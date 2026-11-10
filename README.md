@@ -1,4 +1,4 @@
-# Emberfall Online
+# Dark Portals 1
 Browser tile MMO. `client/` = game (built to one HTML file), `server/` = Node + WebSocket + Postgres, `deploy/` = Docker.
 
 ## Run locally (no Postgres needed)

@@ -8,7 +8,7 @@ const tleft=ms=>{const m=Math.max(0,Math.ceil(ms/60000));return m+'m'};
 function giveItem(s){if(ITEMS[s.id].slot){if(P.inv.length<24){P.inv.push(s);return 'bag'}P.bank.items.push(s);return 'bank'}
  const t=P.inv.find(i=>i.id===s.id);if(t){t.n+=s.n;return 'bag'}if(P.inv.length<24){P.inv.push(s);return 'bag'}const b=P.bank.items.find(i=>i.id===s.id&&!ITEMS[i.id].slot);if(b)b.n+=s.n;else P.bank.items.push(s);return 'bank'}
 /* bank */
-function bankHtml(){const b=P.bank;let h=hdr('🏦 Emberfall Bank')+`<div class="tip" style="font-size:13px;opacity:1">"Safe as a dragon's hoard." 💰 Carrying <b>${P.gold}</b> · Vault <b>${b.gold}</b></div><div class="row"><span style="flex:1">Gold</span>${bt('bg','d100','+100',P.gold<100)}${bt('bg','dall','All in',!P.gold)}</div><div class="row"><span style="flex:1"></span>${bt('bg','w100','−100',b.gold<100)}${bt('bg','wall','All out',!b.gold)}</div>`;
+function bankHtml(){const b=P.bank;let h=hdr('🏦 Hearthmoor Bank')+`<div class="tip" style="font-size:13px;opacity:1">"Safe as a dragon's hoard." 💰 Carrying <b>${P.gold}</b> · Vault <b>${b.gold}</b></div><div class="row"><span style="flex:1">Gold</span>${bt('bg','d100','+100',P.gold<100)}${bt('bg','dall','All in',!P.gold)}</div><div class="row"><span style="flex:1"></span>${bt('bg','w100','−100',b.gold<100)}${bt('bg','wall','All out',!b.gold)}</div>`;
  h+=`<h3 style="margin-top:8px">Vault ${b.items.length}/60</h3>`;if(!b.items.length)h+='<div class="tip">Empty. Store items from your backpack below.</div>';b.items.forEach((s,i)=>h+=xrow(s,'bwd',i,'Take'));
  h+='<h3 style="margin-top:8px">Backpack</h3>';P.inv.forEach((s,i)=>{if(!isEq(s))h+=xrow(s,'bdep',i,'Store')});return h}
 /* auction */
@@ -22,7 +22,7 @@ function aucStep(){const now=Date.now();aucGen();
  for(let i=P.sales.length-1;i>=0;i--){const l=P.sales[i];
   if(now>=l.exp){if(l.bidder){const g=Math.round(l.cur*.95);P.gold+=g;sys(`💰 ${nameOf(l.it)} sold to ${l.bidder} for ${l.cur}g (+${g}g after 5% fee)`,'#ffd36b')}else{const w=giveItem(l.it);sys(`📦 ${nameOf(l.it)} didn't sell – returned to your ${w==='bag'?'backpack':'bank vault'}.`,'#fc6')}P.sales.splice(i,1);continue}
   if(Math.random()<.03&&nextBid(l)<=l.max){l.cur=nextBid(l);l.bidder=pick(BN)}}}
-let xT=0;function xTick(dt){if(!P)return;wizTick(dt);gibStep(dt);xT+=dt;if(xT>=1){xT=0;aucStep()}}
+let xT=0;function xTick(dt){if(!P)return;portalTick(dt);wizTick(dt);gibStep(dt);xT+=dt;if(xT>=1){xT=0;aucStep()}}
 function aucHtml(){let h=`<div class="tip" style="font-size:13px;opacity:1">💰 ${P.gold} · Auctions resolve in real time. Bid, or buy now.</div>`;
  for(const l of P.auc){const nb=nextBid(l),mine=l.bidder==='you';h+=`<div class="row"><span style="font-size:22px">${ITEMS[l.it.id].e}</span><div style="flex:1;color:${RARC[l.it.rar|0]}">${nameOf(l.it)}${l.it.ench?' ✨':''}<div class="tip">${statLine(l.it)}<br>by ${l.seller} · ⏱ ${tleft(l.exp-Date.now())} · bid <b>${l.cur}g</b>${l.bidder?' ('+(mine?'YOU':l.bidder)+')':''}</div></div><div style="display:flex;flex-direction:column;gap:4px">${bt('abid',l.it.u,mine?'Leading':'Bid '+nb+'g',mine||P.gold<nb)}${bt('abuy',l.it.u,'Buy '+l.buy+'g',P.gold<l.buy)}</div></div>`}
  h+=`<h3 style="margin-top:10px">Your listings</h3>`;if(!P.sales.length)h+='<div class="tip">Nothing listed. 5% fee on sales.</div>';
@@ -88,7 +88,7 @@ function spawnDungeon(){const R=DR(),T4=[['skeleton','ogre'],['wraith','golem'],
  const [bx,by,bw,bh]=R[5],w=mkEnemy('wizard',bx+bw-4+.5,by+bh/2+.5);w.el='lord';w.dun=1;w.sc=1.6;w.hx=w.x;w.hy=w.y;E.push(w);
  for(const [dx,dy] of [[-4,-5],[-4,5]]){const e=dunMob('demon',w.x+dx,w.y+dy,5);E.push(e)}}
 function megaLoot(rar){const s=addItem(pick(ENDGAME));if(!s)return;rollGear(s,'smith',true);s.rar=Math.max(s.rar|0,rar);if(rar>=2&&!s.ench)rollGear(Object.assign(s,{}),'smith',true),s.rar=Math.max(s.rar|0,rar);announceGear(s,'Looted');sys('🎁 Dungeon loot: '+nameOf(s),RARC[s.rar|0])}
-function dunKill(e){if(e.el==='elite'){if(Math.random()<.45)megaLoot(Math.random()<.04?3:Math.random()<.2?2:1);if(Math.random()<.3){addItem('gem');fl(e.x,e.y-1,'💎','#fff')}if(Math.random()<.3)addItem(pick(['hpotion','potion']),2)}
+function dunKill(e){if(e.t==='wizard')closePortals();if(e.el==='elite'){if(Math.random()<.45)megaLoot(Math.random()<.04?3:Math.random()<.2?2:1);if(Math.random()<.3){addItem('gem');fl(e.x,e.y-1,'💎','#fff')}if(Math.random()<.3)addItem(pick(['hpotion','potion']),2)}
  else if(e.t==='wizard'){for(let i=0;i<3;i++)megaLoot(3);addItem('essence',6);addItem('gem',4);addItem('hpotion',5);P.wiz=(P.wiz|0)+1;addBoard();sys('💀 MALACHAR, THE DARK WIZARD, HAS FALLEN! The portals fall silent… for now.','#ffd34a');toast('🏆 The Dark Wizard is defeated!','#ffd34a');for(let i=0;i<5;i++)fxs.push({k:'ring',x:e.x,y:e.y,r:2+i*1.6,life:.8+i*.15,max:.8+i*.15,c:'#ffd34a'})}}
 const ELL=e=>e.el==='lord'?'💀 Malachar, the Dark Wizard':e.el==='elite'?'⚔ Elite '+e.t:(e.el==='shaman'?'🔮 Shaman ':'👑 Chief ')+e.t;
 /* ---------- gore · shadows · shake · music ---------- */
@@ -111,7 +111,7 @@ function drawShadows(x0,x1,y0,y1){for(const o of NET.others.values())if(o.x>=x0-
  for(const a of bots)if(!a.dead&&vis(a.x,a.y))el(a.x*T,a.y*T+2,6,2.4);for(const a of guards)if(!a.dead&&vis(a.x,a.y))el(a.x*T,a.y*T+2,6,2.4);for(const n of npcs)if(!n.dead&&vis(n.x,n.y))el(n.x*T+8,n.y*T+14,6,2.4);
  if(!P.dead)el(P.x*T,P.y*T+2,6,2.4);g.restore()}
 function bigMsg(t,c='#f6f'){let d=document.getElementById('bigmsg');if(!d){d=document.createElement('div');d.id='bigmsg';d.style.cssText='position:fixed;left:50%;top:12%;white-space:pre-line;transform:translateX(-50%);z-index:4;pointer-events:none;text-align:center;font:bold 18px Georgia,serif;max-width:86vw;text-shadow:0 0 12px #000,0 2px 0 #000;transition:opacity 1.5s;opacity:0';document.body.appendChild(d)}d.style.color=c;d.textContent=t;d.style.opacity=1;clearTimeout(d._t);d._t=setTimeout(()=>d.style.opacity=0,5000)}
-function wizTick(dt){const R=DR()[5],w=P.x>=R[0]&&P.x<R[0]+R[2]&&P.y>=R[1]&&P.y<R[1]+R[3];if(w&&!inWiz){shakeT=3.2;shakeA=3;sys('🌋 The earth trembles across Emberfall… someone has entered the Dark Wizard\'s chamber!','#f6f');bigMsg('⚠ THE WORLD TREMBLES ⚠\nThe Dark Wizard\'s chamber has been entered!');sfx('boss')}inWiz=w;if(shakeT>0)shakeT-=dt}
+function wizTick(dt){const R=DR()[5],w=P.x>=R[0]&&P.x<R[0]+R[2]&&P.y>=R[1]&&P.y<R[1]+R[3];if(w&&!inWiz){shakeT=3.2;shakeA=3;sys('🌋 The earth trembles across the land… someone has entered the Dark Wizard\'s chamber!','#f6f');bigMsg('⚠ THE WORLD TREMBLES ⚠\nThe Dark Wizard\'s chamber has been entered!');sfx('boss')}inWiz=w;if(shakeT>0)shakeT-=dt}
 /* music: tiny procedural chiptune */
 const NOTE=n=>440*Math.pow(2,(n-69)/12);
 const MUS={
@@ -142,7 +142,32 @@ function dollURL(){const c=document.createElement('canvas');c.width=c.height=64;
 const BKEY='emberfall.board';
 function loadBoard(){if(NET.on)return NET.board;try{return JSON.parse(localStorage.getItem(BKEY)||'[]')}catch(e){return[]}}
 function addBoard(){const s=calcScore(),b=loadBoard(),ent={name:P.name,img:dollURL(),when:Date.now(),...s},i=b.findIndex(x=>x.name===P.name);if(i>=0){ent.wiz=Math.max(ent.wiz,b[i].wiz|0);if(b[i].score>ent.score)ent.score=b[i].score;b[i]=ent}else b.push(ent);b.sort((a,c)=>c.score-a.score);if(NET.on)netPostBoard(ent);else try{localStorage.setItem(BKEY,JSON.stringify(b.slice(0,50)))}catch(e){}sys(`🏆 ${P.name} is inscribed in the Hall of Heroes with ${ent.score} points!`,'#ffd34a');bigMsg('🏆 '+P.name+' slew the Dark Wizard!\n'+ent.score+' points','#ffd34a')}
-function boardHtml(){const b=loadBoard(),me=calcScore();let h=hdr('🏆 Hall of Heroes')+`<div class="tip" style="font-size:13px;opacity:1">Slayers of Malachar, the Dark Wizard. Score = levels, kills, PvP, gold. Your score now: <b>${me.score}</b></div>`;
+function boardHtml(){const b=loadBoard(),me=calcScore();let h=hdr('🏆 Hall of Heroes')+`<div class="tip" style="font-size:13px;opacity:1">🌀 Dark Portals: ${PT.open?'<b style="color:#c6f">OPEN</b> – slay the Dark Wizard to close them':'closed for '+Math.ceil((PT.reopen-clock)/60)+' more min'}</div><div class="tip" style="font-size:13px;opacity:1">Slayers of Malachar, the Dark Wizard. Score = levels, kills, PvP, gold. Your score now: <b>${me.score}</b></div>`;
  if(!b.length)h+='<div class="tip">No one has slain the Dark Wizard yet…</div>';
  b.forEach((e,i)=>{h+=`<div class="row"><b style="width:22px">${i+1}</b><img src="${e.img}" width="48" height="48" style="image-rendering:pixelated;background:#0003;border-radius:6px"><div style="flex:1"><b>${e.name}</b> · <span style="color:#ffd34a">${e.score}</span><div class="tip">Lv ${e.tl} · ⚔${e.mk} kills · 🩸${e.pk} PvP (☠${e.pd}) · 💀${e.d} · 💰${e.gold} · 🐉×${e.wiz}<br>${new Date(e.when).toLocaleDateString()}</div></div></div>`});return h}
 const _xAct=xAct;xAct=function(a,v){if(a==='board'){openPanel('board');if(NET.on)netBoard();return true}if(a==='opt'){if(v==='gore')P.gore=!goreOn();else{P.music=P.music===false;musMode=null}return true}return _xAct(a,v)};
+
+/* ---------- dark portals: mob spawners shut down by slaying the Dark Wizard ---------- */
+const PT={open:true,reopen:0},PTS=[];let ptClean=0;
+function spawnPortals(){const X0=DUN.x0-8,X1=DUN.x0+DUN.w+8,Y0=DUN.y0-8,Y1=DUN.y0+DUN.h+8;let tr=0;
+ while(PTS.length<12&&tr++<40000){const x=ri(8,MW-9),y=ri(8,MH-9),k=idx(x,y);if(!reach[k]||solid[k]||objAt.has(k)||(x>X0&&x<X1&&y>Y0&&y<Y1))continue;
+  if(Math.hypot(x-CX,y-CY)<TOWN_R+38||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R+30)||PTS.some(p=>Math.hypot(x-p.x,y-p.y)<34))continue;
+  if(!reach[idx(x,y+1)]||solid[idx(x,y+1)])continue;solid[k]=1;PTS.push({id:PTS.length,x,y,t:rnd(2,8)})}}
+function portalTick(dt){if(!PT.open){if(clock>=PT.reopen)reopenPortals();return}
+ for(const p of PTS){p.t-=dt;if(p.t>0)continue;p.t=rnd(7,11);if(Math.hypot(P.x-p.x,P.y-p.y)>70)continue;
+  let live=0;for(const e of E)if(e.pt===p.id&&!e.dead)live++;if(live>=6)continue;
+  const d=Math.hypot(p.x-CX,p.y-CY),t=pickMob(d,map[idx(p.x,p.y+1)]);if(!t||!ESPEC[t]||ESPEC[t].pass)continue;
+  const x=p.x+.5+rnd(-1.5,1.5),y=p.y+1.6+rnd(0,1.5);if(solid[idx(Math.floor(x),Math.floor(y))])continue;
+  const m=mkEnemy(t,x,y);m.pt=p.id;m.temp=1;E.push(m);burst(x,y-.4,'#b46aff',10,3);fxs.push({k:'ring',x,y,r:1.4,life:.5,max:.5,c:'#b46aff'})}
+ ptClean+=dt;if(ptClean>30){ptClean=0;E=E.filter(e=>!(e.pt!=null&&e.dead>clock+1e8))}}
+function closePortals(){PT.open=false;PT.reopen=clock+600;let n=0;for(const e of E)if(e.pt!=null&&!e.dead){e.dead=clock+1e9;burst(e.x,e.y-.4,'#b46aff',8,3);n++}
+ sys('🌀 The Dark Portals collapse! The monsters they spawned crumble to dust. The portals will tear open again in 10 minutes…','#c9f');bigMsg('🌀 THE DARK PORTALS HAVE CLOSED\nPeace… for 10 minutes','#c9f')}
+function reopenPortals(){PT.open=true;const w=E.find(e=>e.t==='wizard');if(w){w.dead=0;w.hp=w.mhp;w.x=w.hx;w.y=w.hy;w.p1=w.p2=0;w.st=0;w.nova=6}
+ sys('🌀 The Dark Portals tear open again! The Dark Wizard has returned to his throne.','#f6f');bigMsg('🌀 THE DARK PORTALS REOPEN\nThe Dark Wizard has returned','#f6f');shakeT=2.5;shakeA=2;sfx('boss')}
+function drawPortal(p){const px=p.x*T,py=p.y*T,o=PT.open,tt=clock;g.fillStyle='#0005';g.beginPath();g.ellipse(px+8,py+15,13,3.5,0,0,6.283);g.fill();
+ if(o){g.fillStyle='rgba(150,60,255,'+(.22+.1*Math.sin(tt*3))+')';g.beginPath();g.ellipse(px+8,py-8,19,26,0,0,6.283);g.fill()}
+ g.fillStyle='#3d3a46';g.fillRect(px-3,py-24,5,38);g.fillRect(px+14,py-24,5,38);g.fillRect(px-3,py-28,22,6);g.fillStyle='#262430';g.fillRect(px-2,py-24,1,38);g.fillRect(px+15,py-24,1,38);g.fillRect(px,py-27,16,1);
+ g.fillStyle=o?'#12081e':'#1b1a20';g.fillRect(px+2,py-22,12,36);
+ if(o){for(let i=0;i<7;i++){const y=py-20+((tt*18+i*13)%32),w=3+Math.sin(tt*4+i)*2.5;g.fillStyle='hsl('+(270+i*8)+',85%,'+(50+15*Math.sin(tt*3+i))+'%)';g.fillRect(px+8-w/2+Math.sin(tt*5+i*2)*3,y,w,2)}
+  g.fillStyle='#d9a8ff';g.fillRect(px+7,py-30,2,2);if(Math.random()<.15)parts.push({x:p.x+.5,y:p.y-1.4,vx:rnd(-.4,.4),vy:rnd(-1.2,-.4),life:rnd(.5,1),c:'#c9f',sz:1})}
+ else{g.fillStyle='#55525c';g.fillRect(px+3,py-20,2,6);g.fillRect(px+9,py-12,3,2)}}

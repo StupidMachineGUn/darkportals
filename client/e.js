@@ -36,7 +36,7 @@ function renderPanel(){let h='';const k=panelKind;pn.className=k==='bag'?'bag':'
  else if(k==='elder'){const a=activeQuest(),nq=nextQuest();h=hdr('📜 Elder Maren');
   if(a){const s=P.q[a.id];h+=`<div class="tip" style="font-size:13px;opacity:1"><b>${a.t}</b><br>${a.d}<br>Progress: ${s.n}/${a.n}<br>Reward: ${a.g}g + ${a.xp[1]} ${a.xp[0]} xp</div><div class="row">${bt('turnin',a.id,'Turn in',!s.ok)}</div>`}
   else if(nq)h+=`<div class="tip" style="font-size:13px;opacity:1">"The realm needs heroes. Will you help?"<br><br><b>${nq.t}</b><br>${nq.d}<br>Reward: ${nq.g}g + ${nq.xp[1]} ${nq.xp[0]} xp</div><div class="row">${bt('accept',nq.id,'Accept quest')}</div>`;
-  else h+='<div class="tip" style="font-size:13px;opacity:1">"You have done everything I can ask. Hero of Emberfall!"</div>'}
+  else h+='<div class="tip" style="font-size:13px;opacity:1">"You have done everything I can ask. Hero of Hearthmoor!"</div>'}
  if(k==='skills')h+=optHtml();if(k==='board')h=boardHtml();if(k==='bank')h=bankHtml();else if(k==='trade')h=tradeHtml();
  if(['shop','forge','inn','elder','house','bank','trade'].includes(k))h=h.replace('data-a="close">✕</div></div>','data-a="close">✕</div></div><canvas id="banner" width="160" height="70" style="position:static;inset:auto;width:100%;height:auto;aspect-ratio:160/70;image-rendering:pixelated;border-radius:8px;margin:6px 0;display:block;border:1px solid #5a3a1a"></canvas>');
  pn.innerHTML=h;if(k==='bag')drawDoll();drawBanner(k)}
@@ -119,10 +119,10 @@ function loop(t){requestAnimationFrame(loop);const dt=Math.min(.05,(t-last)/1000
  if(sid===null){input.x=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0);input.y=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)}
  input.run=runBtn||!!keys.ShiftLeft;if(!paused)update(dt);render();drawMini();hudT+=dt;if(hudT>.1){hudT=0;updateHud()}saveT+=dt;if(saveT>8){saveT=0;save()}}
 function migrate(p){for(const s of p.inv)if(ITEMS[s.id]&&ITEMS[s.id].slot&&!s.u)s.u=uid();p.eq.h=p.eq.h||null;p.eq.b=p.eq.b||null;for(const k of['w','a']){if(typeof p.eq[k]==='string'){const s=p.inv.find(i=>i.id===p.eq[k]);p.eq[k]=s?s.u:null}}UID=Math.max(UID,...p.inv.map(i=>i.u||0))}
-function start(){const name=($('#nm').value.trim()||'Hero').slice(0,12);genWorld();carveDungeon();buildTiles();buildSprites();spawnEnemies();spawnVillageMobs();makeElites();spawnBots();spawnChickens();spawnSheep();spawnDungeon();for(let i=0;i<18;i++)spawnShroom();buildMini();
+function start(){const name=($('#nm').value.trim()||'Hero').slice(0,12);genWorld();carveDungeon();buildTiles();buildSprites();spawnEnemies();spawnVillageMobs();makeElites();spawnBots();spawnChickens();spawnSheep();spawnDungeon();spawnPortals();for(let i=0;i<18;i++)spawnShroom();buildMini();
  const s=load();P=Object.assign(newPlayer(name),s&&s.name===name?s:{});migrate(P);P.flag=P.wanted?'red':null;P.fT=P.wanted?Infinity:0;P.vic=P.wanted||0;P.path=null;P.chase=null;P.dead=0;P.hurt=0;P.cd=0;P.swing=0;P.hp=Math.min(P.hp,maxHp());if(!walkable(Math.floor(P.x),Math.floor(P.y))){P.x=CX+.5;P.y=CY+3.5;P.inside=null}if(P.inside!=null&&!(P.rent&&P.rent.id===P.inside&&rentLeft()>0)){leaveHouse()}else if(P.inside!=null){P.hp=maxHp();P.mp=maxMp();P.st=maxSt()}cam.x=P.x;cam.y=P.y;resize();$('#title').style.display='none';
  {const returning=s&&s.name===name;houses.forEach(h=>{if(Math.random()<.35)h.occ={n:pick(BN),exp:Date.now()+ri(3,55)*60000}});if(!returning)showStory()}
- sys('Welcome to Emberfall, '+name+'! Every skill grows by using it.','#fff');sys('Tip: tap trees, rocks, water or monsters. Villages are safe zones with guards. Talk to Elder Maren for quests.','#9cf');
+ sys('Welcome to Dark Portals, '+name+'! Every skill grows by using it.','#fff');sys('Tip: tap trees, rocks, water or monsters. Villages are safe zones with guards. Talk to Elder Maren for quests.','#9cf');
  try{AC=AC||new(window.AudioContext||window.webkitAudioContext)()}catch(e){}xInit();devUi();netConnect();requestAnimationFrame(loop)}
 $('#go').addEventListener('pointerdown',goBtn);$('#regt').addEventListener('pointerdown',toggleReg);netProbe();
 document.addEventListener('visibilitychange',()=>{if(P)save()});

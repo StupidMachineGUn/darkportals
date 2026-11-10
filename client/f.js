@@ -56,7 +56,7 @@ $('#bLeave').addEventListener('pointerdown',()=>{if(P&&P.inside)leaveHouse()});
 /* ---------- opening story ---------- */
 let storyOn=false,stI=0,stT=0,stChars=0,paused=false;
 const STORY=[
- 'In the valley of Emberfall, life was quiet. Farmers sang at dawn, smiths hammered in the sun, and nobody had ever needed to lock a door.',
+ 'In the valley of Hearthmoor, life was quiet. Farmers sang at dawn, smiths hammered in the sun, and nobody had ever needed to lock a door.',
  'Then came Malgrim the Ashen — a wizard cast out for forbidden magic. From his black tower he raised his staff against the sky…',
  '…and the sky tore open. Portals bled into the world, and from them poured every nightmare the old stories had warned about.',
  'The elders wove a ward of living light over each town. Inside the shimmering aura people are safe — but beyond it, the wilds now belong to the monsters.',

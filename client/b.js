@@ -123,7 +123,7 @@ function genWorld(){
  const canPlace=(x,y,w,h,okPath,town)=>{for(let j=y-1;j<=y+h+1;j++)for(let i=x-1;i<x+w+1;i++){if(!inb(i,j))return false;const k=idx(i,j);if(map[k]<2||solid[k])return false;if(!okPath&&map[k]===TL.PATH)return false;if(town&&(i>=CX-1&&i<=CX+2||j>=CY-1&&j<=CY+2))return false}return true};
  const HC=['#6a5a3a','#7a4a3a','#4a6a5a','#5a4a6a','#8a6a4a','#4a5a7a','#7a6a3a','#6a3a3a'];
  const addHouse=(x,y,town)=>{const b={n:'Cottage',x,y,w:3,h:3,c:HC[houses.length%HC.length],dx:x+1,dy:y+3,house:true,id:houses.length,town};houses.push(b);buildings.push(b);for(let j=0;j<3;j++)for(let i=0;i<3;i++)solid[idx(x+i,y+j)]=1;map[idx(b.dx,b.dy)]=TL.PATH};
- {let cnt=0;for(const r of [11.5,14.5,17.5]){const n=Math.floor(6.283*r/5);for(let i=0;i<n&&cnt<34;i++){const a=i/n*6.283+r;const x=Math.round(CX+Math.cos(a)*r)-1,y=Math.round(CY+Math.sin(a)*r)-1;if(canPlace(x,y,3,3,false,true)){addHouse(x,y,'Emberfall Town');cnt++}}}}
+ {let cnt=0;for(const r of [11.5,14.5,17.5]){const n=Math.floor(6.283*r/5);for(let i=0;i<n&&cnt<34;i++){const a=i/n*6.283+r;const x=Math.round(CX+Math.cos(a)*r)-1,y=Math.round(CY+Math.sin(a)*r)-1;if(canPlace(x,y,3,3,false,true)){addHouse(x,y,'Hearthmoor Town');cnt++}}}}
  for(const v of VIL){let cnt=0;const n=14;for(let i=0;i<n&&cnt<5;i++){const a=i/n*6.283;const x=Math.round(v.x+Math.cos(a)*8.3)-1,y=Math.round(v.y+Math.sin(a)*8.3)-1;if(canPlace(x,y,3,3,true,false)){addHouse(x,y,v.name);cnt++}}}
  // flood fill reachability
  const q=[[CX,CY+1]];reach[idx(CX,CY+1)]=1;
