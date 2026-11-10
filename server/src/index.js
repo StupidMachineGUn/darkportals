@@ -112,12 +112,12 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
           const tpOk = m.tp && now - (me.lastTp || 0) > 3000; if (tpOk) me.lastTp = now;
           if (d > MAX_SPEED * dt + 3 && !tpOk) { ws.send(JSON.stringify({ t: 'snap', x: me.x, y: me.y })); return; }
         }
-        me.x = m.x; me.y = m.y; me.dir = m.dir | 0; me.eq = m.eq | 0; me.name = a.name; me.t = now; me.init = true; me.hp = m.hp | 0; me.ch = m.ch ? 1 : 0; me.w = String(m.w || 'sword0').slice(0, 16); me.mh = m.mhp | 0; me.f = m.f === 'red' || m.f === 'orange' || m.f === 'blue' ? m.f : null; me.col = String(m.col || '').slice(0, 9);
+        if (Math.hypot(m.x - me.x, m.y - me.y) > .05) me.mvT = now; me.x = m.x; me.y = m.y; me.dir = m.dir | 0; me.eq = m.eq | 0; me.name = a.name; me.t = now; me.init = true; me.hp = m.hp | 0; me.ch = m.ch ? 1 : 0; me.bz = m.bz ? 1 : 0; { const l = m.lk || {}, cs = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : null, ci = v => Number.isInteger(v) && v >= -1 && v < 20 ? v : 0; me.lk = { w: typeof l.w === 'string' ? l.w.slice(0, 16) : null, tw: cs(l.tw), ta: cs(l.ta), a: ci(l.a), h: ci(l.h), b: ci(l.b) } } me.mh = m.mhp | 0; me.f = m.f === 'red' || m.f === 'orange' || m.f === 'blue' ? m.f : null; me.col = String(m.col || '').slice(0, 9);
         const sp = me.sp; if (sp) { sp.x = m.x; sp.y = m.y; sp.dir = m.dir | 0; sp.hp = m.hp | 0; sp.mhp = m.mhp | 0 || sp.mhp; sp.dead = m.dead ? 1 : 0; sp.inside = m.inside ? 1 : 0; sp.ready = true; if (m.xp && typeof m.xp === 'object') { const x = {}; for (const k in m.xp) if (Number.isFinite(m.xp[k])) x[k] = Math.min(1e8, m.xp[k]); sp.xp = x } }
       } else if (m.t === 'ping') { ws.send(JSON.stringify({ t: 'pong', c: m.c, ld: Math.round(eld.mean / 1e6 * 10) / 10, q: ws.bufferedAmount }));
       } else if (m.t === 'hit' && sim && me.sp) { sim.hit(me.sp, m.id | 0, +m.d);
       } else if (m.t === 'fx' && sim && me.sp) { sim.fx(me.sp, m.id | 0, String(m.sp), +m.d);
-      } else if (m.t === 'act') { // swing / spell visuals for others
+      } else if (m.t === 'act') { me.mvT = now; // swing / spell visuals for others
         const o = JSON.stringify({ t: 'act', id: a.uid, k: String(m.k || '').slice(0, 12), x: +m.x || 0, y: +m.y || 0, dir: m.dir | 0, sp: String(m.sp || '').slice(0, 16), w: String(m.w || '').slice(0, 16) });
         for (const q of players.values()) if (q !== me && q.ws.readyState === 1 && Math.hypot(q.x - me.x, q.y - me.y) < 45) q.ws.send(o);
       } else if (m.t === 'pvp') { // melee hit on another player; relayed to victim for them to apply
@@ -129,7 +129,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
         const k = players.get(m.by); if (k && k.ws.readyState === 1) { const sx = {}; if (m.sx && typeof m.sx === 'object') for (const kk in m.sx) if (Number.isFinite(+m.sx[kk])) sx[kk.slice(0, 16)] = Math.min(+m.sx[kk], 1e6); k.ws.send(JSON.stringify({ t: 'pk', who: a.uid, n: a.name, g: Math.max(0, Math.min(+m.g || 0, 1e7)), sx, b: Math.max(0, Math.min(+m.b || 0, 5000)), fl: m.fl ? 1 : 0 })) }
         broadcast({ t: 'sys', m: `${a.name} was slain by ${k ? k.name : 'a player'}` });
       } else if (m.t === 'chat' && typeof m.m === 'string') {
-        if (now - me.lastChat < 1000) return; me.lastChat = now;
+        if (now - me.lastChat < 1000) return; me.lastChat = now; me.chT = now; me.mvT = now;
         broadcast({ t: 'chat', n: a.name, m: m.m.slice(0, 120) });
       }
     });
@@ -137,10 +137,10 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   });
   function broadcast(obj, except) { const s = JSON.stringify(obj); for (const p of players.values()) if (p !== except && p.ws.readyState === 1) p.ws.send(s) }
   const tick = setInterval(() => {
-    const all = [...players.values()].filter(p => p.init);
+    const all = [...players.values()].filter(p => p.init); const now0 = Date.now();
     for (const p of players.values()) {
       if (p.ws.readyState !== 1 || !p.init) continue;
-      const near = all.filter(q => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < 45).map(q => ({ id: q.uid, n: q.name, x: +q.x.toFixed(2), y: +q.y.toFixed(2), d: q.dir, e: q.eq, h: q.hp, c: q.ch, k: q.col, w: q.w, mh: q.mh, f: q.f }));
+      const near = all.filter(q => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < 45).map(q => ({ id: q.uid, n: q.name, x: +q.x.toFixed(2), y: +q.y.toFixed(2), d: q.dir, e: q.eq, h: q.hp, c: q.ch, k: q.col, l: q.lk, s: (now0 - (q.chT || 0) < 6000 || q.bz) ? 2 : (now0 - (q.mvT || now0) > 30000 ? 1 : 0), mh: q.mh, f: q.f }));
       p.ws.send(JSON.stringify({ t: 'players', l: near, online: players.size }));
     }
   }, 200);

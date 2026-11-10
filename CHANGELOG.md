@@ -34,3 +34,7 @@
 
 ## 0.3.2
 - Server no longer exits on a simulation/unhandled error; errors are logged (SIM ERROR / UNCAUGHT) instead of crash-looping.
+
+## 0.3.3
+- Other players now render with your real look: weapon (or none), weapon tint, armour tint, armour/helm/boots tiers.
+- zZ above a player idle for 30s (server-decided); oO while chatting or in a shop. Shown on your own character too.
