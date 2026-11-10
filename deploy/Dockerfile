@@ -1,4 +1,4 @@
-# build context = repo root:  docker build -f deploy/Dockerfile -t emberfall:$(cat VERSION) .
+# build context = repo root:  docker build -f deploy/Dockerfile -t darkportals:$(cat VERSION) .
 FROM node:22-bookworm-slim AS client
 WORKDIR /src
 COPY VERSION ./VERSION

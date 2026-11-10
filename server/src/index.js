@@ -131,7 +131,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const s = await createServer();
-  console.log(`Emberfall server v${VERSION} listening on :${s.port}`);
+  console.log(`Dark Portals server v${VERSION} listening on :${s.port}`);
   const stop = async () => { console.log('shutting down'); await s.close(); process.exit(0) };
   process.on('SIGTERM', stop); process.on('SIGINT', stop);
 }

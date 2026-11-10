@@ -90,7 +90,7 @@ body.trip #c{animation:trip 4s linear infinite,wob 3s ease-in-out infinite}
 <div id="story"><canvas id="stc" width="192" height="108"></canvas><div id="stt"></div><div id="stb"><div class="btn" id="stSkip">Skip</div><div class="btn" id="stNext">Next ▶</div></div></div>
 <div id="toast"></div>
 <div id="title"><h1>🌀 DARK PORTALS</h1><div style="opacity:.8;max-width:320px">A tiny MMO that grows with you. Every skill is trained by using it.</div>
-<input id="nm" maxlength="12" placeholder="Hero name" value="Nexemis"><input id="pw" type="password" placeholder="Password" style="display:none;margin-top:6px"><div id="authmsg" style="font-size:12px;color:#f88;min-height:15px"></div><div class="btn" id="go">Enter the world</div><div id="regt" style="display:none;font-size:12px;text-decoration:underline;opacity:.8;padding:6px">New here? Create account</div><div style="font-size:10px;opacity:.4">v0.1.1</div>
+<input id="nm" maxlength="12" placeholder="Hero name" value="Nexemis"><input id="pw" type="password" placeholder="Password" style="display:none;margin-top:6px"><div id="authmsg" style="font-size:12px;color:#f88;min-height:15px"></div><div class="btn" id="go">Enter the world</div><div id="regt" style="display:none;font-size:12px;text-decoration:underline;opacity:.8;padding:6px">New here? Create account</div><div style="font-size:10px;opacity:.4">v0.1.2</div>
 <div style="font-size:11px;opacity:.6;max-width:320px">Drag stick / WASD to move · tap the world to walk or interact · Space attack · E use · 1-6 spells, food &amp; potions</div></div>
 <script>
 'use strict';
@@ -1137,7 +1137,7 @@ function drawPortal(p){const px=p.x*T,py=p.y*T,o=PT.open,tt=clock;g.fillStyle='#
   g.fillStyle='#d9a8ff';g.fillRect(px+7,py-30,2,2);if(Math.random()<.15)parts.push({x:p.x+.5,y:p.y-1.4,vx:rnd(-.4,.4),vy:rnd(-1.2,-.4),life:rnd(.5,1),c:'#c9f',sz:1})}
  else{g.fillStyle='#55525c';g.fillRect(px+3,py-20,2,6);g.fillRect(px+9,py-12,3,2)}}
 /* ---------- online layer (accounts, cloud save, other players, chat) ---------- */
-const NET={on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'0.1.1',board:[],lastSave:0,reg:false,tpT:0};
+const NET={on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'0.1.2',board:[],lastSave:0,reg:false,tpT:0};
 async function netProbe(){try{const r=await fetch('/api/ping',{cache:'no-store'});const j=await r.json();if(j&&j.ok){NET.on=true;NET.ver=j.version;authUi();}}catch(e){}}
 function authUi(){$('#pw').style.display='block';$('#regt').style.display='block';$('#nm').placeholder='Username';$('#nm').maxLength=16;$('#nm').value=localStorage.getItem('emberfall.user')||'';$('#go').textContent='Log in';}
 function authMsg(t){$('#authmsg').textContent=t||''}
