@@ -1,3 +1,4 @@
+import { monitorEventLoopDelay } from 'node:perf_hooks';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -86,12 +87,14 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 4096 });
   server.on('upgrade', (req, sock, head) => {
     const u = new URL(req.url, 'http://x');
+    sock.setNoDelay?.(true);
     const a = u.pathname === '/ws' ? readToken(u.searchParams.get('token')) : null;
     if (!a) { sock.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); return sock.destroy(); }
     wss.handleUpgrade(req, sock, head, ws => wss.emit('connection', ws, a));
   });
   let sim = null;
   if (process.env.NO_SIM !== '1') { try { const { createSim } = await import('./sim.js'); sim = createSim(); console.log('world sim ready', sim.info) } catch (e) { console.error('sim disabled:', e.message) } }
+  const eld = monitorEventLoopDelay({ resolution: 10 }); eld.enable(); setInterval(() => eld.reset(), 10000).unref();
   const MAX_SPEED = 14; // tiles/s incl. sprint + slack; anything faster is snapped back
   wss.on('connection', (ws, a) => {
     const old = players.get(a.uid); if (old) { try { old.ws.close(4000, 'Logged in elsewhere') } catch {} }
@@ -111,7 +114,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
         }
         me.x = m.x; me.y = m.y; me.dir = m.dir | 0; me.eq = m.eq | 0; me.name = a.name; me.t = now; me.init = true; me.hp = m.hp | 0; me.ch = m.ch ? 1 : 0; me.w = String(m.w || 'sword0').slice(0, 16); me.mh = m.mhp | 0; me.f = m.f === 'red' || m.f === 'orange' || m.f === 'blue' ? m.f : null; me.col = String(m.col || '').slice(0, 9);
         const sp = me.sp; if (sp) { sp.x = m.x; sp.y = m.y; sp.dir = m.dir | 0; sp.hp = m.hp | 0; sp.mhp = m.mhp | 0 || sp.mhp; sp.dead = m.dead ? 1 : 0; sp.inside = m.inside ? 1 : 0; sp.ready = true; if (m.xp && typeof m.xp === 'object') { const x = {}; for (const k in m.xp) if (Number.isFinite(m.xp[k])) x[k] = Math.min(1e8, m.xp[k]); sp.xp = x } }
-      } else if (m.t === 'ping') { ws.send(JSON.stringify({ t: 'pong', c: m.c }));
+      } else if (m.t === 'ping') { ws.send(JSON.stringify({ t: 'pong', c: m.c, ld: Math.round(eld.mean / 1e6 * 10) / 10, q: ws.bufferedAmount }));
       } else if (m.t === 'hit' && sim && me.sp) { sim.hit(me.sp, m.id | 0, +m.d);
       } else if (m.t === 'fx' && sim && me.sp) { sim.fx(me.sp, m.id | 0, String(m.sp), +m.d);
       } else if (m.t === 'act') { // swing / spell visuals for others
@@ -142,6 +145,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     }
   }, 200);
 
+  function encU(u) { if (!u.length) return null; const b = Buffer.allocUnsafe(3 + u.length * 13); b[0] = 1; b.writeUInt16LE(u.length, 1); let o = 3; for (const e of u) { b.writeUInt32LE(e[0], o); b.writeUInt16LE(Math.max(0, Math.min(65535, Math.round(e[1] * 16))), o + 4); b.writeUInt16LE(Math.max(0, Math.min(65535, Math.round(e[2] * 16))), o + 6); b.writeInt8(Math.round(e[3] * 8), o + 8); b.writeInt8(Math.round(e[4] * 8), o + 9); b.writeUInt16LE(Math.max(0, Math.min(65535, e[5])), o + 10); b[o + 12] = e[6]; o += 13 } return b }
   let st = 0;
   const simTick = sim ? setInterval(() => {
     if (![...players.values()].some(p => p.sp?.ready)) return;
@@ -154,7 +158,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     for (const q of players.values()) {
       if (q.ws.readyState !== 1 || !q.sp?.ready) continue;
       if (ks) q.ws.send(ks);
-      if (st % 2 === 0) { if (q.ws.bufferedAmount > 65536) { q.slow = (q.slow || 0) + 1; continue } const sn = sim.snapshot(q.sp); if (sn.a.length || sn.u.length || sn.r.length || st % 20 === 0) q.ws.send(JSON.stringify(sn)) }
+      { if (q.ws.bufferedAmount > 65536) { q.slow = (q.slow || 0) + 1; continue } const sn = sim.snapshot(q.sp); const ub = encU(sn.u); delete sn.u; if (sn.a.length || sn.r.length || st % 40 === 0 || q.lpt !== sn.pt[0]) { q.lpt = sn.pt[0]; q.ws.send(JSON.stringify(sn)) } if (ub) q.ws.send(ub) }
     }
   }, 50) : null;
   await new Promise(r => server.listen(port, r));

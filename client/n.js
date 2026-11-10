@@ -10,12 +10,12 @@ function goBtn(){if(!NET.on)return start();netAuth().then(ok=>{if(ok)start()})}
 function toggleReg(){NET.reg=!NET.reg;$('#go').textContent=NET.reg?'Create account':'Log in';$('#regt').textContent=NET.reg?'Have an account? Log in':'New here? Create account';authMsg('')}
 function netSave(force){if(!NET.on||!NET.tok||!P)return;const n=Date.now();if(!force&&n-NET.lastSave<15000)return;NET.lastSave=n;
  try{fetch('/api/save',{method:'PUT',keepalive:true,headers:{'content-type':'application/json',authorization:'Bearer '+NET.tok},body:JSON.stringify(P,(k,v)=>k==='path'||k==='chase'?undefined:v)}).then(r=>{if(r.status===401){NET.tok=null;sys('⚠ Session expired – reload to log in again','#f66')}}).catch(()=>{})}catch(e){}}
-function netConnect(){if(!NET.on||!NET.tok)return;const w=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws?token='+encodeURIComponent(NET.tok));NET.ws=w;
- $('#chatin').style.display='block';w.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch{return}
+function netConnect(){if(!NET.on||!NET.tok)return;const w=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws?token='+encodeURIComponent(NET.tok));NET.ws=w;w.binaryType='arraybuffer';NET.rx=0;
+ $('#chatin').style.display='block';w.onmessage=ev=>{if(typeof ev.data!=='string'){NET.rx+=ev.data.byteLength;return netBin(ev.data)}NET.rx+=ev.data.length;let m;try{m=JSON.parse(ev.data)}catch{return}
   if(m.t==='players'){NET.online=m.online;const seen=new Set();for(const p of m.l){seen.add(p.id);let o=NET.others.get(p.id);if(!o){o={id:p.id,x:p.x,y:p.y,remote:true,act:true,xp:{},gold:0};NET.others.set(p.id,o)}Object.assign(o,{name:p.n,w:p.w||'sword0',mhp:p.mh||20,flag:p.f||null,fT:p.f?clock+3:0,n:p.n,tx:p.x,ty:p.y,dir:p.d,eq:p.e,hp:p.h,ch:p.c,col:p.k||'#8fd',seen:clock})}
    for(const id of [...NET.others.keys()])if(!seen.has(id))NET.others.delete(id)}
   else if(m.t==='m')netSnap(m);
-  else if(m.t==='pong'){NET.ping=Math.round(performance.now()-m.c);netPingUi()}
+  else if(m.t==='pong'){NET.ping=Math.round(performance.now()-m.c);NET.ld=m.ld;NET.q=m.q;netPingUi()}
   else if(m.t==='hurt'){if(P&&!P.dead)playerHit(m.d,null)}
   else if(m.t==='kill')netKill(m.l);
   else if(m.t==='ev'){if(m.k==='proj'&&Math.hypot(m.x-P.x,m.y-P.y)<30)proj.push({x:m.x,y:m.y,vx:m.vx,vy:m.vy,dmg:0,life:m.life,own:'e'})}
@@ -30,7 +30,7 @@ function netConnect(){if(!NET.on||!NET.tok)return;const w=new WebSocket((locatio
  w.onclose=ev=>{NET.ws=null;NET.sim=false;NET.ping=null;netPingUi();if(ev.code===4000)sys('⚠ Logged in from another place','#f66');else setTimeout(netConnect,3000)}}
 setInterval(()=>{const w=NET.ws;if(!w||w.readyState!==1||!P||P.dead&&0)return;const tp=NET.lx!=null&&Math.hypot(P.x-NET.lx,P.y-NET.ly)>5;NET.lx=P.x;NET.ly=P.y;w.send(JSON.stringify({t:'pos',x:+P.x.toFixed(2),y:+P.y.toFixed(2),dir:P.dir|0,eq:armLv(eqId('a')),hp:Math.ceil(P.hp),ch:!!P.chicken,col:ARMC[armLv(eqId('a'))],tp,w:eqId('w')||'sword0',mhp:maxHp(),dead:P.dead>0,inside:!!P.inside,f:flagOf(P),xp:P.xp}))},200);
 $('#chatin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){netSay(e.target.value);e.target.value='';e.target.blur()}});['keyup','keypress'].forEach(t=>$('#chatin').addEventListener(t,e=>e.stopPropagation()));
-function netPingUi(){const e=$('#ping');if(!e)return;if(NET.ping==null){e.style.display='none';return}e.style.display='block';e.textContent='ping '+NET.ping+' ms'+(NET.ping>250?' ⚠ LAG':'')}
+function netPingUi(){const e=$('#ping');if(!e)return;if(NET.ping==null){e.style.display='none';return}e.style.display='block';const n=performance.now(),kb=NET.rt?((NET.rx-NET.rb)/1024/((n-NET.rt)/1000)):0;NET.rt=n;NET.rb=NET.rx;e.textContent='ping '+NET.ping+' ms'+(NET.ping>250?' ⚠ LAG':'')+'  srv '+(NET.ld??'?')+'ms  ↓'+kb.toFixed(1)+'KB/s'+(NET.q>16384?'  q'+Math.round(NET.q/1024)+'K':'')}
 setInterval(()=>{const w=NET.ws;if(w&&w.readyState===1)w.send(JSON.stringify({t:'ping',c:performance.now()}))},2000);
 const netSend=o=>{const w=NET.ws;if(w&&w.readyState===1)w.send(JSON.stringify(o))};
 function netHit(e,d){if(e.id)netSend({t:'hit',id:e.id,d:Math.round(d)})}
@@ -44,13 +44,13 @@ function netGotKill(m){const o=NET.others.get(m.who),vf=o?flagOf(o):null;P.gold+
  sys('🏴‍☠️ Spoils from '+m.n+': +'+(m.g|0)+'g and +'+tot+' skill xp','#ffd36b');P.kills++;P.pvpK=(P.pvpK|0)+1;
  if(m.b>0){P.gold+=m.b;sys('💰 Bounty collected: '+m.b+'g for '+m.n+'!','#ffd36b');toast('💰 +'+m.b+'g bounty')}
  else if(vf!=='orange'&&vf!=='red'){setFlag(P,'red',Infinity);P.vic=(P.vic||0)+1}}
+function netBin(ab){const dv=new DataView(ab);if(dv.getUint8(0)!==1||!NET.em)return;const n=dv.getUint16(1,true);let o=3;for(let i=0;i<n;i++,o+=13){const e=NET.em.get(dv.getUint32(o,true));if(!e)continue;e.tx=dv.getUint16(o+4,true)/16;e.ty=dv.getUint16(o+6,true)/16;e.vx=dv.getInt8(o+8)/8;e.vy=dv.getInt8(o+9)/8;e.hp=dv.getUint16(o+10,true);const f=dv.getUint8(o+12);e.dir=(f>>4)&3;e.st=(f>>6)&1;if(f&1)e.sw=.2}}
 function netSnap(m){const em=NET.em;if(!em)return;
- for(const a of m.a){let e=em.get(a[0]);if(e)continue;if(!ESPEC[a[1]])continue;e=mkEnemy(a[1],a[2],a[3]);Object.assign(e,{id:a[0],hp:a[4],mhp:a[5],dir:a[6],st:a[7],tx:a[2],ty:a[3],hx:a[12],hy:a[13]});if(a[8])e.el=a[8];if(a[9]!==1)e.sc=a[9];else if(e.el)e.sc=1;if(a[10])e.dun=1;if(a[11]>=0){e.pt=a[11];e.temp=1}em.set(e.id,e);E.push(e);if(e.t==='wyrm')boss=e}
- for(const u of m.u){const e=em.get(u[0]);if(!e)continue;e.tx=u[1];e.ty=u[2];e.hp=u[3];e.dir=u[4];e.st=u[5];if(u[6]&1)e.sw=.2}
- if(m.r.length){const rs=new Set(m.r);for(const id of rs){const e=em.get(id);if(e){e.dead=clock+1e9;if(e===boss)boss=null;em.delete(id)}}E=E.filter(e=>!(e.id&&rs.has(e.id)))}
+ for(const a of m.a){let e=em.get(a[0]);if(e)continue;if(!ESPEC[a[1]])continue;e=mkEnemy(a[1],a[2],a[3]);Object.assign(e,{id:a[0],hp:a[4],mhp:a[5],dir:a[6],st:a[7],tx:a[2],ty:a[3],vx:0,vy:0,hx:a[12],hy:a[13]});if(a[8])e.el=a[8];if(a[9]!==1)e.sc=a[9];else if(e.el)e.sc=1;if(a[10])e.dun=1;if(a[11]>=0){e.pt=a[11];e.temp=1}em.set(e.id,e);E.push(e);if(e.t==='wyrm')boss=e}
+  if(m.r.length){const rs=new Set(m.r);for(const id of rs){const e=em.get(id);if(e){e.dead=clock+1e9;if(e===boss)boss=null;em.delete(id)}}E=E.filter(e=>!(e.id&&rs.has(e.id)))}
  PT.open=!!m.pt[0];PT.reopen=clock+m.pt[1]}
 function netKill(l){for(const k of l){const e=NET.em&&NET.em.get(k.id);if(!e)continue;if(k.by===NET.id||(e.t==='wyrm'&&(P.bossDmg||0)>=40)){e.dead=0;try{meleeT=clock;killEnemy(e)}catch(x){}}if(e.t==='wyrm')P.bossDmg=0;e.dead=clock+1e9}}
-function netMobs(dt){const k=Math.min(1,dt*10);for(const e of E){if(e.dead)continue;const dx=e.tx-e.x,dy=e.ty-e.y;e.mv=Math.abs(dx)+Math.abs(dy)>.03;e.x+=dx*k;e.y+=dy*k;if(e.flash>0)e.flash-=dt;if(e.sw>0)e.sw-=dt}}
+function netMobs(dt){const k=Math.min(1,dt*12);for(const e of E){if(e.dead)continue;e.tx+=(e.vx||0)*dt;e.ty+=(e.vy||0)*dt;const dx=e.tx-e.x,dy=e.ty-e.y;e.mv=Math.abs(dx)+Math.abs(dy)>.03;e.x+=dx*k;e.y+=dy*k;if(e.flash>0)e.flash-=dt;if(e.sw>0)e.sw-=dt}}
 function netSay(t){t=t.trim();if(t&&NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify({t:'chat',m:t}))}
 function netStep(dt){for(const o of NET.others.values()){const k=Math.min(1,dt*10),dx=o.tx-o.x,dy=o.ty-o.y;o.mv=Math.abs(dx)+Math.abs(dy)>.05;o.swing=(o.swing||0)-dt;o.x+=dx*k;o.y+=dy*k;o.ph=(o.ph||0)+dt*8}}
 function netDraw(R,vis){for(const o of NET.others.values())if(vis(o.x,o.y))R.push([o.y*T,()=>{drawChar(Math.round(o.x*T-8),Math.round(o.y*T-14),o.dir,o.ph||0,o.col,'#432',{moving:o.mv,wid:o.w,chick:o.ch,sp:o.swing>0?1-o.swing/.25:-1})}])}

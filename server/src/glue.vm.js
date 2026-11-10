@@ -39,6 +39,7 @@ portalTick = function (dt) {
 };
 SRV.init = function () {
   genWorld(); carveDungeon(); spawnEnemies(); spawnVillageMobs(); makeElites(); spawnChickens(); spawnSheep(); spawnDungeon(); spawnPortals();
+  { let k = 0; E = E.filter(e => { if (e.dun || e.el || e.t === 'wizard' || e.t === 'wyrm' || e.t === 'rooster' || e.t === 'chicken' || e.t === 'sheep') return true; return (k++ & 1) === 0 }) }
   for (const e of E) if (e.t === 'wizard') { e.hx = e.x; e.hy = e.y }
   return { mobs: E.length, portals: PTS.length };
 };
@@ -65,8 +66,10 @@ SRV.step = function (dt) {
   const live = pls.filter(p => !p.dead && !p.inside), groups = new Map();
   for (const e of E) { if (e.dead) continue; let b = null, bd = 45; for (const p of live) { const d = Math.max(Math.abs(p.x - e.x), Math.abs(p.y - e.y)); if (d < bd) { bd = d; b = p } } if (b) { if (!groups.has(b)) groups.set(b, []); groups.get(b).push(e) } }
   const master = E;
+  for (const e of E) { e.px = e.x; e.py = e.y; e.sv = e.sv || [0, 0]; e.sv[0] *= .5; e.sv[1] *= .5 }
   for (const [p, list] of groups) { P = p; CUR = p; const n0 = list.length; E = list; updEnemies(dt); E = master; for (let i = n0; i < list.length; i++) master.push(list[i]) }
   E = master; CUR = null;
+  for (const list of groups.values()) for (const e of list) { if (e.dead) { e.sv[0] = e.sv[1] = 0; continue } e.sv[0] = e.sv[0] * .5 + (e.x - e.px) / dt * .5; e.sv[1] = e.sv[1] * .5 + (e.y - e.py) / dt * .5 }
   // enemy projectiles
   for (let i = proj.length - 1; i >= 0; i--) {
     const q = proj[i]; q.x += q.vx * dt; q.y += q.vy * dt; q.life -= dt;
@@ -81,17 +84,24 @@ SRV.step = function (dt) {
   for (const p of pls) { const inW = !p.dead && p.x >= R5[0] && p.x < R5[0] + R5[2] && p.y >= R5[1] && p.y < R5[1] + R5[3]; if (inW && !SRV.wizIn.has(p.id)) { SRV.wizIn.add(p.id); SRV.glob.push({ t: 'shake' }); SRV.glob.push({ t: 'sys', m: "🌋 The earth trembles across the land… " + p.name + " has entered the Dark Wizard's chamber!" }); SRV.glob.push({ t: 'big', m: "⚠ THE WORLD TREMBLES ⚠\n" + p.name + " entered the Dark Wizard's chamber!", c: '#f6f' }) } else if (!inW) SRV.wizIn.delete(p.id) }
 };
 SRV.snapshot = function (p) {
-  const a = [], u = [], seen = new Set(), last = p.last || (p.last = new Map());
+  const a = [], cand = [], seen = new Set(), last = p.last || (p.last = new Map());
   for (const e of E) {
     if (e.dead) continue;
     const dx = Math.abs(e.x - p.x), dy = Math.abs(e.y - p.y), kn = p.known.has(e.id);
     if (dx > (kn ? 30 : 24) || dy > (kn ? 30 : 24)) continue;
     seen.add(e.id);
-    const fl = (e.sw > 0 ? 1 : 0) | (e.novaT > 0 ? 2 : 0) | (e.slow ? 4 : 0) | (e.dots && e.dots.length ? 8 : 0);
-    const x = Math.round(e.x * 20) / 20, y = Math.round(e.y * 20) / 20, hp = Math.round(e.hp);
-    if (!kn) { p.known.add(e.id); last.set(e.id, x + ',' + y + ',' + hp + ',' + e.dir + ',' + e.st + ',' + fl); a.push([e.id, e.t, x, y, hp, e.mhp, e.dir, e.st, e.el || 0, e.sc || 1, e.dun ? 1 : 0, e.pt == null ? -1 : e.pt, +e.hx.toFixed(1), +e.hy.toFixed(1)]) }
-    else { const sig = x + ',' + y + ',' + hp + ',' + e.dir + ',' + e.st + ',' + fl; if (last.get(e.id) !== sig) { last.set(e.id, sig); u.push([e.id, x, y, hp, e.dir, e.st, fl]) } }
+    const f = (e.sw > 0 ? 1 : 0) | (e.novaT > 0 ? 2 : 0) | (e.slow ? 4 : 0) | (e.dots && e.dots.length ? 8 : 0) | ((e.dir & 3) << 4) | ((e.st ? 1 : 0) << 6);
+    const vx = Math.max(-15, Math.min(15, e.sv ? e.sv[0] : 0)), vy = Math.max(-15, Math.min(15, e.sv ? e.sv[1] : 0)), hp = Math.round(e.hp);
+    if (!kn) { p.known.add(e.id); last.set(e.id, { x: e.x, y: e.y, vx, vy, hp, f, t: clock }); a.push([e.id, e.t, +e.x.toFixed(2), +e.y.toFixed(2), hp, e.mhp, e.dir, e.st, e.el || 0, e.sc || 1, e.dun ? 1 : 0, e.pt == null ? -1 : e.pt, +e.hx.toFixed(1), +e.hy.toFixed(1)]); continue }
+    const l = last.get(e.id), age = clock - l.t, dev = Math.hypot(e.x - (l.x + l.vx * age), e.y - (l.y + l.vy * age)), dist = Math.max(dx, dy);
+    const must = hp !== l.hp || f !== l.f;
+    if (!must && !(dev > .3 || Math.abs(vx - l.vx) + Math.abs(vy - l.vy) > 2)) continue;
+    if (!must && dist > 14 && ((SRV.tick + e.id) & 3) !== 0) continue;
+    cand.push([dist, e, vx, vy, hp, f]);
   }
+  if (cand.length > 150) cand.sort((m, n) => m[0] - n[0]);
+  const u = [];
+  for (let i = 0; i < cand.length && i < 150; i++) { const [, e, vx, vy, hp, f] = cand[i]; last.set(e.id, { x: e.x, y: e.y, vx, vy, hp, f, t: clock }); u.push([e.id, e.x, e.y, vx, vy, hp, f]) }
   const r = []; for (const id of p.known) if (!seen.has(id)) { r.push(id); p.known.delete(id); last.delete(id) }
   return { t: 'm', a, u, r, pt: [PT.open ? 1 : 0, Math.max(0, Math.round(PT.reopen - clock))] };
 };

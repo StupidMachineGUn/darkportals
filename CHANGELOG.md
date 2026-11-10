@@ -21,3 +21,10 @@
 
 ## 0.2.1
 - Fix huge lag (ping tens of seconds): snapshots were resending every mob 10x/s (~220 KB/s per player) and queued up on slower links. Now delta-only, smaller view radius (24 tiles), rounded coords, and skipped when a client's send buffer is backed up (~37 KB/s).
+
+## 0.3.0 – network optimisation
+- Mobs halved (wild mobs; elites, dungeon, bosses, farm animals kept).
+- Dead-reckoning: server sends position + velocity only when a mob deviates >0.3 tile from the client's prediction, or HP/state changes; client extrapolates in between.
+- Binary updates (13 bytes/mob vs ~40 JSON), 20 Hz, distance-based rates (far mobs every 4th tick), 150 updates/tick cap nearest-first, backpressure.
+- TCP_NODELAY on sockets.
+- Ping readout (red) now also shows server loop delay, download KB/s and queued bytes.
