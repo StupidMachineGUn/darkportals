@@ -79,7 +79,7 @@ body.trip #c{animation:trip 4s linear infinite,wob 3s ease-in-out infinite}
 <div class="hud"><div class="bar" id="hp"><i></i><span></span></div><div class="bar" id="st"><i></i><span></span></div><div class="bar" id="mp"><i></i><span></span></div><div class="bar" id="xp"><i></i><span></span></div></div>
 <div id="where"></div>
 <div id="boss" class="bar"><i></i><span></span></div>
-<div id="top"><div class="btn" id="bSk">📜</div><div class="btn" id="bBag">🎒</div><div class="btn" id="bSp" style="display:none">🔮</div><div class="btn" id="bDev" style="width:auto;padding:0 8px;font-size:12px;font-weight:bold;color:#ffd36b">DEV</div><div class="btn" id="bMute">🔊</div></div>
+<input id="chatin" maxlength="120" placeholder="💬 chat…" style="display:none;position:fixed;top:68px;left:8px;width:42%;height:24px;z-index:6;background:#000a;color:#fff;border:1px solid #fff3;border-radius:6px;font-size:12px;padding:0 6px"><div id="top"><div class="btn" id="bSk">📜</div><div class="btn" id="bBag">🎒</div><div class="btn" id="bSp" style="display:none">🔮</div><div class="btn" id="bDev" style="width:auto;padding:0 8px;font-size:12px;font-weight:bold;color:#ffd36b">DEV</div><div class="btn" id="bMute">🔊</div></div>
 <div id="chat"></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="hot"></div>
@@ -90,5 +90,5 @@ body.trip #c{animation:trip 4s linear infinite,wob 3s ease-in-out infinite}
 <div id="story"><canvas id="stc" width="192" height="108"></canvas><div id="stt"></div><div id="stb"><div class="btn" id="stSkip">Skip</div><div class="btn" id="stNext">Next ▶</div></div></div>
 <div id="toast"></div>
 <div id="title"><h1>⚔ EMBERFALL</h1><div style="opacity:.8;max-width:320px">A tiny MMO that grows with you. Every skill is trained by using it.</div>
-<input id="nm" maxlength="12" placeholder="Hero name" value="Nexemis"><div class="btn" id="go">Enter the world</div>
+<input id="nm" maxlength="12" placeholder="Hero name" value="Nexemis"><input id="pw" type="password" placeholder="Password" style="display:none;margin-top:6px"><div id="authmsg" style="font-size:12px;color:#f88;min-height:15px"></div><div class="btn" id="go">Enter the world</div><div id="regt" style="display:none;font-size:12px;text-decoration:underline;opacity:.8;padding:6px">New here? Create account</div><div style="font-size:10px;opacity:.4">v__VERSION__</div>
 <div style="font-size:11px;opacity:.6;max-width:320px">Drag stick / WASD to move · tap the world to walk or interact · Space attack · E use · 1-6 spells, food &amp; potions</div></div>

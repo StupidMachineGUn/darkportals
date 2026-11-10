@@ -338,7 +338,7 @@ function castPortal(){if(P.dead)return;if(chickenForm())return toast('🐔 Bawk!
 function updPortal(dt){trackVillage();if(!portCh)return;if(P.dead||P.hp<portCh.hp-.01||Math.hypot(P.x-portCh.x,P.y-portCh.y)>.6){portCh=null;return toast('Portal interrupted','#f66')}
  portCh.hp=P.hp;portCh.left-=dt;if(Math.random()<dt*30)parts.push({x:P.x+rnd(-.5,.5),y:P.y,vx:0,vy:-2,life:.6,c:'#b46aff',sz:2});
  if(portCh.left<=0){const v=P.lastV;burst(P.x,P.y-.4,'#b46aff',30,5);fxs.push({k:'ring',x:P.x,y:P.y,r:2,life:.6,max:.6,c:'#b46aff'});P.x=v.x;P.y=v.y;P.path=null;P.chase=null;cam.x=P.x;cam.y=P.y;burst(P.x,P.y-.4,'#b46aff',30,5);fxs.push({k:'ring',x:P.x,y:P.y,r:2,life:.6,max:.6,c:'#b46aff'});P.portAt=Date.now()+PORT_CD;portCh=null;sys('🌀 Portal to '+v.n+'. Recharges in 30 min.','#c9f');sfx('lvl')}}
-function update(dt){clock+=dt;xTick(dt);updPortal(dt);roosterT-=dt;if(roosterT<=0){spawnRooster();roosterT=rnd(300,540)}shroomSpawnT-=dt;if(shroomSpawnT<=0){spawnShroom();shroomSpawnT=rnd(60,150)}shroomTick(dt);if(P.inside)insideTick(dt);else if(shopSt)shopTick(dt);else updPlayer(dt);updEnemies(dt);updBots(dt);updNpcs(dt);updGuards(dt);updProj(dt);
+function update(dt){clock+=dt;xTick(dt);netStep(dt);updPortal(dt);roosterT-=dt;if(roosterT<=0){spawnRooster();roosterT=rnd(300,540)}shroomSpawnT-=dt;if(shroomSpawnT<=0){spawnShroom();shroomSpawnT=rnd(60,150)}shroomTick(dt);if(P.inside)insideTick(dt);else if(shopSt)shopTick(dt);else updPlayer(dt);updEnemies(dt);updBots(dt);updNpcs(dt);updGuards(dt);updProj(dt);
  for(let i=objs.length-1;i>=0;i--){const o=objs[i];if(o.exp&&clock>o.exp){objs.splice(i,1);objAt.delete(idx(o.x,o.y));continue}
   if(o.dead&&clock>o.dead){o.dead=0;if(o.t==='tree'){o.hp=ri(2,4);solid[idx(o.x,o.y)]=1}else if(o.t==='rock'){o.hp=ri(2,3);solid[idx(o.x,o.y)]=1}else o.hp=1}}
  for(const o of objs)if(o.hp===1&&(o.t==='tree'||o.t==='rock')&&!o.init){o.init=1;o.hp=o.t==='tree'?ri(2,4):ri(2,3)}
@@ -349,5 +349,5 @@ function update(dt){clock+=dt;xTick(dt);updPortal(dt);roosterT-=dt;if(roosterT<=
  for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=5*dt;if(p.life<=0)parts.splice(i,1)}
  cam.x+=(P.x-cam.x)*Math.min(1,dt*8);cam.y+=(P.y-cam.y)*Math.min(1,dt*8)}
 /* ---------- save ---------- */
-function save(){try{P.wanted=flagOf(P)==='red'?Math.max(1,P.vic|0):0;localStorage.setItem('emberfall.v1',JSON.stringify(P,(k,v)=>k==='path'||k==='chase'?undefined:v))}catch(e){}}
-function load(){try{const s=JSON.parse(localStorage.getItem('emberfall.v1'));if(s&&s.xp)return s}catch(e){}return null}
+function save(){netSave();try{P.wanted=flagOf(P)==='red'?Math.max(1,P.vic|0):0;localStorage.setItem('emberfall.v1',JSON.stringify(P,(k,v)=>k==='path'||k==='chase'?undefined:v))}catch(e){}}
+function load(){if(NET.on)return NET.save;try{const s=JSON.parse(localStorage.getItem('emberfall.v1'));if(s&&s.xp)return s}catch(e){}return null}

@@ -123,8 +123,8 @@ function start(){const name=($('#nm').value.trim()||'Hero').slice(0,12);genWorld
  const s=load();P=Object.assign(newPlayer(name),s&&s.name===name?s:{});migrate(P);P.flag=P.wanted?'red':null;P.fT=P.wanted?Infinity:0;P.vic=P.wanted||0;P.path=null;P.chase=null;P.dead=0;P.hurt=0;P.cd=0;P.swing=0;P.hp=Math.min(P.hp,maxHp());if(!walkable(Math.floor(P.x),Math.floor(P.y))){P.x=CX+.5;P.y=CY+3.5;P.inside=null}if(P.inside!=null&&!(P.rent&&P.rent.id===P.inside&&rentLeft()>0)){leaveHouse()}else if(P.inside!=null){P.hp=maxHp();P.mp=maxMp();P.st=maxSt()}cam.x=P.x;cam.y=P.y;resize();$('#title').style.display='none';
  {const returning=s&&s.name===name;houses.forEach(h=>{if(Math.random()<.35)h.occ={n:pick(BN),exp:Date.now()+ri(3,55)*60000}});if(!returning)showStory()}
  sys('Welcome to Emberfall, '+name+'! Every skill grows by using it.','#fff');sys('Tip: tap trees, rocks, water or monsters. Villages are safe zones with guards. Talk to Elder Maren for quests.','#9cf');
- try{AC=AC||new(window.AudioContext||window.webkitAudioContext)()}catch(e){}xInit();devUi();requestAnimationFrame(loop)}
-$('#go').addEventListener('pointerdown',start);
+ try{AC=AC||new(window.AudioContext||window.webkitAudioContext)()}catch(e){}xInit();devUi();netConnect();requestAnimationFrame(loop)}
+$('#go').addEventListener('pointerdown',goBtn);$('#regt').addEventListener('pointerdown',toggleReg);netProbe();
 document.addEventListener('visibilitychange',()=>{if(P)save()});
 addEventListener('beforeunload',()=>{if(P)save()});
 </script></body></html>

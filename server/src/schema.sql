@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  salt TEXT NOT NULL,
+  hash TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS characters (
+  user_id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  data TEXT NOT NULL,
+  schema_v INTEGER NOT NULL DEFAULT 1,
+  updated_at TIMESTAMP DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS heroes (
+  name TEXT PRIMARY KEY,
+  score INTEGER NOT NULL,
+  data TEXT NOT NULL,
+  at TIMESTAMP DEFAULT now()
+);

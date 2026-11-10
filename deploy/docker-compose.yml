@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: emberfall
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: emberfall
+    volumes:
+      - pgdata:/var/lib/postgresql/data:Z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U emberfall"]
+      interval: 5s
+      retries: 10
+  game:
+    image: emberfall:${VERSION:-latest}
+    build: { context: .., dockerfile: deploy/Dockerfile }
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      DATABASE_URL: postgres://emberfall:${DB_PASSWORD}@db:5432/emberfall
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 8080
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    depends_on: [game]
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro,Z
+      - caddy_data:/data
+      - caddy_config:/config
+volumes: { pgdata: {}, caddy_data: {}, caddy_config: {} }

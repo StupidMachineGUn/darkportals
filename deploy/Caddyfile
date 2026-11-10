@@ -1,0 +1,6 @@
+# DOMAIN=game.example.com  -> automatic HTTPS (DNS A record must point at this server).
+# For a quick test without a domain set DOMAIN=:80 (plain HTTP).
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy game:8080
+}

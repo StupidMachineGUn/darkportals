@@ -1,0 +1,38 @@
+process.env.USE_PGMEM = '1'; process.env.JWT_SECRET = 'test';
+import assert from 'node:assert/strict';
+import WebSocket from 'ws';
+const { createServer } = await import('../src/index.js');
+const s = await createServer({ port: 0 });
+const base = `http://127.0.0.1:${s.port}`;
+const j = async (m, p, b, tok) => { const r = await fetch(base + p, { method: m, headers: { 'content-type': 'application/json', ...(tok ? { authorization: 'Bearer ' + tok } : {}) }, body: b ? JSON.stringify(b) : undefined }); return { s: r.status, b: await r.json() } };
+assert.equal((await j('GET', '/api/ping')).b.ok, 1);
+assert.equal((await j('POST', '/api/register', { username: 'a', password: 'secret1' })).s, 400);
+const a = await j('POST', '/api/register', { username: 'Alice', password: 'secret1' }); assert.equal(a.s, 200);
+assert.equal((await j('POST', '/api/register', { username: 'alice', password: 'secret1' })).s, 409);
+assert.equal((await j('POST', '/api/login', { username: 'Alice', password: 'nope123' })).s, 401);
+const l = await j('POST', '/api/login', { username: 'ALICE', password: 'secret1' }); assert.equal(l.s, 200); assert.equal(l.b.character, null);
+assert.equal((await j('PUT', '/api/save', { name: 'x' })).s, 401);
+assert.equal((await j('PUT', '/api/save', { name: 'x' }, l.b.token)).s, 400);
+const ch = { name: 'Alice', xp: { melee: 5 }, inv: [{ id: 'bread', n: 2 }], gold: 77 };
+assert.equal((await j('PUT', '/api/save', ch, l.b.token)).s, 200);
+assert.equal((await j('PUT', '/api/save', { ...ch, gold: 99 }, l.b.token)).s, 200);
+const l2 = await j('POST', '/api/login', { username: 'Alice', password: 'secret1' }); assert.equal(l2.b.character.data.gold, 99);
+assert.equal((await j('POST', '/api/board', { name: 'Alice', score: 6000, tl: 10, wiz: 1 }, l.b.token)).s, 200);
+assert.equal((await j('POST', '/api/board', { name: 'Alice', score: 100 }, l.b.token)).s, 200);
+const bd = await j('GET', '/api/board'); assert.equal(bd.b[0].score, 6000);
+// websocket presence
+const b = await j('POST', '/api/register', { username: 'Bob', password: 'secret2' });
+const open = (tok) => new Promise((res, rej) => { const w = new WebSocket(`ws://127.0.0.1:${s.port}/ws?token=${tok}`); const msgs = []; w.on('message', d => msgs.push(JSON.parse(d))); w.on('open', () => res({ w, msgs })); w.on('error', rej) });
+await assert.rejects(open('bad'));
+const A = await open(l.b.token), B = await open(b.b.token);
+A.w.send(JSON.stringify({ t: 'pos', x: 10, y: 10, dir: 1, eq: 2 })); B.w.send(JSON.stringify({ t: 'pos', x: 12, y: 10, dir: 0, eq: 0 }));
+await new Promise(r => setTimeout(r, 500));
+assert.ok(A.msgs.some(m => m.t === 'players' && m.l.some(p => p.n === 'Bob')), 'A sees Bob');
+A.w.send(JSON.stringify({ t: 'pos', x: 200, y: 200, dir: 0 }));     // teleport hack
+await new Promise(r => setTimeout(r, 200));
+assert.ok(A.msgs.some(m => m.t === 'snap'), 'speed hack snapped');
+A.w.send(JSON.stringify({ t: 'chat', m: 'hello' })); await new Promise(r => setTimeout(r, 200));
+assert.ok(B.msgs.some(m => m.t === 'chat' && m.m === 'hello'));
+A.w.close(); B.w.close(); await s.close();
+console.log('server smoke test passed');
+process.exit(0);
