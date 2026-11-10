@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "scripts": { "start": "node src/index.js", "test": "node test/smoke.js" },
+  "scripts": { "start": "node src/index.js", "test": "node test/smoke.js && CLIENT_SRC=../client node test/sim.js" },
   "dependencies": { "pg": "^8.13.0", "ws": "^8.18.0" },
   "devDependencies": { "pg-mem": "^3.0.5" }
 }

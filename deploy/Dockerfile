@@ -13,6 +13,8 @@ RUN npm install --omit=dev --no-audit --no-fund
 COPY server/src ./src
 COPY VERSION ./VERSION
 COPY --from=client /src/server/public ./public
+COPY client ./client
+ENV CLIENT_SRC=/app/client
 USER node
 EXPOSE 8080
 CMD ["node","src/index.js"]

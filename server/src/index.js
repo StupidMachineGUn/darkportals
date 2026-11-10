@@ -90,12 +90,15 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     if (!a) { sock.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); return sock.destroy(); }
     wss.handleUpgrade(req, sock, head, ws => wss.emit('connection', ws, a));
   });
+  let sim = null;
+  if (process.env.NO_SIM !== '1') { try { const { createSim } = await import('./sim.js'); sim = createSim(); console.log('world sim ready', sim.info) } catch (e) { console.error('sim disabled:', e.message) } }
   const MAX_SPEED = 14; // tiles/s incl. sprint + slack; anything faster is snapped back
   wss.on('connection', (ws, a) => {
     const old = players.get(a.uid); if (old) { try { old.ws.close(4000, 'Logged in elsewhere') } catch {} }
     const me = { ws, uid: a.uid, name: a.name, x: 0, y: 0, dir: 0, eq: 0, t: Date.now(), lastChat: 0, init: false };
     players.set(a.uid, me);
-    ws.send(JSON.stringify({ t: 'hello', id: a.uid, online: players.size }));
+    me.sp = sim ? sim.add(a.uid, a.name) : null;
+    ws.send(JSON.stringify({ t: 'hello', id: a.uid, online: players.size, world: sim ? sim.world() : null }));
     broadcast({ t: 'sys', m: `${a.name} entered the world` }, me);
     ws.on('message', raw => {
       let m; try { m = JSON.parse(raw) } catch { return }
@@ -106,26 +109,56 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
           const tpOk = m.tp && now - (me.lastTp || 0) > 3000; if (tpOk) me.lastTp = now;
           if (d > MAX_SPEED * dt + 3 && !tpOk) { ws.send(JSON.stringify({ t: 'snap', x: me.x, y: me.y })); return; }
         }
-        me.x = m.x; me.y = m.y; me.dir = m.dir | 0; me.eq = m.eq | 0; me.name = a.name; me.t = now; me.init = true; me.hp = m.hp | 0; me.ch = m.ch ? 1 : 0; me.col = String(m.col || '').slice(0, 9);
+        me.x = m.x; me.y = m.y; me.dir = m.dir | 0; me.eq = m.eq | 0; me.name = a.name; me.t = now; me.init = true; me.hp = m.hp | 0; me.ch = m.ch ? 1 : 0; me.w = String(m.w || 'sword0').slice(0, 16); me.mh = m.mhp | 0; me.f = m.f === 'red' || m.f === 'orange' || m.f === 'blue' ? m.f : null; me.col = String(m.col || '').slice(0, 9);
+        const sp = me.sp; if (sp) { sp.x = m.x; sp.y = m.y; sp.dir = m.dir | 0; sp.hp = m.hp | 0; sp.mhp = m.mhp | 0 || sp.mhp; sp.dead = m.dead ? 1 : 0; sp.inside = m.inside ? 1 : 0; sp.ready = true; if (m.xp && typeof m.xp === 'object') { const x = {}; for (const k in m.xp) if (Number.isFinite(m.xp[k])) x[k] = Math.min(1e8, m.xp[k]); sp.xp = x } }
+      } else if (m.t === 'ping') { ws.send(JSON.stringify({ t: 'pong', c: m.c }));
+      } else if (m.t === 'hit' && sim && me.sp) { sim.hit(me.sp, m.id | 0, +m.d);
+      } else if (m.t === 'fx' && sim && me.sp) { sim.fx(me.sp, m.id | 0, String(m.sp), +m.d);
+      } else if (m.t === 'act') { // swing / spell visuals for others
+        const o = JSON.stringify({ t: 'act', id: a.uid, k: String(m.k || '').slice(0, 12), x: +m.x || 0, y: +m.y || 0, dir: m.dir | 0, sp: String(m.sp || '').slice(0, 16), w: String(m.w || '').slice(0, 16) });
+        for (const q of players.values()) if (q !== me && q.ws.readyState === 1 && Math.hypot(q.x - me.x, q.y - me.y) < 45) q.ws.send(o);
+      } else if (m.t === 'pvp') { // melee hit on another player; relayed to victim for them to apply
+        const q = players.get(m.to); if (!q || q === me || !q.init || q.ws.readyState !== 1) return;
+        if (now - (me.lastPvp || 0) < 150) return; me.lastPvp = now;
+        if (Math.hypot(q.x - me.x, q.y - me.y) > 4) return;
+        q.ws.send(JSON.stringify({ t: 'phit', from: a.uid, fn: a.name, d: Math.max(1, Math.min(+m.d || 1, 400)) }));
+      } else if (m.t === 'pkill') { // victim reports death by player
+        const k = players.get(m.by); if (k && k.ws.readyState === 1) { const sx = {}; if (m.sx && typeof m.sx === 'object') for (const kk in m.sx) if (Number.isFinite(+m.sx[kk])) sx[kk.slice(0, 16)] = Math.min(+m.sx[kk], 1e6); k.ws.send(JSON.stringify({ t: 'pk', who: a.uid, n: a.name, g: Math.max(0, Math.min(+m.g || 0, 1e7)), sx, b: Math.max(0, Math.min(+m.b || 0, 5000)), fl: m.fl ? 1 : 0 })) }
+        broadcast({ t: 'sys', m: `${a.name} was slain by ${k ? k.name : 'a player'}` });
       } else if (m.t === 'chat' && typeof m.m === 'string') {
         if (now - me.lastChat < 1000) return; me.lastChat = now;
         broadcast({ t: 'chat', n: a.name, m: m.m.slice(0, 120) });
       }
     });
-    ws.on('close', () => { if (players.get(a.uid) === me) { players.delete(a.uid); broadcast({ t: 'sys', m: `${a.name} left the world` }) } });
+    ws.on('close', () => { if (players.get(a.uid) === me) { players.delete(a.uid); sim?.remove(a.uid); broadcast({ t: 'sys', m: `${a.name} left the world` }) } });
   });
   function broadcast(obj, except) { const s = JSON.stringify(obj); for (const p of players.values()) if (p !== except && p.ws.readyState === 1) p.ws.send(s) }
   const tick = setInterval(() => {
     const all = [...players.values()].filter(p => p.init);
     for (const p of players.values()) {
       if (p.ws.readyState !== 1 || !p.init) continue;
-      const near = all.filter(q => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < 45).map(q => ({ id: q.uid, n: q.name, x: +q.x.toFixed(2), y: +q.y.toFixed(2), d: q.dir, e: q.eq, h: q.hp, c: q.ch, k: q.col }));
+      const near = all.filter(q => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < 45).map(q => ({ id: q.uid, n: q.name, x: +q.x.toFixed(2), y: +q.y.toFixed(2), d: q.dir, e: q.eq, h: q.hp, c: q.ch, k: q.col, w: q.w, mh: q.mh, f: q.f }));
       p.ws.send(JSON.stringify({ t: 'players', l: near, online: players.size }));
     }
   }, 200);
 
+  let st = 0;
+  const simTick = sim ? setInterval(() => {
+    if (![...players.values()].some(p => p.sp?.ready)) return;
+    sim.step(.05); st++;
+    const dr = sim.drain();
+    for (const h of dr.hits) { const q = players.get(h.to); if (q?.ws.readyState === 1) q.ws.send(JSON.stringify({ t: 'hurt', d: h.d })) }
+    for (const g of dr.glob) broadcast(g);
+    for (const e of dr.evs) broadcast(e);
+    const ks = dr.kills.length ? JSON.stringify({ t: 'kill', l: dr.kills }) : null;
+    for (const q of players.values()) {
+      if (q.ws.readyState !== 1 || !q.sp?.ready) continue;
+      if (ks) q.ws.send(ks);
+      if (st % 2 === 0) q.ws.send(JSON.stringify(sim.snapshot(q.sp)));
+    }
+  }, 50) : null;
   await new Promise(r => server.listen(port, r));
-  const close = async () => { clearInterval(tick); wss.close(); for (const p of players.values()) try { p.ws.terminate() } catch {} await new Promise(r => server.close(r)); await db.end?.() };
+  const close = async () => { clearInterval(tick); if (simTick) clearInterval(simTick); wss.close(); for (const p of players.values()) try { p.ws.terminate() } catch {} await new Promise(r => server.close(r)); await db.end?.() };
   return { server, port: server.address().port, close, db };
 }
 

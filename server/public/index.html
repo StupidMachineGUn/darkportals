@@ -31,6 +31,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;d
 #panel{z-index:5;position:fixed;inset:calc(56px + env(safe-area-inset-top)) 8px calc(150px + env(safe-area-inset-bottom)) 8px;max-width:520px;margin:0 auto;background:var(--pn);border:1px solid var(--bd);border-radius:14px;padding:10px;display:none;overflow:auto;touch-action:pan-y}
 #panel *{touch-action:pan-y}#panel{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 #bPvp{position:fixed;right:108px;bottom:calc(112px + env(safe-area-inset-bottom));width:52px;height:52px;border-radius:50%;font-size:22px}
+#ping{position:fixed;left:8px;bottom:calc(4px + env(safe-area-inset-bottom));font:bold 11px monospace;color:#ff3b3b;text-shadow:0 0 3px #000,0 0 2px #000;pointer-events:none;z-index:9;display:none}
 #panel h3{margin:0 0 8px;color:var(--gd)}
 .row{display:flex;align-items:center;gap:8px;margin:5px 0}
 .row .nm{width:92px}.row .lv{width:26px;text-align:right;color:var(--gd)}
@@ -80,7 +81,7 @@ body.trip #c{animation:trip 4s linear infinite,wob 3s ease-in-out infinite}
 <div id="where"></div>
 <div id="boss" class="bar"><i></i><span></span></div>
 <input id="chatin" maxlength="120" placeholder="💬 chat…" style="display:none;position:fixed;top:68px;left:8px;width:42%;height:24px;z-index:6;background:#000a;color:#fff;border:1px solid #fff3;border-radius:6px;font-size:12px;padding:0 6px"><div id="top"><div class="btn" id="bSk">📜</div><div class="btn" id="bBag">🎒</div><div class="btn" id="bSp" style="display:none">🔮</div><div class="btn" id="bDev" style="width:auto;padding:0 8px;font-size:12px;font-weight:bold;color:#ffd36b">DEV</div><div class="btn" id="bMute">🔊</div></div>
-<div id="chat"></div>
+<div id="chat"></div><div id="ping"></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="hot"></div>
 <div id="acts"><div class="btn big" id="bAtk">⚔️</div><div class="btn" id="bUse">✋</div><div class="btn" id="bRun">👟</div></div>
@@ -90,7 +91,7 @@ body.trip #c{animation:trip 4s linear infinite,wob 3s ease-in-out infinite}
 <div id="story"><canvas id="stc" width="192" height="108"></canvas><div id="stt"></div><div id="stb"><div class="btn" id="stSkip">Skip</div><div class="btn" id="stNext">Next ▶</div></div></div>
 <div id="toast"></div>
 <div id="title"><h1>🌀 DARK PORTALS</h1><div style="opacity:.8;max-width:320px">A tiny MMO that grows with you. Every skill is trained by using it.</div>
-<input id="nm" maxlength="12" placeholder="Hero name" value="Nexemis"><input id="pw" type="password" placeholder="Password" style="display:none;margin-top:6px"><div id="authmsg" style="font-size:12px;color:#f88;min-height:15px"></div><div class="btn" id="go">Enter the world</div><div id="regt" style="display:none;font-size:12px;text-decoration:underline;opacity:.8;padding:6px">New here? Create account</div><div style="font-size:10px;opacity:.4">v0.1.2</div>
+<input id="nm" maxlength="12" placeholder="Hero name" value="Nexemis"><input id="pw" type="password" placeholder="Password" style="display:none;margin-top:6px"><div id="authmsg" style="font-size:12px;color:#f88;min-height:15px"></div><div class="btn" id="go">Enter the world</div><div id="regt" style="display:none;font-size:12px;text-decoration:underline;opacity:.8;padding:6px">New here? Create account</div><div style="font-size:10px;opacity:.4">v0.2.0</div>
 <div style="font-size:11px;opacity:.6;max-width:320px">Drag stick / WASD to move · tap the world to walk or interact · Space attack · E use · 1-6 spells, food &amp; potions</div></div>
 <script>
 'use strict';
@@ -400,6 +401,7 @@ function setFlag(a,f,dur){const cur=flagOf(a);if(cur&&FL[cur]>FL[f])return;if(cu
  if(a===P){sys({orange:'🟠 You are now a CRIMINAL (orange) for 60s.',red:'🔴 You are now a MURDERER (red) until you die or are killed! Guards will hunt you.',blue:'🔵 You are flagged lawful (blue) for attacking a murderer.'}[f],FCOL[f])}}
 function actorHit(A,V,dmg){if(V.dead||V===A||(V===P&&(P.dead||P.inside||shopSt)))return;const vf=flagOf(V);
  if(!A.guard){if(vf==='red')setFlag(A,'blue',90);else if(vf!=='orange')setFlag(A,'orange',60)}
+ if(V.remote){if(safeAt(P.x,P.y)||safeAt(V.x,V.y)||V.hp<=0)return;netPvp(V,dmg);fl(V.x,V.y-.8,dmg,'#fff');return}
  if((V.isBot||V.npc)&&A!==V){V.target=A;V.tT=clock+15}if(V.guard){V.fightWho=A;V.fightT=clock+20}
  if(V===P)return playerHit(dmg,A);
  V.hp-=dmg;V.flash=.15;if(A!==P)fl(AX(V),AY(V)-.8,'-'+dmg,'#f88');if(V.hp<=0)killActor(A,V)}
@@ -469,7 +471,7 @@ function shroomTick(dt){if(!(P.shroomT>0))return;const b0=P.shroomT;P.shroomT-=d
  for(let i=ills.length-1;i>=0;i--){const m=ills[i];m.life-=dt;m.x+=m.vx*dt;m.y+=m.vy*dt;if(Math.hypot(m.x-P.x,m.y-P.y)<1.1){burst(m.x,m.y-.4,hsl2hex((clock*200)%360,.9,.6),16);fl(m.x,m.y-.8,pick(['?!','boo','bawk','wow','🌈']),'#e9a8ff');sfx('pick');ills.splice(i,1)}else if(m.life<=0)ills.splice(i,1)}
  if(Math.random()<dt*.15)fl(P.x,P.y-1.1,pick(['whoa…','so colorful','the walls are breathing','bawk?','🌈','is that a slime?']),'#e9a8ff')}
 function spawnEnemies(){let c=0,tries=0;while(c<2200&&tries++<300000){const x=ri(3,MW-4),y=ri(3,MH-4),k=idx(x,y);if(!reach[k]||solid[k]||objAt.has(k)||safeAt(x,y))continue;const d=Math.hypot(x-CX,y-CY);if(d<TOWN_R+14||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R+13))continue;const t=pickMob(d,map[k]);if(!t)continue;E.push(mkEnemy(t,x+.5,y+.5));c++}}
-function hurtEnemy(e,d,src='p'){if(e.dead)return;if(meleeT===clock)bloodHit(e);if(src==='p'&&P.shroomT>0)d*=3;if(e.t==='chicken'||e.t==='sheep'){e.flee=5;if(Math.random()<.4)sfx('bawk')}e.hp-=d;e.flash=.18;e.st=1;if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.hp<=0)killEnemy(e)}
+function hurtEnemy(e,d,src='p'){if(e.dead)return;if(meleeT===clock)bloodHit(e);if(src==='p'&&P.shroomT>0)d*=3;if(NET.sim){if(src==='p')netHit(e,d);e.flash=.18;e.hp=Math.max(1,e.hp-d);if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;return}if(e.t==='chicken'||e.t==='sheep'){e.flee=5;if(Math.random()<.4)sfx('bawk')}e.hp-=d;e.flash=.18;e.st=1;if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.hp<=0)killEnemy(e)}
 const ELN=e=>(e.el==='shaman'?'Shaman ':e.el==='elite'?'Elite ':'Chief ')+e.t[0].toUpperCase()+e.t.slice(1);
 function killEnemy(e){if(meleeT===clock)goreKill(e);if(e.dun)dunKill(e);e.dead=clock+(e.temp?1e9:e.t==='wizard'?1e9:e.dun?ri(240,360):e.t==='wyrm'||e.t==='rooster'?1e9:ri(45,70)*(e.el?4:1));P.kills++;const s=ESPEC[e.t],xm=e.xm||1;gainXp('melee',s.xp*.4*xm);if(e.el&&e.el!=='lord'&&!e.dun){const g2=ri(...s.gold)*4;P.gold+=g2;fl(e.x,e.y-1.2,'+'+g2+'g','#ffd36b');toast('☠️ '+ELN(e)+' slain!','#ffd36b');dropGear(e.t,true);dropGear(e.t,true)}onEvent(e.t);burst(e.x,e.y-.4,'#fff',14);
  const g=ri(...s.gold);P.gold+=g;fl(e.x,e.y-.6,'+'+g+'g','#ffd36b');const dr=(id,p,n=1)=>{if(Math.random()<p&&addItem(id,n)){fl(e.x+.3,e.y-1,'+'+ITEMS[id].e,'#fff')}};
@@ -483,9 +485,9 @@ function killEnemy(e){if(meleeT===clock)goreKill(e);if(e.dun)dunKill(e);e.dead=c
  if(e.t==='wyrm'){boss=null;if((P.bossDmg||0)>=40){dropGear('wyrm',true);dropGear('wyrm',true);addItem('scale',ri(1,3));if(Math.random()<.5)addItem('gem');P.gold+=ri(...s.gold);gainXp('magic',200);gainXp('melee',200);sys('🐉 You helped slay the Ember Wyrm! Rewards granted.','#ff9bff');toast('🐉 WYRM SLAIN!')}else sys('The Ember Wyrm was slain by others… you did too little to earn loot.','#f99');}}
 function playerHit(d,by){if(P.dead||P.inside||shopSt)return;const df=A_().def||0;let dmg=Math.max(1,Math.round(d*(1-df*.035)-lv('defense')*.12+rnd(-1,1)));
  P.hp-=dmg;P.hurt=5;fl(P.x,P.y-.8,'-'+dmg,'#f55');sfx('hurt');gainXp('defense',2+dmg);gainXp('vitality',1+dmg*.6);burst(P.x,P.y-.4,'#d33',5);
- if(P.hp<=0){if(by&&by.act)killActor(by,P);P.flag=null;P.fT=0;P.vic=0;P.dead=2.2;P.deaths=(P.deaths|0)+1;if(by&&by.act)P.pvpD=(P.pvpD|0)+1;if(!(by&&by.isBot)){P.gold=Math.floor(P.gold*.9);sys('💀 You were knocked out and lost 10% gold.','#f66')}P.path=null;stopAct();P.chase=null}}
+ if(P.hp<=0){if(by&&by.remote)netDied(by);else if(by&&by.act)killActor(by,P);P.flag=null;P.fT=0;P.vic=0;P.dead=2.2;P.deaths=(P.deaths|0)+1;if(by&&by.act)P.pvpD=(P.pvpD|0)+1;if(!(by&&by.isBot)){P.gold=Math.floor(P.gold*.9);sys('💀 You were knocked out and lost 10% gold.','#f66')}P.path=null;stopAct();P.chase=null}}
 function nearestEnemy(r,fr=P){let b=null,bd=r;for(const e of E){if(e.dead)continue;const d=Math.hypot(e.x-fr.x,e.y-fr.y);if(d<bd){bd=d;b=e}}return b}
-const actorsList=()=>[...bots,...guards,...npcs];
+const actorsList=()=>[...bots,...guards,...npcs,...netRem()];
 let wardT=0;
 function wardMsg(){if(clock>wardT){wardT=clock+1.5;toast('🛡️ The town ward forbids fighting monsters here','#9cf')}}
 function playerAttack(){if(P.dead||P.cd>0)return;let t=null;
@@ -494,8 +496,8 @@ function playerAttack(){if(P.dead||P.cd>0)return;let t=null;
  if(t&&ESPEC[t.t]&&!ESPEC[t.t].pass&&safeAt(P.x,P.y)){P.chase=null;wardMsg();return}
  if(!t){let bd=1.7;for(const a of actorsList()){if(a.dead||(!stance&&!isCrim(a)))continue;const d=Math.hypot(AX(a)-P.x,AY(a)-P.y);if(d<bd){bd=d;t=a}}}
  stopAct();
- if(!t){P.cd=.55;P.swing=.25;sfx('miss');return}
- const tx=AX(t),ty=AY(t),dx=tx-P.x,dy=ty-P.y;P.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?2:1):(dy>0?0:3);P.cd=.55;P.swing=.25;
+ if(!t){P.cd=.55;P.swing=.25;netAct('swing');sfx('miss');return}
+ const tx=AX(t),ty=AY(t),dx=tx-P.x,dy=ty-P.y;P.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?2:1):(dy>0?0:3);P.cd=.55;P.swing=.25;netAct('swing');
  const hit=Math.random()<clamp(.78+lv('melee')*.01,.78,.97);
  if(!hit){fl(tx,ty-.7,'Miss','#aaa');sfx('miss');if(!t.act)gainXp('melee',1);return}
  const crit=Math.random()<.08+lv('agility')*.002+G().crit/100;let d=(1+lv('melee')*.55+(W_().atk||0))*rnd(.8,1.2);if(crit)d*=2;d=Math.max(1,Math.round(d));
@@ -518,7 +520,7 @@ function spellHit(p,e0){const sp=SPELLS[p.sp],col=spCol(sp),hit=new Set([e0]);hu
   fxs.push({k:'line',x:from.x,y:from.y-.4,x2:best.x,y2:best.y-.4,life:.3,max:.3,c:col});const d2=Math.round(p.dmg*.7);hurtEnemy(best,d2);fl(best.x,best.y-.7,d2,col);applyFx(best,sp,d2);hit.add(best);gainXp('magic',2);from=best}}}
 function castBolt(){if(chickenForm())return toast('🐔 Bawk! (chickens cannot cast)','#fc6');if(safeAt(P.x,P.y))return wardMsg();const tier=spellTier(),sp=SPELLS[tier],cost=4+tier*2;if(P.dead||CD.bolt>0)return;if(P.mp<cost)return toast('Not enough mana','#6af');const t=nearestEnemy(8+tier*.3);let a=DIR[P.dir],vx=a[0],vy=a[1];
  if(t){const d=Math.hypot(t.x-P.x,t.y-P.y);vx=(t.x-P.x)/d;vy=(t.y-P.y)/d;P.dir=Math.abs(vx)>Math.abs(vy)?(vx>0?2:1):(vy>0?0:3)}
- P.mp-=cost;CDM.bolt=.9+tier*.04;CD.bolt=CDM.bolt;P.swing=.25;proj.push({x:P.x,y:P.y-.3,vx:vx*9,vy:vy*9,dmg:Math.round((3+lv('magic')*.9+(W_().mag||0))*rnd(.9,1.15)),life:1.1,own:'p',sp:tier,sz:3+tier*.5});if(t)gainXp('magic',2+tier);sfx('bolt')}
+ P.mp-=cost;CDM.bolt=.9+tier*.04;CD.bolt=CDM.bolt;P.swing=.25;netAct('bolt',tier);proj.push({x:P.x,y:P.y-.3,vx:vx*9,vy:vy*9,dmg:Math.round((3+lv('magic')*.9+(W_().mag||0))*rnd(.9,1.15)),life:1.1,own:'p',sp:tier,sz:3+tier*.5});if(t)gainXp('magic',2+tier);sfx('bolt')}
 function castMend(){if(chickenForm())return toast('🐔 Bawk! (chickens cannot cast)','#fc6');if(CD.mend>0||P.dead)return;if(lv('magic')<5)return toast('Mend unlocks at Magic 5','#6af');const tier=spellTier(),cost=8+tier;if(P.mp<cost)return toast('Not enough mana','#6af');if(P.hp>=maxHp())return;
  P.mp-=cost;CD.mend=2;const h=Math.round(10+lv('magic')*1.5),col=spCol(SPELLS[tier]);P.hp=Math.min(maxHp(),P.hp+h);if(tier>=2)P.hot={left:5,per:2+tier*.9};gainXp('magic',8);gainXp('vitality',3);fl(P.x,P.y-.8,'+'+h,'#6f6');burst(P.x,P.y-.4,col,12+tier*3);fxs.push({k:'ring',x:P.x,y:P.y,r:1.2+tier*.15,life:.5,max:.5,c:col});sfx('heal')}
 function eatBest(){if(CD.eat>0||P.dead)return;let b=null;for(const i of P.inv){const it=ITEMS[i.id];if(it.heal&&!it.pot&&(!b||it.heal>ITEMS[b.id].heal))b=i}
@@ -538,7 +540,7 @@ function updPassive(e,s,dt){e.flash-=dt;let tx=null,ty=null,sp=s.spd;e.mv=false;
  else{if(Math.random()<dt*.5){e.wx=e.hx+rnd(-s.rad,s.rad);e.wy=e.hy+rnd(-s.rad,s.rad)}if(e.wx!=null){tx=e.wx;ty=e.wy;sp*=.6;if(Math.hypot(tx-e.x,ty-e.y)<.2)e.wx=null}}
  if(tx!=null){const dx=tx-e.x,dy=ty-e.y,m=Math.hypot(dx,dy)||1,vx=dx/m*sp*dt,vy=dy/m*sp*dt,ox=e.x,oy=e.y;moveEnt(e,vx,vy);if(e.x===ox&&e.y===oy&&m>.3){moveEnt(e,vx*1.5,0);moveEnt(e,0,vy*1.5)}e.mv=e.x!==ox||e.y!==oy;if(Math.abs(dx)>.05)e.dir=dx>0?2:1}
  if(Math.random()<dt*.02&&Math.hypot(e.x-P.x,e.y-P.y)<9){fl(e.x,e.y-.6,'bawk','#fff');if(Math.random()<.3)sfx('bawk')}}
-function updEnemies(dt){for(const e of E){if(e.dead){if(clock>e.dead&&e.t!=='wyrm'&&e.t!=='rooster'&&Math.hypot(e.hx-P.x,e.hy-P.y)>6){e.dead=0;e.hp=e.mhp;e.x=e.hx;e.y=e.hy;e.st=0}continue}
+function updEnemies(dt){if(NET.sim)return netMobs(dt);for(const e of E){if(e.dead){if(clock>e.dead&&e.t!=='wyrm'&&e.t!=='rooster'&&Math.hypot(e.hx-P.x,e.hy-P.y)>6){e.dead=0;e.hp=e.mhp;e.x=e.hx;e.y=e.hy;e.st=0}continue}
   if(Math.abs(e.x-P.x)>40||Math.abs(e.y-P.y)>40)continue;
   if(e.dots&&e.dots.length){let col='#ccc';for(let i=e.dots.length-1;i>=0;i--){const d=e.dots[i];d.left-=dt;e.dotA=(e.dotA||0)+d.dps*dt;col=DOTC[d.k];if(d.left<=0)e.dots.splice(i,1)}
    if(e.dotA>=1){const dm=Math.floor(e.dotA);e.dotA-=dm;hurtEnemy(e,dm,'p');if(e.dead)continue;e.dotS=(e.dotS||0)+dm;if(clock>(e.dotT||0)){fl(e.x,e.y-.7,e.dotS,col);e.dotS=0;e.dotT=clock+.8;gainXp('magic',.5)}}
@@ -581,6 +583,7 @@ function spawnBoss(){let x,y,t=0;do{x=ri(5,MW-5);y=ri(5,MH-5);t++}while(t<9000&&
  const e=mkEnemy('wyrm',x+.5,y+.5);e.born=clock;E.push(e);boss=e;P.bossDmg=0;sfx('boss');sys('🐉 The EMBER WYRM has awoken! Heroes are rushing to fight it.','#ff7a3a');toast('🐉 EMBER WYRM AWAKENS');}
 function updProj(dt){for(let i=proj.length-1;i>=0;i--){const p=proj[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;let rm=p.life<=0||!inb(Math.floor(p.x),Math.floor(p.y))||(solid[idx(Math.floor(p.x),Math.floor(p.y))]&&isWater(Math.floor(p.x),Math.floor(p.y))===false&&!objAt.has(idx(Math.floor(p.x),Math.floor(p.y))));
   if(p.own==='p'){let hit=null;for(const e of E){if(!e.dead&&Math.hypot(e.x-p.x,e.y-.3-p.y)<.7){hit=e;break}}if(hit){spellHit(p,hit);rm=true}else if(rm&&SPELLS[p.sp].aoe)spellAoe(p,new Set())}
+  else if(p.own==='o'||NET.sim){}
   else if(!P.dead&&Math.hypot(P.x-p.x,P.y-.3-p.y)<.6){playerHit(p.dmg);burst(p.x,p.y,'#f93',10);rm=true}
   if(rm)proj.splice(i,1);else if(Math.random()<.5)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:.25,c:p.own==='p'?spCol(SPELLS[p.sp]):'#f93',sz:2})}}
 /* ---------- main update ---------- */
@@ -1118,14 +1121,14 @@ function spawnPortals(){const X0=DUN.x0-8,X1=DUN.x0+DUN.w+8,Y0=DUN.y0-8,Y1=DUN.y
  while(PTS.length<12&&tr++<40000){const x=ri(8,MW-9),y=ri(8,MH-9),k=idx(x,y);if(!reach[k]||solid[k]||objAt.has(k)||(x>X0&&x<X1&&y>Y0&&y<Y1))continue;
   if(Math.hypot(x-CX,y-CY)<TOWN_R+38||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R+30)||PTS.some(p=>Math.hypot(x-p.x,y-p.y)<34))continue;
   if(!reach[idx(x,y+1)]||solid[idx(x,y+1)])continue;solid[k]=1;PTS.push({id:PTS.length,x,y,t:rnd(2,8)})}}
-function portalTick(dt){if(!PT.open){if(clock>=PT.reopen)reopenPortals();return}
+function portalTick(dt){if(NET.sim)return;if(!PT.open){if(clock>=PT.reopen)reopenPortals();return}
  for(const p of PTS){p.t-=dt;if(p.t>0)continue;p.t=rnd(7,11);if(Math.hypot(P.x-p.x,P.y-p.y)>70)continue;
   let live=0;for(const e of E)if(e.pt===p.id&&!e.dead)live++;if(live>=6)continue;
   const d=Math.hypot(p.x-CX,p.y-CY),t=pickMob(d,map[idx(p.x,p.y+1)]);if(!t||!ESPEC[t]||ESPEC[t].pass)continue;
   const x=p.x+.5+rnd(-1.5,1.5),y=p.y+1.6+rnd(0,1.5);if(solid[idx(Math.floor(x),Math.floor(y))])continue;
   const m=mkEnemy(t,x,y);m.pt=p.id;m.temp=1;E.push(m);burst(x,y-.4,'#b46aff',10,3);fxs.push({k:'ring',x,y,r:1.4,life:.5,max:.5,c:'#b46aff'})}
  ptClean+=dt;if(ptClean>30){ptClean=0;E=E.filter(e=>!(e.pt!=null&&e.dead>clock+1e8))}}
-function closePortals(){PT.open=false;PT.reopen=clock+600;let n=0;for(const e of E)if(e.pt!=null&&!e.dead){e.dead=clock+1e9;burst(e.x,e.y-.4,'#b46aff',8,3);n++}
+function closePortals(){if(NET.sim){PT.open=false;return}PT.open=false;PT.reopen=clock+600;let n=0;for(const e of E)if(e.pt!=null&&!e.dead){e.dead=clock+1e9;burst(e.x,e.y-.4,'#b46aff',8,3);n++}
  sys('🌀 The Dark Portals collapse! The monsters they spawned crumble to dust. The portals will tear open again in 10 minutes…','#c9f');bigMsg('🌀 THE DARK PORTALS HAVE CLOSED\nPeace… for 10 minutes','#c9f')}
 function reopenPortals(){PT.open=true;const w=E.find(e=>e.t==='wizard');if(w){w.dead=0;w.hp=w.mhp;w.x=w.hx;w.y=w.hy;w.p1=w.p2=0;w.st=0;w.nova=6}
  sys('🌀 The Dark Portals tear open again! The Dark Wizard has returned to his throne.','#f6f');bigMsg('🌀 THE DARK PORTALS REOPEN\nThe Dark Wizard has returned','#f6f');shakeT=2.5;shakeA=2;sfx('boss')}
@@ -1137,7 +1140,7 @@ function drawPortal(p){const px=p.x*T,py=p.y*T,o=PT.open,tt=clock;g.fillStyle='#
   g.fillStyle='#d9a8ff';g.fillRect(px+7,py-30,2,2);if(Math.random()<.15)parts.push({x:p.x+.5,y:p.y-1.4,vx:rnd(-.4,.4),vy:rnd(-1.2,-.4),life:rnd(.5,1),c:'#c9f',sz:1})}
  else{g.fillStyle='#55525c';g.fillRect(px+3,py-20,2,6);g.fillRect(px+9,py-12,3,2)}}
 /* ---------- online layer (accounts, cloud save, other players, chat) ---------- */
-const NET={on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'0.1.2',board:[],lastSave:0,reg:false,tpT:0};
+const NET={on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'0.2.0',board:[],lastSave:0,reg:false,tpT:0};
 async function netProbe(){try{const r=await fetch('/api/ping',{cache:'no-store'});const j=await r.json();if(j&&j.ok){NET.on=true;NET.ver=j.version;authUi();}}catch(e){}}
 function authUi(){$('#pw').style.display='block';$('#regt').style.display='block';$('#nm').placeholder='Username';$('#nm').maxLength=16;$('#nm').value=localStorage.getItem('emberfall.user')||'';$('#go').textContent='Log in';}
 function authMsg(t){$('#authmsg').textContent=t||''}
@@ -1150,17 +1153,48 @@ function netSave(force){if(!NET.on||!NET.tok||!P)return;const n=Date.now();if(!f
  try{fetch('/api/save',{method:'PUT',keepalive:true,headers:{'content-type':'application/json',authorization:'Bearer '+NET.tok},body:JSON.stringify(P,(k,v)=>k==='path'||k==='chase'?undefined:v)}).then(r=>{if(r.status===401){NET.tok=null;sys('⚠ Session expired – reload to log in again','#f66')}}).catch(()=>{})}catch(e){}}
 function netConnect(){if(!NET.on||!NET.tok)return;const w=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws?token='+encodeURIComponent(NET.tok));NET.ws=w;
  $('#chatin').style.display='block';w.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch{return}
-  if(m.t==='players'){NET.online=m.online;const seen=new Set();for(const p of m.l){seen.add(p.id);let o=NET.others.get(p.id);if(!o){o={id:p.id,x:p.x,y:p.y};NET.others.set(p.id,o)}Object.assign(o,{n:p.n,tx:p.x,ty:p.y,dir:p.d,eq:p.e,hp:p.h,ch:p.c,col:p.k||'#8fd',seen:clock})}
+  if(m.t==='players'){NET.online=m.online;const seen=new Set();for(const p of m.l){seen.add(p.id);let o=NET.others.get(p.id);if(!o){o={id:p.id,x:p.x,y:p.y,remote:true,act:true,xp:{},gold:0};NET.others.set(p.id,o)}Object.assign(o,{name:p.n,w:p.w||'sword0',mhp:p.mh||20,flag:p.f||null,fT:p.f?clock+3:0,n:p.n,tx:p.x,ty:p.y,dir:p.d,eq:p.e,hp:p.h,ch:p.c,col:p.k||'#8fd',seen:clock})}
    for(const id of [...NET.others.keys()])if(!seen.has(id))NET.others.delete(id)}
+  else if(m.t==='m')netSnap(m);
+  else if(m.t==='pong'){NET.ping=Math.round(performance.now()-m.c);netPingUi()}
+  else if(m.t==='hurt'){if(P&&!P.dead)playerHit(m.d,null)}
+  else if(m.t==='kill')netKill(m.l);
+  else if(m.t==='ev'){if(m.k==='proj'&&Math.hypot(m.x-P.x,m.y-P.y)<30)proj.push({x:m.x,y:m.y,vx:m.vx,vy:m.vy,dmg:0,life:m.life,own:'e'})}
+  else if(m.t==='shake'){shakeT=3.2;shakeA=3;sfx('boss')}
+  else if(m.t==='big')bigMsg(m.m,m.c);
+  else if(m.t==='act'){const o=NET.others.get(m.id);if(o){o.swing=.25;o.dir=m.dir;if(m.k==='bolt'&&SPELLS[+m.sp]){const a=DIR[m.dir];proj.push({x:o.x,y:o.y-.3,vx:a[0]*9,vy:a[1]*9,dmg:0,life:1.1,own:'o',sp:+m.sp,sz:3})}}}
+  else if(m.t==='phit'){const o=NET.others.get(m.from)||{remote:1,name:m.fn,x:P.x,y:P.y,hp:1,mhp:1};o.act=true;o.remote=true;if(P&&!P.dead&&!safeAt(P.x,P.y))playerHit(m.d,o)}
+  else if(m.t==='pk')netGotKill(m);
   else if(m.t==='chat')sys('💬 '+m.n+': '+m.m,'#cfe8ff');else if(m.t==='sys')sys('· '+m.m,'#8aa');
   else if(m.t==='snap'){P.x=m.x;P.y=m.y;P.path=null;sys('⚠ Movement corrected by server','#fc6')}
-  else if(m.t==='hello')sys('🌐 Connected · '+m.online+' online','#9fe3ff')};
- w.onclose=ev=>{NET.ws=null;if(ev.code===4000)sys('⚠ Logged in from another place','#f66');else setTimeout(netConnect,3000)}}
-setInterval(()=>{const w=NET.ws;if(!w||w.readyState!==1||!P||P.dead&&0)return;const tp=NET.lx!=null&&Math.hypot(P.x-NET.lx,P.y-NET.ly)>5;NET.lx=P.x;NET.ly=P.y;w.send(JSON.stringify({t:'pos',x:+P.x.toFixed(2),y:+P.y.toFixed(2),dir:P.dir|0,eq:armLv(eqId('a')),hp:Math.ceil(P.hp),ch:!!P.chicken,col:ARMC[armLv(eqId('a'))],tp}))},200);
+  else if(m.t==='hello'){sys('🌐 Connected · '+m.online+' online','#9fe3ff');NET.id=m.id;if(m.world){NET.sim=true;NET.em=new Map();E.length=0;boss=null;bots.length=0;roosterT=bossTimer=1e9;m.world.pts.forEach((q,i)=>{if(PTS[i]){PTS[i].x=q[0];PTS[i].y=q[1]}});sys('⚔ Shared world active','#9fe3ff')}}};
+ w.onclose=ev=>{NET.ws=null;NET.sim=false;NET.ping=null;netPingUi();if(ev.code===4000)sys('⚠ Logged in from another place','#f66');else setTimeout(netConnect,3000)}}
+setInterval(()=>{const w=NET.ws;if(!w||w.readyState!==1||!P||P.dead&&0)return;const tp=NET.lx!=null&&Math.hypot(P.x-NET.lx,P.y-NET.ly)>5;NET.lx=P.x;NET.ly=P.y;w.send(JSON.stringify({t:'pos',x:+P.x.toFixed(2),y:+P.y.toFixed(2),dir:P.dir|0,eq:armLv(eqId('a')),hp:Math.ceil(P.hp),ch:!!P.chicken,col:ARMC[armLv(eqId('a'))],tp,w:eqId('w')||'sword0',mhp:maxHp(),dead:P.dead>0,inside:!!P.inside,f:flagOf(P),xp:P.xp}))},200);
 $('#chatin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){netSay(e.target.value);e.target.value='';e.target.blur()}});['keyup','keypress'].forEach(t=>$('#chatin').addEventListener(t,e=>e.stopPropagation()));
+function netPingUi(){const e=$('#ping');if(!e)return;if(NET.ping==null){e.style.display='none';return}e.style.display='block';e.textContent='ping '+NET.ping+' ms'+(NET.ping>250?' ⚠ LAG':'')}
+setInterval(()=>{const w=NET.ws;if(w&&w.readyState===1)w.send(JSON.stringify({t:'ping',c:performance.now()}))},2000);
+const netSend=o=>{const w=NET.ws;if(w&&w.readyState===1)w.send(JSON.stringify(o))};
+function netHit(e,d){if(e.id)netSend({t:'hit',id:e.id,d:Math.round(d)})}
+const _ax=applyFx;applyFx=function(e,sp,d){_ax(e,sp,d);if(NET.sim&&e.id)netSend({t:'fx',id:e.id,sp:SPELLS.indexOf(sp),d:Math.round(d)})};
+function netAct(k,sp){netSend({t:'act',k,sp:sp|0,dir:P.dir|0,x:P.x,y:P.y})}
+const netRem=()=>NET.others?[...NET.others.values()].filter(o=>o.hp>0&&(o.hp<=0?0:1)):[];
+function netPvp(V,d){netSend({t:'pvp',to:V.id,d:Math.round(d)})}
+function netDied(by){const g=Math.floor(P.gold*.1);P.gold-=g;const sx={};for(const s of SK){const k=s[0],t=Math.floor((P.xp[k]||0)*.01);if(t>0){P.xp[k]-=t;sx[k]=t}}
+ const vf=flagOf(P),b=vf==='red'?100*Math.max(1,P.vic||1):0;netSend({t:'pkill',by:by.id,g,sx,b,fl:vf?1:0});P.flag=null;P.fT=0;P.vic=0;sys('💀 '+by.name+' killed you and took '+g+'g + 1% of your skills','#f66')}
+function netGotKill(m){const o=NET.others.get(m.who),vf=o?flagOf(o):null;P.gold+=m.g|0;let tot=0;for(const k in m.sx||{}){const t=+m.sx[k]||0;if(t>0&&P.xp[k]!==undefined){gainXp(k,t);tot+=t}}
+ sys('🏴‍☠️ Spoils from '+m.n+': +'+(m.g|0)+'g and +'+tot+' skill xp','#ffd36b');P.kills++;P.pvpK=(P.pvpK|0)+1;
+ if(m.b>0){P.gold+=m.b;sys('💰 Bounty collected: '+m.b+'g for '+m.n+'!','#ffd36b');toast('💰 +'+m.b+'g bounty')}
+ else if(vf!=='orange'&&vf!=='red'){setFlag(P,'red',Infinity);P.vic=(P.vic||0)+1}}
+function netSnap(m){const em=NET.em;if(!em)return;
+ for(const a of m.a){let e=em.get(a[0]);if(e)continue;if(!ESPEC[a[1]])continue;e=mkEnemy(a[1],a[2],a[3]);Object.assign(e,{id:a[0],hp:a[4],mhp:a[5],dir:a[6],st:a[7],tx:a[2],ty:a[3],hx:a[12],hy:a[13]});if(a[8])e.el=a[8];if(a[9]!==1)e.sc=a[9];else if(e.el)e.sc=1;if(a[10])e.dun=1;if(a[11]>=0){e.pt=a[11];e.temp=1}em.set(e.id,e);E.push(e);if(e.t==='wyrm')boss=e}
+ for(const u of m.u){const e=em.get(u[0]);if(!e)continue;e.tx=u[1];e.ty=u[2];e.hp=u[3];e.dir=u[4];e.st=u[5];if(u[6]&1)e.sw=.2}
+ if(m.r.length){const rs=new Set(m.r);for(const id of rs){const e=em.get(id);if(e){e.dead=clock+1e9;if(e===boss)boss=null;em.delete(id)}}E=E.filter(e=>!(e.id&&rs.has(e.id)))}
+ PT.open=!!m.pt[0];PT.reopen=clock+m.pt[1]}
+function netKill(l){for(const k of l){const e=NET.em&&NET.em.get(k.id);if(!e)continue;if(k.by===NET.id||(e.t==='wyrm'&&(P.bossDmg||0)>=40)){e.dead=0;try{meleeT=clock;killEnemy(e)}catch(x){}}if(e.t==='wyrm')P.bossDmg=0;e.dead=clock+1e9}}
+function netMobs(dt){const k=Math.min(1,dt*10);for(const e of E){if(e.dead)continue;const dx=e.tx-e.x,dy=e.ty-e.y;e.mv=Math.abs(dx)+Math.abs(dy)>.03;e.x+=dx*k;e.y+=dy*k;if(e.flash>0)e.flash-=dt;if(e.sw>0)e.sw-=dt}}
 function netSay(t){t=t.trim();if(t&&NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify({t:'chat',m:t}))}
-function netStep(dt){for(const o of NET.others.values()){const k=Math.min(1,dt*10),dx=o.tx-o.x,dy=o.ty-o.y;o.mv=Math.abs(dx)+Math.abs(dy)>.05;o.x+=dx*k;o.y+=dy*k;o.ph=(o.ph||0)+dt*8}}
-function netDraw(R,vis){for(const o of NET.others.values())if(vis(o.x,o.y))R.push([o.y*T,()=>{drawChar(Math.round(o.x*T-8),Math.round(o.y*T-14),o.dir,o.ph||0,o.col,'#432',{moving:o.mv,wid:'sword0',chick:o.ch})}])}
+function netStep(dt){for(const o of NET.others.values()){const k=Math.min(1,dt*10),dx=o.tx-o.x,dy=o.ty-o.y;o.mv=Math.abs(dx)+Math.abs(dy)>.05;o.swing=(o.swing||0)-dt;o.x+=dx*k;o.y+=dy*k;o.ph=(o.ph||0)+dt*8}}
+function netDraw(R,vis){for(const o of NET.others.values())if(vis(o.x,o.y))R.push([o.y*T,()=>{drawChar(Math.round(o.x*T-8),Math.round(o.y*T-14),o.dir,o.ph||0,o.col,'#432',{moving:o.mv,wid:o.w,chick:o.ch,sp:o.swing>0?1-o.swing/.25:-1})}])}
 function netLabels(vis,label){for(const o of NET.others.values())if(vis(o.x,o.y))label(o.n,o.x,o.y-1,'#8dffb0')}
 async function netBoard(){try{const r=await fetch('/api/board');NET.board=await r.json();if(panelKind==='board')renderPanel()}catch(e){}}
 function netPostBoard(ent){if(!NET.on||!NET.tok)return;fetch('/api/board',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+NET.tok},body:JSON.stringify(ent)}).then(()=>netBoard()).catch(()=>{})}

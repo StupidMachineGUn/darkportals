@@ -153,14 +153,14 @@ function spawnPortals(){const X0=DUN.x0-8,X1=DUN.x0+DUN.w+8,Y0=DUN.y0-8,Y1=DUN.y
  while(PTS.length<12&&tr++<40000){const x=ri(8,MW-9),y=ri(8,MH-9),k=idx(x,y);if(!reach[k]||solid[k]||objAt.has(k)||(x>X0&&x<X1&&y>Y0&&y<Y1))continue;
   if(Math.hypot(x-CX,y-CY)<TOWN_R+38||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R+30)||PTS.some(p=>Math.hypot(x-p.x,y-p.y)<34))continue;
   if(!reach[idx(x,y+1)]||solid[idx(x,y+1)])continue;solid[k]=1;PTS.push({id:PTS.length,x,y,t:rnd(2,8)})}}
-function portalTick(dt){if(!PT.open){if(clock>=PT.reopen)reopenPortals();return}
+function portalTick(dt){if(NET.sim)return;if(!PT.open){if(clock>=PT.reopen)reopenPortals();return}
  for(const p of PTS){p.t-=dt;if(p.t>0)continue;p.t=rnd(7,11);if(Math.hypot(P.x-p.x,P.y-p.y)>70)continue;
   let live=0;for(const e of E)if(e.pt===p.id&&!e.dead)live++;if(live>=6)continue;
   const d=Math.hypot(p.x-CX,p.y-CY),t=pickMob(d,map[idx(p.x,p.y+1)]);if(!t||!ESPEC[t]||ESPEC[t].pass)continue;
   const x=p.x+.5+rnd(-1.5,1.5),y=p.y+1.6+rnd(0,1.5);if(solid[idx(Math.floor(x),Math.floor(y))])continue;
   const m=mkEnemy(t,x,y);m.pt=p.id;m.temp=1;E.push(m);burst(x,y-.4,'#b46aff',10,3);fxs.push({k:'ring',x,y,r:1.4,life:.5,max:.5,c:'#b46aff'})}
  ptClean+=dt;if(ptClean>30){ptClean=0;E=E.filter(e=>!(e.pt!=null&&e.dead>clock+1e8))}}
-function closePortals(){PT.open=false;PT.reopen=clock+600;let n=0;for(const e of E)if(e.pt!=null&&!e.dead){e.dead=clock+1e9;burst(e.x,e.y-.4,'#b46aff',8,3);n++}
+function closePortals(){if(NET.sim){PT.open=false;return}PT.open=false;PT.reopen=clock+600;let n=0;for(const e of E)if(e.pt!=null&&!e.dead){e.dead=clock+1e9;burst(e.x,e.y-.4,'#b46aff',8,3);n++}
  sys('🌀 The Dark Portals collapse! The monsters they spawned crumble to dust. The portals will tear open again in 10 minutes…','#c9f');bigMsg('🌀 THE DARK PORTALS HAVE CLOSED\nPeace… for 10 minutes','#c9f')}
 function reopenPortals(){PT.open=true;const w=E.find(e=>e.t==='wizard');if(w){w.dead=0;w.hp=w.mhp;w.x=w.hx;w.y=w.hy;w.p1=w.p2=0;w.st=0;w.nova=6}
  sys('🌀 The Dark Portals tear open again! The Dark Wizard has returned to his throne.','#f6f');bigMsg('🌀 THE DARK PORTALS REOPEN\nThe Dark Wizard has returned','#f6f');shakeT=2.5;shakeA=2;sfx('boss')}

@@ -113,6 +113,7 @@ function setFlag(a,f,dur){const cur=flagOf(a);if(cur&&FL[cur]>FL[f])return;if(cu
  if(a===P){sys({orange:'🟠 You are now a CRIMINAL (orange) for 60s.',red:'🔴 You are now a MURDERER (red) until you die or are killed! Guards will hunt you.',blue:'🔵 You are flagged lawful (blue) for attacking a murderer.'}[f],FCOL[f])}}
 function actorHit(A,V,dmg){if(V.dead||V===A||(V===P&&(P.dead||P.inside||shopSt)))return;const vf=flagOf(V);
  if(!A.guard){if(vf==='red')setFlag(A,'blue',90);else if(vf!=='orange')setFlag(A,'orange',60)}
+ if(V.remote){if(safeAt(P.x,P.y)||safeAt(V.x,V.y)||V.hp<=0)return;netPvp(V,dmg);fl(V.x,V.y-.8,dmg,'#fff');return}
  if((V.isBot||V.npc)&&A!==V){V.target=A;V.tT=clock+15}if(V.guard){V.fightWho=A;V.fightT=clock+20}
  if(V===P)return playerHit(dmg,A);
  V.hp-=dmg;V.flash=.15;if(A!==P)fl(AX(V),AY(V)-.8,'-'+dmg,'#f88');if(V.hp<=0)killActor(A,V)}
@@ -182,7 +183,7 @@ function shroomTick(dt){if(!(P.shroomT>0))return;const b0=P.shroomT;P.shroomT-=d
  for(let i=ills.length-1;i>=0;i--){const m=ills[i];m.life-=dt;m.x+=m.vx*dt;m.y+=m.vy*dt;if(Math.hypot(m.x-P.x,m.y-P.y)<1.1){burst(m.x,m.y-.4,hsl2hex((clock*200)%360,.9,.6),16);fl(m.x,m.y-.8,pick(['?!','boo','bawk','wow','🌈']),'#e9a8ff');sfx('pick');ills.splice(i,1)}else if(m.life<=0)ills.splice(i,1)}
  if(Math.random()<dt*.15)fl(P.x,P.y-1.1,pick(['whoa…','so colorful','the walls are breathing','bawk?','🌈','is that a slime?']),'#e9a8ff')}
 function spawnEnemies(){let c=0,tries=0;while(c<2200&&tries++<300000){const x=ri(3,MW-4),y=ri(3,MH-4),k=idx(x,y);if(!reach[k]||solid[k]||objAt.has(k)||safeAt(x,y))continue;const d=Math.hypot(x-CX,y-CY);if(d<TOWN_R+14||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R+13))continue;const t=pickMob(d,map[k]);if(!t)continue;E.push(mkEnemy(t,x+.5,y+.5));c++}}
-function hurtEnemy(e,d,src='p'){if(e.dead)return;if(meleeT===clock)bloodHit(e);if(src==='p'&&P.shroomT>0)d*=3;if(e.t==='chicken'||e.t==='sheep'){e.flee=5;if(Math.random()<.4)sfx('bawk')}e.hp-=d;e.flash=.18;e.st=1;if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.hp<=0)killEnemy(e)}
+function hurtEnemy(e,d,src='p'){if(e.dead)return;if(meleeT===clock)bloodHit(e);if(src==='p'&&P.shroomT>0)d*=3;if(NET.sim){if(src==='p')netHit(e,d);e.flash=.18;e.hp=Math.max(1,e.hp-d);if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;return}if(e.t==='chicken'||e.t==='sheep'){e.flee=5;if(Math.random()<.4)sfx('bawk')}e.hp-=d;e.flash=.18;e.st=1;if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.hp<=0)killEnemy(e)}
 const ELN=e=>(e.el==='shaman'?'Shaman ':e.el==='elite'?'Elite ':'Chief ')+e.t[0].toUpperCase()+e.t.slice(1);
 function killEnemy(e){if(meleeT===clock)goreKill(e);if(e.dun)dunKill(e);e.dead=clock+(e.temp?1e9:e.t==='wizard'?1e9:e.dun?ri(240,360):e.t==='wyrm'||e.t==='rooster'?1e9:ri(45,70)*(e.el?4:1));P.kills++;const s=ESPEC[e.t],xm=e.xm||1;gainXp('melee',s.xp*.4*xm);if(e.el&&e.el!=='lord'&&!e.dun){const g2=ri(...s.gold)*4;P.gold+=g2;fl(e.x,e.y-1.2,'+'+g2+'g','#ffd36b');toast('☠️ '+ELN(e)+' slain!','#ffd36b');dropGear(e.t,true);dropGear(e.t,true)}onEvent(e.t);burst(e.x,e.y-.4,'#fff',14);
  const g=ri(...s.gold);P.gold+=g;fl(e.x,e.y-.6,'+'+g+'g','#ffd36b');const dr=(id,p,n=1)=>{if(Math.random()<p&&addItem(id,n)){fl(e.x+.3,e.y-1,'+'+ITEMS[id].e,'#fff')}};
@@ -196,9 +197,9 @@ function killEnemy(e){if(meleeT===clock)goreKill(e);if(e.dun)dunKill(e);e.dead=c
  if(e.t==='wyrm'){boss=null;if((P.bossDmg||0)>=40){dropGear('wyrm',true);dropGear('wyrm',true);addItem('scale',ri(1,3));if(Math.random()<.5)addItem('gem');P.gold+=ri(...s.gold);gainXp('magic',200);gainXp('melee',200);sys('🐉 You helped slay the Ember Wyrm! Rewards granted.','#ff9bff');toast('🐉 WYRM SLAIN!')}else sys('The Ember Wyrm was slain by others… you did too little to earn loot.','#f99');}}
 function playerHit(d,by){if(P.dead||P.inside||shopSt)return;const df=A_().def||0;let dmg=Math.max(1,Math.round(d*(1-df*.035)-lv('defense')*.12+rnd(-1,1)));
  P.hp-=dmg;P.hurt=5;fl(P.x,P.y-.8,'-'+dmg,'#f55');sfx('hurt');gainXp('defense',2+dmg);gainXp('vitality',1+dmg*.6);burst(P.x,P.y-.4,'#d33',5);
- if(P.hp<=0){if(by&&by.act)killActor(by,P);P.flag=null;P.fT=0;P.vic=0;P.dead=2.2;P.deaths=(P.deaths|0)+1;if(by&&by.act)P.pvpD=(P.pvpD|0)+1;if(!(by&&by.isBot)){P.gold=Math.floor(P.gold*.9);sys('💀 You were knocked out and lost 10% gold.','#f66')}P.path=null;stopAct();P.chase=null}}
+ if(P.hp<=0){if(by&&by.remote)netDied(by);else if(by&&by.act)killActor(by,P);P.flag=null;P.fT=0;P.vic=0;P.dead=2.2;P.deaths=(P.deaths|0)+1;if(by&&by.act)P.pvpD=(P.pvpD|0)+1;if(!(by&&by.isBot)){P.gold=Math.floor(P.gold*.9);sys('💀 You were knocked out and lost 10% gold.','#f66')}P.path=null;stopAct();P.chase=null}}
 function nearestEnemy(r,fr=P){let b=null,bd=r;for(const e of E){if(e.dead)continue;const d=Math.hypot(e.x-fr.x,e.y-fr.y);if(d<bd){bd=d;b=e}}return b}
-const actorsList=()=>[...bots,...guards,...npcs];
+const actorsList=()=>[...bots,...guards,...npcs,...netRem()];
 let wardT=0;
 function wardMsg(){if(clock>wardT){wardT=clock+1.5;toast('🛡️ The town ward forbids fighting monsters here','#9cf')}}
 function playerAttack(){if(P.dead||P.cd>0)return;let t=null;
@@ -207,8 +208,8 @@ function playerAttack(){if(P.dead||P.cd>0)return;let t=null;
  if(t&&ESPEC[t.t]&&!ESPEC[t.t].pass&&safeAt(P.x,P.y)){P.chase=null;wardMsg();return}
  if(!t){let bd=1.7;for(const a of actorsList()){if(a.dead||(!stance&&!isCrim(a)))continue;const d=Math.hypot(AX(a)-P.x,AY(a)-P.y);if(d<bd){bd=d;t=a}}}
  stopAct();
- if(!t){P.cd=.55;P.swing=.25;sfx('miss');return}
- const tx=AX(t),ty=AY(t),dx=tx-P.x,dy=ty-P.y;P.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?2:1):(dy>0?0:3);P.cd=.55;P.swing=.25;
+ if(!t){P.cd=.55;P.swing=.25;netAct('swing');sfx('miss');return}
+ const tx=AX(t),ty=AY(t),dx=tx-P.x,dy=ty-P.y;P.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?2:1):(dy>0?0:3);P.cd=.55;P.swing=.25;netAct('swing');
  const hit=Math.random()<clamp(.78+lv('melee')*.01,.78,.97);
  if(!hit){fl(tx,ty-.7,'Miss','#aaa');sfx('miss');if(!t.act)gainXp('melee',1);return}
  const crit=Math.random()<.08+lv('agility')*.002+G().crit/100;let d=(1+lv('melee')*.55+(W_().atk||0))*rnd(.8,1.2);if(crit)d*=2;d=Math.max(1,Math.round(d));
@@ -231,7 +232,7 @@ function spellHit(p,e0){const sp=SPELLS[p.sp],col=spCol(sp),hit=new Set([e0]);hu
   fxs.push({k:'line',x:from.x,y:from.y-.4,x2:best.x,y2:best.y-.4,life:.3,max:.3,c:col});const d2=Math.round(p.dmg*.7);hurtEnemy(best,d2);fl(best.x,best.y-.7,d2,col);applyFx(best,sp,d2);hit.add(best);gainXp('magic',2);from=best}}}
 function castBolt(){if(chickenForm())return toast('🐔 Bawk! (chickens cannot cast)','#fc6');if(safeAt(P.x,P.y))return wardMsg();const tier=spellTier(),sp=SPELLS[tier],cost=4+tier*2;if(P.dead||CD.bolt>0)return;if(P.mp<cost)return toast('Not enough mana','#6af');const t=nearestEnemy(8+tier*.3);let a=DIR[P.dir],vx=a[0],vy=a[1];
  if(t){const d=Math.hypot(t.x-P.x,t.y-P.y);vx=(t.x-P.x)/d;vy=(t.y-P.y)/d;P.dir=Math.abs(vx)>Math.abs(vy)?(vx>0?2:1):(vy>0?0:3)}
- P.mp-=cost;CDM.bolt=.9+tier*.04;CD.bolt=CDM.bolt;P.swing=.25;proj.push({x:P.x,y:P.y-.3,vx:vx*9,vy:vy*9,dmg:Math.round((3+lv('magic')*.9+(W_().mag||0))*rnd(.9,1.15)),life:1.1,own:'p',sp:tier,sz:3+tier*.5});if(t)gainXp('magic',2+tier);sfx('bolt')}
+ P.mp-=cost;CDM.bolt=.9+tier*.04;CD.bolt=CDM.bolt;P.swing=.25;netAct('bolt',tier);proj.push({x:P.x,y:P.y-.3,vx:vx*9,vy:vy*9,dmg:Math.round((3+lv('magic')*.9+(W_().mag||0))*rnd(.9,1.15)),life:1.1,own:'p',sp:tier,sz:3+tier*.5});if(t)gainXp('magic',2+tier);sfx('bolt')}
 function castMend(){if(chickenForm())return toast('🐔 Bawk! (chickens cannot cast)','#fc6');if(CD.mend>0||P.dead)return;if(lv('magic')<5)return toast('Mend unlocks at Magic 5','#6af');const tier=spellTier(),cost=8+tier;if(P.mp<cost)return toast('Not enough mana','#6af');if(P.hp>=maxHp())return;
  P.mp-=cost;CD.mend=2;const h=Math.round(10+lv('magic')*1.5),col=spCol(SPELLS[tier]);P.hp=Math.min(maxHp(),P.hp+h);if(tier>=2)P.hot={left:5,per:2+tier*.9};gainXp('magic',8);gainXp('vitality',3);fl(P.x,P.y-.8,'+'+h,'#6f6');burst(P.x,P.y-.4,col,12+tier*3);fxs.push({k:'ring',x:P.x,y:P.y,r:1.2+tier*.15,life:.5,max:.5,c:col});sfx('heal')}
 function eatBest(){if(CD.eat>0||P.dead)return;let b=null;for(const i of P.inv){const it=ITEMS[i.id];if(it.heal&&!it.pot&&(!b||it.heal>ITEMS[b.id].heal))b=i}
@@ -251,7 +252,7 @@ function updPassive(e,s,dt){e.flash-=dt;let tx=null,ty=null,sp=s.spd;e.mv=false;
  else{if(Math.random()<dt*.5){e.wx=e.hx+rnd(-s.rad,s.rad);e.wy=e.hy+rnd(-s.rad,s.rad)}if(e.wx!=null){tx=e.wx;ty=e.wy;sp*=.6;if(Math.hypot(tx-e.x,ty-e.y)<.2)e.wx=null}}
  if(tx!=null){const dx=tx-e.x,dy=ty-e.y,m=Math.hypot(dx,dy)||1,vx=dx/m*sp*dt,vy=dy/m*sp*dt,ox=e.x,oy=e.y;moveEnt(e,vx,vy);if(e.x===ox&&e.y===oy&&m>.3){moveEnt(e,vx*1.5,0);moveEnt(e,0,vy*1.5)}e.mv=e.x!==ox||e.y!==oy;if(Math.abs(dx)>.05)e.dir=dx>0?2:1}
  if(Math.random()<dt*.02&&Math.hypot(e.x-P.x,e.y-P.y)<9){fl(e.x,e.y-.6,'bawk','#fff');if(Math.random()<.3)sfx('bawk')}}
-function updEnemies(dt){for(const e of E){if(e.dead){if(clock>e.dead&&e.t!=='wyrm'&&e.t!=='rooster'&&Math.hypot(e.hx-P.x,e.hy-P.y)>6){e.dead=0;e.hp=e.mhp;e.x=e.hx;e.y=e.hy;e.st=0}continue}
+function updEnemies(dt){if(NET.sim)return netMobs(dt);for(const e of E){if(e.dead){if(clock>e.dead&&e.t!=='wyrm'&&e.t!=='rooster'&&Math.hypot(e.hx-P.x,e.hy-P.y)>6){e.dead=0;e.hp=e.mhp;e.x=e.hx;e.y=e.hy;e.st=0}continue}
   if(Math.abs(e.x-P.x)>40||Math.abs(e.y-P.y)>40)continue;
   if(e.dots&&e.dots.length){let col='#ccc';for(let i=e.dots.length-1;i>=0;i--){const d=e.dots[i];d.left-=dt;e.dotA=(e.dotA||0)+d.dps*dt;col=DOTC[d.k];if(d.left<=0)e.dots.splice(i,1)}
    if(e.dotA>=1){const dm=Math.floor(e.dotA);e.dotA-=dm;hurtEnemy(e,dm,'p');if(e.dead)continue;e.dotS=(e.dotS||0)+dm;if(clock>(e.dotT||0)){fl(e.x,e.y-.7,e.dotS,col);e.dotS=0;e.dotT=clock+.8;gainXp('magic',.5)}}
@@ -294,6 +295,7 @@ function spawnBoss(){let x,y,t=0;do{x=ri(5,MW-5);y=ri(5,MH-5);t++}while(t<9000&&
  const e=mkEnemy('wyrm',x+.5,y+.5);e.born=clock;E.push(e);boss=e;P.bossDmg=0;sfx('boss');sys('🐉 The EMBER WYRM has awoken! Heroes are rushing to fight it.','#ff7a3a');toast('🐉 EMBER WYRM AWAKENS');}
 function updProj(dt){for(let i=proj.length-1;i>=0;i--){const p=proj[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;let rm=p.life<=0||!inb(Math.floor(p.x),Math.floor(p.y))||(solid[idx(Math.floor(p.x),Math.floor(p.y))]&&isWater(Math.floor(p.x),Math.floor(p.y))===false&&!objAt.has(idx(Math.floor(p.x),Math.floor(p.y))));
   if(p.own==='p'){let hit=null;for(const e of E){if(!e.dead&&Math.hypot(e.x-p.x,e.y-.3-p.y)<.7){hit=e;break}}if(hit){spellHit(p,hit);rm=true}else if(rm&&SPELLS[p.sp].aoe)spellAoe(p,new Set())}
+  else if(p.own==='o'||NET.sim){}
   else if(!P.dead&&Math.hypot(P.x-p.x,P.y-.3-p.y)<.6){playerHit(p.dmg);burst(p.x,p.y,'#f93',10);rm=true}
   if(rm)proj.splice(i,1);else if(Math.random()<.5)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:.25,c:p.own==='p'?spCol(SPELLS[p.sp]):'#f93',sz:2})}}
 /* ---------- main update ---------- */
