@@ -154,7 +154,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     for (const q of players.values()) {
       if (q.ws.readyState !== 1 || !q.sp?.ready) continue;
       if (ks) q.ws.send(ks);
-      if (st % 2 === 0) q.ws.send(JSON.stringify(sim.snapshot(q.sp)));
+      if (st % 2 === 0) { if (q.ws.bufferedAmount > 65536) { q.slow = (q.slow || 0) + 1; continue } const sn = sim.snapshot(q.sp); if (sn.a.length || sn.u.length || sn.r.length || st % 20 === 0) q.ws.send(JSON.stringify(sn)) }
     }
   }, 50) : null;
   await new Promise(r => server.listen(port, r));

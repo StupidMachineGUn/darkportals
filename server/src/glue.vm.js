@@ -81,14 +81,18 @@ SRV.step = function (dt) {
   for (const p of pls) { const inW = !p.dead && p.x >= R5[0] && p.x < R5[0] + R5[2] && p.y >= R5[1] && p.y < R5[1] + R5[3]; if (inW && !SRV.wizIn.has(p.id)) { SRV.wizIn.add(p.id); SRV.glob.push({ t: 'shake' }); SRV.glob.push({ t: 'sys', m: "🌋 The earth trembles across the land… " + p.name + " has entered the Dark Wizard's chamber!" }); SRV.glob.push({ t: 'big', m: "⚠ THE WORLD TREMBLES ⚠\n" + p.name + " entered the Dark Wizard's chamber!", c: '#f6f' }) } else if (!inW) SRV.wizIn.delete(p.id) }
 };
 SRV.snapshot = function (p) {
-  const a = [], u = [], seen = new Set();
+  const a = [], u = [], seen = new Set(), last = p.last || (p.last = new Map());
   for (const e of E) {
-    if (e.dead || Math.abs(e.x - p.x) > 42 || Math.abs(e.y - p.y) > 42) continue;
+    if (e.dead) continue;
+    const dx = Math.abs(e.x - p.x), dy = Math.abs(e.y - p.y), kn = p.known.has(e.id);
+    if (dx > (kn ? 30 : 24) || dy > (kn ? 30 : 24)) continue;
     seen.add(e.id);
-    if (!p.known.has(e.id)) { p.known.add(e.id); a.push([e.id, e.t, +e.x.toFixed(2), +e.y.toFixed(2), Math.round(e.hp), e.mhp, e.dir, e.st, e.el || 0, e.sc || 1, e.dun ? 1 : 0, e.pt == null ? -1 : e.pt, +e.hx.toFixed(1), +e.hy.toFixed(1)]) }
-    else u.push([e.id, +e.x.toFixed(2), +e.y.toFixed(2), Math.round(e.hp), e.dir, e.st, (e.sw > 0 ? 1 : 0) | (e.novaT > 0 ? 2 : 0) | (e.slow ? 4 : 0) | (e.dots && e.dots.length ? 8 : 0)]);
+    const fl = (e.sw > 0 ? 1 : 0) | (e.novaT > 0 ? 2 : 0) | (e.slow ? 4 : 0) | (e.dots && e.dots.length ? 8 : 0);
+    const x = Math.round(e.x * 20) / 20, y = Math.round(e.y * 20) / 20, hp = Math.round(e.hp);
+    if (!kn) { p.known.add(e.id); last.set(e.id, x + ',' + y + ',' + hp + ',' + e.dir + ',' + e.st + ',' + fl); a.push([e.id, e.t, x, y, hp, e.mhp, e.dir, e.st, e.el || 0, e.sc || 1, e.dun ? 1 : 0, e.pt == null ? -1 : e.pt, +e.hx.toFixed(1), +e.hy.toFixed(1)]) }
+    else { const sig = x + ',' + y + ',' + hp + ',' + e.dir + ',' + e.st + ',' + fl; if (last.get(e.id) !== sig) { last.set(e.id, sig); u.push([e.id, x, y, hp, e.dir, e.st, fl]) } }
   }
-  const r = []; for (const id of p.known) if (!seen.has(id)) { r.push(id); p.known.delete(id) }
+  const r = []; for (const id of p.known) if (!seen.has(id)) { r.push(id); p.known.delete(id); last.delete(id) }
   return { t: 'm', a, u, r, pt: [PT.open ? 1 : 0, Math.max(0, Math.round(PT.reopen - clock))] };
 };
 SRV.drain = function () { const o = { hits: SRV.hits, kills: SRV.kills, glob: SRV.glob, evs: SRV.evs }; SRV.hits = []; SRV.kills = []; SRV.glob = []; SRV.evs = []; return o };

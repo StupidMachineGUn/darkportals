@@ -18,3 +18,6 @@
 - Server caps hit damage and range (anti-cheat).
 - Red ping readout (bottom-left).
 - Known limits: spells don't hit players (melee PvP only), guards/shrooms stay client-side.
+
+## 0.2.1
+- Fix huge lag (ping tens of seconds): snapshots were resending every mob 10x/s (~220 KB/s per player) and queued up on slower links. Now delta-only, smaller view radius (24 tiles), rounded coords, and skipped when a client's send buffer is backed up (~37 KB/s).
