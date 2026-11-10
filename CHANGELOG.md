@@ -28,3 +28,6 @@
 - Binary updates (13 bytes/mob vs ~40 JSON), 20 Hz, distance-based rates (far mobs every 4th tick), 150 updates/tick cap nearest-first, backpressure.
 - TCP_NODELAY on sockets.
 - Ping readout (red) now also shows server loop delay, download KB/s and queued bytes.
+
+## 0.3.1
+- Server mob speed: fast mobs (bat, wolf, wraith, spider) and bosses/rooster keep their speed; all other mobs move at 50% speed (fewer position updates).

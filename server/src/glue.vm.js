@@ -38,6 +38,7 @@ portalTick = function (dt) {
   ptClean += dt; if (ptClean > 30) { ptClean = 0; E = E.filter(e => !(e.pt != null && e.dead > clock + 1e8)) }
 };
 SRV.init = function () {
+  for (const t in ESPEC) if (ESPEC[t].spd < 3 && !['wyrm', 'wizard', 'rooster'].includes(t)) ESPEC[t].spd = +(ESPEC[t].spd * .5).toFixed(2);
   genWorld(); carveDungeon(); spawnEnemies(); spawnVillageMobs(); makeElites(); spawnChickens(); spawnSheep(); spawnDungeon(); spawnPortals();
   { let k = 0; E = E.filter(e => { if (e.dun || e.el || e.t === 'wizard' || e.t === 'wyrm' || e.t === 'rooster' || e.t === 'chicken' || e.t === 'sheep') return true; return (k++ & 1) === 0 }) }
   for (const e of E) if (e.t === 'wizard') { e.hx = e.x; e.hy = e.y }
