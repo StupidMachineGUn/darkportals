@@ -147,7 +147,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
 
   function encU(u) { if (!u.length) return null; const b = Buffer.allocUnsafe(3 + u.length * 13); b[0] = 1; b.writeUInt16LE(u.length, 1); let o = 3; for (const e of u) { b.writeUInt32LE(e[0], o); b.writeUInt16LE(Math.max(0, Math.min(65535, Math.round(e[1] * 16))), o + 4); b.writeUInt16LE(Math.max(0, Math.min(65535, Math.round(e[2] * 16))), o + 6); b.writeInt8(Math.round(e[3] * 8), o + 8); b.writeInt8(Math.round(e[4] * 8), o + 9); b.writeUInt16LE(Math.max(0, Math.min(65535, e[5])), o + 10); b[o + 12] = e[6]; o += 13 } return b }
   let st = 0;
-  const simTick = sim ? setInterval(() => {
+  const simTick = sim ? setInterval(() => { try {
     if (![...players.values()].some(p => p.sp?.ready)) return;
     sim.step(.05); st++;
     const dr = sim.drain();
@@ -160,12 +160,14 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
       if (ks) q.ws.send(ks);
       { if (q.ws.bufferedAmount > 65536) { q.slow = (q.slow || 0) + 1; continue } const sn = sim.snapshot(q.sp); const ub = encU(sn.u); delete sn.u; if (sn.a.length || sn.r.length || st % 40 === 0 || q.lpt !== sn.pt[0]) { q.lpt = sn.pt[0]; q.ws.send(JSON.stringify(sn)) } if (ub) q.ws.send(ub) }
     }
-  }, 50) : null;
+  } catch (e) { if (Date.now() - (globalThis.__le || 0) > 5000) { globalThis.__le = Date.now(); console.error('SIM ERROR:', e && e.stack || e) } } }, 50) : null;
   await new Promise(r => server.listen(port, r));
   const close = async () => { clearInterval(tick); if (simTick) clearInterval(simTick); wss.close(); for (const p of players.values()) try { p.ws.terminate() } catch {} await new Promise(r => server.close(r)); await db.end?.() };
   return { server, port: server.address().port, close, db };
 }
 
+process.on('uncaughtException', e => console.error('UNCAUGHT:', e && e.stack || e));
+process.on('unhandledRejection', e => console.error('UNHANDLED:', e && e.stack || e));
 if (import.meta.url === `file://${process.argv[1]}`) {
   const s = await createServer();
   console.log(`Dark Portals server v${VERSION} listening on :${s.port}`);
