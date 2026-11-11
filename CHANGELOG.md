@@ -57,3 +57,14 @@
 - The Witch's Hut (forest, with a campfire safe zone and friendly goblin guards): higher-tier spells (level 50–100), and she buys/sells magic mushrooms and ingredients.
 - New support spells: Ward Shield, Haste, Regrowth, Greater Mend, Aegis.
 - Existing characters keep the attack spells they had already unlocked.
+
+## 0.5.0 – parties, jail, admin tools, HTTPS docs
+- Other players' titles ("the Swordsman") now show above their name, in the world and inside shops/houses
+- Trade: stackable items (food, potions, ingredients…) can be offered with +1 / All, not only gear
+- Autowalk watchdog: if a walk gets stuck it re-paths once, then cancels ("Path blocked"); paths clear on server correction, shop entry, death, jail
+- Portal status (🌀 open / closed Nm) in the red ping line (portal spawning itself was verified working server-side)
+- Parties (max 5): 👥 panel, invite/accept/leave/kick, member HP, `/p text` party chat, no PvP between members, free warp to a member (60s cooldown; blocked in combat, dungeon, jail, buildings)
+- Admin tools (🛠 button, only for names in `ADMINS` env): player list, teleport to, bring, kick (5-min block), jail 25/50, unjail — enforced on the server
+- Jail: fenced yard with potato plants in Hearthmoor; dig the sentence (25 potatoes, 50 if set higher) to go free; server-authoritative, confined to the yard, saved across logout, safe from mobs/PvP
+- Town guards: attacking a non-red player inside a safe zone does no damage and gets the attacker jailed for assault
+- Deploy: HTTPS/domain docs (Caddy auto-cert, own certificate, Cloudflare), `CF=1` makes rate limiting use the real client IP behind Cloudflare

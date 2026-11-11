@@ -4,6 +4,6 @@ set -e
 cd "$(dirname "$0")"
 V=$(cat ../VERSION)
 mkdir -p ../dist ../server/public
-cat a.html b.js c.js d.js f.js x.js n.js s.js e.js | sed "s/__VERSION__/$V/g" > ../dist/index.html
+cat a.html b.js c.js d.js f.js x.js n.js s.js p.js e.js | sed "s/__VERSION__/$V/g" > ../dist/index.html
 cp ../dist/index.html ../server/public/index.html
 echo "built v$V ($(wc -c < ../dist/index.html) bytes)"

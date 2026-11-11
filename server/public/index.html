@@ -91,7 +91,7 @@ body.trip #c{animation:trip 4s linear infinite,wob 3s ease-in-out infinite}
 <div id="story"><canvas id="stc" width="192" height="108"></canvas><div id="stt"></div><div id="stb"><div class="btn" id="stSkip">Skip</div><div class="btn" id="stNext">Next ▶</div></div></div>
 <div id="toast"></div>
 <div id="title"><h1>🌀 DARK PORTALS</h1><div style="opacity:.8;max-width:320px">A tiny MMO that grows with you. Every skill is trained by using it.</div>
-<input id="nm" maxlength="12" placeholder="Hero name" value="Nexemis"><input id="pw" type="password" placeholder="Password" style="display:none;margin-top:6px"><div id="authmsg" style="font-size:12px;color:#f88;min-height:15px"></div><div class="btn" id="go">Enter the world</div><div id="regt" style="display:none;font-size:12px;text-decoration:underline;opacity:.8;padding:6px">New here? Create account</div><div style="font-size:10px;opacity:.4">v0.4.0</div>
+<input id="nm" maxlength="12" placeholder="Hero name" value="Nexemis"><input id="pw" type="password" placeholder="Password" style="display:none;margin-top:6px"><div id="authmsg" style="font-size:12px;color:#f88;min-height:15px"></div><div class="btn" id="go">Enter the world</div><div id="regt" style="display:none;font-size:12px;text-decoration:underline;opacity:.8;padding:6px">New here? Create account</div><div style="font-size:10px;opacity:.4">v0.5.0</div>
 <div style="font-size:11px;opacity:.6;max-width:320px">Drag stick / WASD to move · tap the world to walk or interact · Space attack · E use · 1-6 spells, food &amp; potions</div></div>
 <script>
 'use strict';
@@ -179,7 +179,7 @@ const idx=(x,y)=>y*MW+x,inb=(x,y)=>x>=0&&y>=0&&x<MW&&y<MH;
 const isWater=(x,y)=>inb(x,y)&&map[idx(x,y)]<=1;
 const objs=[],objAt=new Map(),buildings=[],npcs=[],inNpcs=[],houses=[];
 const GYS=[{x:CX+45,y:CY-42},{x:CX-93,y:CY+69},{x:CX+87,y:CY+93},{x:CX-51,y:CY-108}];
-const VIL=[],guards=[],WITCH=[];const TOWN_R=20,VIL_R=12,safeAt=(x,y)=>Math.hypot(x-CX,y-CY)<TOWN_R||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R)||WITCH.some(w=>Math.hypot(x-w.x,y-w.y)<w.r);
+const VIL=[],guards=[],WITCH=[],JAIL={x0:CX+9,y0:CY+4,x1:CX+16,y1:CY+10,gx:CX+12,pl:[]};const TOWN_R=20,VIL_R=12,safeAt=(x,y)=>Math.hypot(x-CX,y-CY)<TOWN_R||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R)||WITCH.some(w=>Math.hypot(x-w.x,y-w.y)<w.r);
 function genWorld(){
  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){
   const dx=(x-CX)/(MW/2),dy=(y-CY)/(MH/2),d=Math.sqrt(dx*dx+dy*dy);
@@ -204,7 +204,7 @@ function genWorld(){
  const npc=(b,n,role,col)=>{b.npc={n,name:n,role,col,npc:true,dead:0,x:b.dx,y:b.dy-1};inNpcs.push(b.npc)};
  const guard=(x,y)=>guards.push({guard:true,act:true,name:'Guard',x:x+.5,y:y+.5,hx:x+.5,hy:y+.5,hp:600,mhp:600,dead:0,flag:null,fT:0,vic:0,cd:0,sw:0,flash:0,dir:0});
  npc(buildings[0],'Pip','shop','#34527f');npc(buildings[1],'Brakka','smith','#8a3a22');npc(buildings[2],'Rosa','inn','#8a6a2a');npc(buildings[3],'Elder Maren','elder','#4e3d6e');npc(buildings[4],'Gorm','bank','#6b5a2a');npc(buildings[5],'Vessa','trade','#2a5a5a');npc(buildings[6],'Sorin','mage','#4a3a7a');
- guard(CX-1,CY-12);guard(CX+2,CY+13);guard(CX-13,CY);guard(CX+14,CY+1);guard(CX-9,CY-9);guard(CX+10,CY+10);
+ guard(CX-1,CY-12);guard(CX+2,CY+13);guard(CX-13,CY);guard(CX+14,CY+1);guard(CX-9,CY-9);guard(CX+10,CY+12);
  const pre=new Uint8Array(MW*MH);{const q=[idx(CX,CY)];pre[q[0]]=1;for(let h=0;h<q.length;h++){const k=q[h],x=k%MW,y=(k/MW)|0;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+a,ny=y+b;if(inb(nx,ny)&&!pre[idx(nx,ny)]&&map[idx(nx,ny)]>1){pre[idx(nx,ny)]=1;q.push(idx(nx,ny))}}}}
  const VT=[[70,10,'Oakhollow',1,[['orc',12],['wolf',6]],['Hobb','Mara']],[-12,-76,'Stonereach',2,[['ogre',8],['orc',8]],['Dren','Sela']],[-76,44,'Gravewatch',3,[['wraith',10],['skeleton',10],['ogre',4]],['Orin','Vesk']],[14,88,'Emberkeep',4,[['troll',8],['ogre',8]],['Tamsin','Rook']],[100,-52,'Frostmere',5,[['troll',10],['wraith',8]],['Bjorn','Ilsa']],[-92,-84,'Dragonwatch',6,[['demon',8],['troll',8]],['Kael','Nyra']]];
  const cands=[];for(let vy=10;vy<MH-10;vy+=2)for(let vx=11;vx<MW-10;vx+=2){if(Math.hypot(vx-CX,vy-CY)<50)continue;let ok=true;for(let y=vy-8;y<=vy+8&&ok;y++)for(let x=vx-9;x<=vx+9;x++){const k=idx(x,y);if(!pre[k]){ok=false;break}}if(ok)cands.push([vx,vy])}
@@ -225,6 +225,8 @@ function genWorld(){
  /* ---- rentable cottages ---- */
  const canPlace=(x,y,w,h,okPath,town)=>{for(let j=y-1;j<=y+h+1;j++)for(let i=x-1;i<x+w+1;i++){if(!inb(i,j))return false;const k=idx(i,j);if(map[k]<2||solid[k])return false;if(!okPath&&map[k]===TL.PATH)return false;if(town&&(i>=CX-1&&i<=CX+2||j>=CY-1&&j<=CY+2))return false}return true};
  const HC=['#6a5a3a','#7a4a3a','#4a6a5a','#5a4a6a','#8a6a4a','#4a5a7a','#7a6a3a','#6a3a3a'];
+ {const J=JAIL;for(let y=J.y0;y<=J.y1;y++)for(let x=J.x0;x<=J.x1;x++){const edge=x===J.x0||x===J.x1||y===J.y0||y===J.y1;if(edge&&!(y===J.y0&&x===J.gx))solid[idx(x,y)]=1;if(!edge&&map[idx(x,y)]>=2)map[idx(x,y)]=TL.PATH}
+  if(solid[idx(J.gx,J.y0)]===0)map[idx(J.gx,J.y0)]=TL.PATH;for(const y of [J.y0+2,J.y0+4])for(let x=J.x0+1;x<J.x1;x++)J.pl.push({x,y,t:0})}
  const addHouse=(x,y,town)=>{const b={n:'Cottage',x,y,w:3,h:3,c:HC[houses.length%HC.length],dx:x+1,dy:y+3,house:true,id:houses.length,town};houses.push(b);buildings.push(b);for(let j=0;j<3;j++)for(let i=0;i<3;i++)solid[idx(x+i,y+j)]=1;map[idx(b.dx,b.dy)]=TL.PATH};
  {let cnt=0;for(const r of [11.5,14.5,17.5]){const n=Math.floor(6.283*r/5);for(let i=0;i<n&&cnt<34;i++){const a=i/n*6.283+r;const x=Math.round(CX+Math.cos(a)*r)-1,y=Math.round(CY+Math.sin(a)*r)-1;if(canPlace(x,y,3,3,false,true)){addHouse(x,y,'Hearthmoor Town');cnt++}}}}
  for(const v of VIL){let cnt=0;const n=14;for(let i=0;i<n&&cnt<5;i++){const a=i/n*6.283;const x=Math.round(v.x+Math.cos(a)*8.3)-1,y=Math.round(v.y+Math.sin(a)*8.3)-1;if(canPlace(x,y,3,3,true,false)){addHouse(x,y,v.name);cnt++}}}
@@ -409,7 +411,7 @@ function setFlag(a,f,dur){const cur=flagOf(a);if(cur&&FL[cur]>FL[f])return;if(cu
  if(a===P){sys({orange:'🟠 You are now a CRIMINAL (orange) for 60s.',red:'🔴 You are now a MURDERER (red) until you die or are killed! Guards will hunt you.',blue:'🔵 You are flagged lawful (blue) for attacking a murderer.'}[f],FCOL[f])}}
 function actorHit(A,V,dmg){if(V.dead||V===A||(V===P&&(P.dead||P.inside||shopSt)))return;const vf=flagOf(V);
  if(!A.guard){if(vf==='red')setFlag(A,'blue',90);else if(vf!=='orange')setFlag(A,'orange',60)}
- if(V.remote){if(safeAt(P.x,P.y)||safeAt(V.x,V.y)||V.hp<=0)return;netPvp(V,dmg);fl(V.x,V.y-.8,dmg,'#fff');return}
+ if(V.remote){if(V.hp<=0)return;if(safeAt(P.x,P.y)||safeAt(V.x,V.y)){netPvp(V,dmg);return}netPvp(V,dmg);fl(V.x,V.y-.8,dmg,'#fff');return}
  if((V.isBot||V.npc)&&A!==V){V.target=A;V.tT=clock+15}if(V.guard){V.fightWho=A;V.fightT=clock+20}
  if(V===P)return playerHit(dmg,A);
  V.hp-=dmg;V.flash=.15;if(A!==P)fl(AX(V),AY(V)-.8,'-'+dmg,'#f88');if(V.hp<=0)killActor(A,V)}
@@ -604,8 +606,10 @@ function updPlayer(dt){
  if(mag>.15){P.path=null;goal=null;P.chase=null;if(act)stopAct();if(mag>1){vx/=mag;vy/=mag}}else{vx=vy=0}
  if(P.chase&&P.chase.act&&!stance&&!isCrim(P.chase))P.chase=null;
  if(P.chase){if(P.chase.dead)P.chase=null;else{const d=Math.hypot(AX(P.chase)-P.x,AY(P.chase)-P.y);if(d<1.5){P.path=null;playerAttack()}else{chaseT-=dt;if(chaseT<=0||!P.path){chaseT=.35;P.path=setPath(Math.floor(AX(P.chase)),Math.floor(AY(P.chase)),true)}}}}
+ if(!mag&&P.path&&P.path.length){const L=P.path[P.path.length-1];if(!P.sk||Math.hypot(P.x-P.sk.x,P.y-P.sk.y)>.2){P.sk={x:P.x,y:P.y,t:0}}else{P.sk.t+=dt;if(P.sk.t>1.3){P.sk=null;if(!P.rep){P.rep=1;const np=setPath(L[0],L[1],!!goal);if(np&&np.length)P.path=np;else{P.path=null;goal=null}}else{P.rep=0;P.path=null;goal=null;toast('🚧 Path blocked','#fc9')}}}}
+ if(!P.path)P.sk=null;
  if(!mag&&P.path){if(P.path.length){const [tx,ty]=P.path[0],dx=tx+.5-P.x,dy=ty+.5-P.y,d=Math.hypot(dx,dy);if(d<.14)P.path.shift();else{vx=dx/d;vy=dy/d}}
-  if(!P.path.length){P.path=null;if(goal){const g=goal;goal=null;startInteract(g)}}}
+  if(!P.path.length){P.path=null;P.rep=0;if(goal){const g=goal;goal=null;startInteract(g)}}}
  const moving=vx||vy;if(input.atk&&!P.chase)playerAttack();
  const sprint=input.run&&moving&&P.st>0&&!P.tired;
  if(P.tired&&P.st>maxSt()*.25)P.tired=false;if(P.st<=0)P.tired=true;
@@ -823,6 +827,8 @@ function render(){if(P.inside){drawInside();return}if(insideOn)hideInside();if(s
  drawAura(CX,CY,TOWN_R);for(const v of VIL)drawAura(v.x,v.y,VIL_R);for(const w of WITCH)drawAura(w.x,w.y,w.r);
  drawDecals();drawShadows(x0,x1,y0,y1);
  const R=[],vis=(x,y)=>x>=x0-2&&x<=x1+2&&y>=y0-3&&y<=y1+3;
+ {const J=JAIL;if(vis(J.x0+4,J.y0+3)||vis(J.x0,J.y0)||vis(J.x1,J.y1)){for(let y=J.y0;y<=J.y1;y++)for(let x=J.x0;x<=J.x1;x++){const e=x===J.x0||x===J.x1||y===J.y0||y===J.y1;if(!e||(y===J.y0&&x===J.gx)||!vis(x,y))continue;R.push([y*T+14,()=>{const px=x*T,py=y*T;g.fillStyle='#0003';g.fillRect(px+3,py+13,10,2);g.fillStyle='#5a3d22';if(y===J.y0||y===J.y1){g.fillRect(px,py+6,16,2);g.fillRect(px,py+10,16,2)}else{g.fillRect(px+6,py,4,16)}g.fillStyle='#7a5530';g.fillRect(px+6,py+2,4,12);g.fillStyle='#9a7040';g.fillRect(px+6,py+2,4,2)}])}
+  for(const p of J.pl)if(vis(p.x,p.y))R.push([p.y*T+10,()=>{const px=p.x*T,py=p.y*T,rd=clock>=p.t;g.fillStyle='#3b2a18';g.fillRect(px+2,py+8,12,6);g.fillStyle='#4a3520';g.fillRect(px+3,py+8,10,3);if(rd){g.fillStyle='#3f9a3a';g.fillRect(px+4,py+3,3,6);g.fillRect(px+9,py+4,3,5);g.fillRect(px+7,py+1,2,7);g.fillStyle='#c9a05a';g.fillRect(px+6,py+10,4,3)}else{g.fillStyle='#2e6a2a';g.fillRect(px+7,py+6,2,3)}}])}}
  for(const o of objs)if(vis(o.x,o.y))R.push([o.y*T+16,()=>{const px=o.x*T,py=o.y*T;
   if(o.t==='tree')o.dead?g.drawImage(SPR.stump,px,py):g.drawImage(SPR.tree,px-8,py-24);else if(o.t==='rock')g.drawImage(o.dead?SPR.rockdead:SPR[o.ore],px,py);
   else if(o.t==='gate'){g.fillStyle='#0004';g.fillRect(px-2,py+13,20,3);const gl=.5+.3*Math.sin(clock*3);g.fillStyle='rgba(150,60,255,'+gl*.35+')';g.beginPath();g.arc(px+8,py-2,16,0,6.3);g.fill();g.fillStyle='#4a4650';g.fillRect(px,py-14,4,30);g.fillRect(px+12,py-14,4,30);g.fillRect(px-1,py-18,18,6);g.fillStyle='#2f2c36';g.fillRect(px+1,py-14,1,28);g.fillRect(px+13,py-14,1,28);g.fillStyle='#12081e';g.fillRect(px+4,py-12,8,28);g.fillStyle='hsl(280,85%,'+(45+20*Math.sin(clock*4))+'%)';g.fillRect(px+5,py-10+((clock*14)|0)%20,6,2);g.fillRect(px+6,py-6+((clock*9)|0)%18,4,2);g.fillStyle='#e8e0d0';g.fillRect(px+6,py-17,4,3);g.fillRect(px+7,py-14,2,1)}
@@ -858,7 +864,7 @@ function render(){if(P.inside){drawInside();return}if(insideOn)hideInside();if(s
  for(const n of npcs)if(!n.dead&&vis(n.x,n.y))label(n.n+(n.role==='elder'&&Object.values(P.q).some(q=>q.ok)?' ❗':''),n.x+.5,n.y-.15,FCOL[flagOf(n)]||'#ffd36b');
  for(const gd of guards)if(!gd.dead&&vis(gd.x,gd.y))label(gd.name||'Guard',gd.x,gd.y-1,gd.gob?'#9be36b':'#e8c060');
  const sub=(t,x,y)=>{const [sx,sy]=w2s(x,y);g.font=`italic ${Math.round(8.5*DPR)}px Georgia,serif`;g.lineWidth=2.5*DPR;g.strokeText(t,sx,sy);g.fillStyle='#d8c27a';g.fillText(t,sx,sy);g.font=`bold ${FS}px system-ui,sans-serif`;g.lineWidth=3*DPR};
- netLabels(vis,label);
+ netLabels(vis,label,sub);
  for(const b of bots)if(!b.dead&&vis(b.x,b.y)){label(b.name,b.x,b.y-1,FCOL[flagOf(b)]||'#9fe3ff');const tt=titleOf(b.xp);if(tt)sub('the '+tt,b.x,b.y-1.32)}
  label(P.name,P.x,P.y-1.05,FCOL[flagOf(P)]||'#fff');{const tt=titleOf(P.xp);if(tt)sub('the '+tt,P.x,P.y-1.37)}
  for(const e of E)if(!e.dead&&e.el&&vis(e.x,e.y))label(ELL(e),e.x,e.y-1.2*e.sc,e.el==='shaman'?'#8cf':e.el==='lord'?'#f6f':e.el==='elite'?'#f96':'#fb4');
@@ -880,8 +886,9 @@ function roomOthers(bid){return bid?[...NET.others.values()].filter(o=>o.bd===bi
 function roomPeople(x,bid,me){const L=roomOthers(bid).filter(o=>!(o.rs&&o.bd===bid&&me.house)).map(o=>({y:o.dry,o}));L.push({y:me.y,me:1});L.sort((a,b)=>a.y-b.y);const old=g;g=x;x.textAlign='center';x.font='bold 7px monospace';x.lineWidth=2;x.strokeStyle='#000';
  for(const e of L){if(e.me){playerSpr(Math.round(me.x-8),Math.round(me.y-14),me.dir,me.ph,me.mv);x.fillStyle='#ffe9a0';x.strokeText(P.name,me.x,me.y-17);x.fillText(P.name,me.x,me.y-17);if(NET.mySayT>0&&NET.mySay)roomBubble(x,me.x,me.y-24,NET.mySay);continue}
   const o=e.o;otherSpr(o,Math.round(o.drx-8),Math.round(o.dry-14),o.rm);const fc=flagOf(o);x.fillStyle=fc?FCOL[fc]:'#8dffb0';x.strokeText(o.n,o.drx,o.dry-17);x.fillText(o.n,o.drx,o.dry-17);
-  const ic=o.s===1?'zZ':o.s===2?'oO':ACI[o.ac];if(ic){x.fillStyle='#fff';x.strokeText(ic,o.drx,o.dry-24);x.fillText(ic,o.drx,o.dry-24)}
-  if(o.sayT>0&&o.say)roomBubble(x,o.drx,o.dry-(ic?31:24),o.say)}
+  const ty=o.ti?7:0;if(o.ti){x.font='italic 6px Georgia,serif';x.fillStyle='#d8c27a';x.strokeText('the '+o.ti,o.drx,o.dry-23);x.fillText('the '+o.ti,o.drx,o.dry-23);x.font='bold 7px monospace'}
+  const ic=o.s===1?'zZ':o.s===2?'oO':ACI[o.ac];if(ic){x.fillStyle='#fff';x.strokeText(ic,o.drx,o.dry-24-ty);x.fillText(ic,o.drx,o.dry-24-ty)}
+  if(o.sayT>0&&o.say)roomBubble(x,o.drx,o.dry-(ic?31:24)-ty,o.say)}
  x.textAlign='left';g=old}
 function roomBubble(x,px,py,t){const L=bubbleLines(t);x.fillStyle='#fff';L.forEach((s,i)=>{const yy=py-(L.length-1-i)*8;x.strokeText(s,px,yy);x.fillText(s,px,yy)})}
 function enterShop(b){if(chickenForm()&&b.npc.role!=='inn')return toast('🐔 The shopkeeper shoos the chicken out. "Bawk off!"','#fc6');if(flagOf(P)==='red')return toast('🚫 "We don\'t serve murderers!"','#f66');shopSt={b,bid:bldId(b),x:120,y:136,dir:3,ph:0,tx:null,talk:false,mv:false};P.path=null;P.chase=null;stopAct();goal=null;toast('🚪 '+b.n)}
@@ -1032,7 +1039,7 @@ function aucHtml(){let h=`<div class="tip" style="font-size:13px;opacity:1">💰
  h+=`<h3 style="margin-top:10px">List an item (10 min)</h3><div class="row"><span style="flex:1">Price: ${Math.round(listMul*100)}% of value</span>${bt('alm',0,'Change')}</div>`;
  P.inv.forEach((s,i)=>{if(!isEq(s)&&P.sales.length<5){const p=Math.max(1,Math.round(valOf(s)*s.n*listMul));h+=xrow(s,'alist',s.u,'List '+p+'g')}});return h}
 /* trade table */
-function trSync(){TR.my=0;TR.bot=0;netSend({t:'tu',items:TR.mine.map(i=>{const o={...i};delete o.u;return o}),gold:TR.mg})}
+function trSync(){TR.my=0;TR.bot=0;netSend({t:'tu',items:TR.mine.map(i=>{const o={...i};delete o.u;delete o.src;return o}),gold:TR.mg})}
 function trVal(items,g){return g+items.reduce((a,s)=>a+valOf(s)*s.n,0)}
 function trStart(b){const th=[];for(let i=0;i<ri(1,2);i++){const s={id:pick(AUCPOOL),n:1,u:uid()};rollGear(s,'mob',false);th.push(s)}
  TR={b,mine:[],mg:0,theirs:th,tg:ri(20,200),bot:0,msg:`${b.name} lays out an offer.`}}
@@ -1048,7 +1055,8 @@ function tradeHtml(){let h=hdr('🤝 Trade House')+`<div class="row">${bt('tab',
  h+=`<h3>They offer ${TR.bot?'✅':'⬜'}</h3>`+TR.theirs.map(s=>xrow(s,'',0,'')).join('')+`<div class="row"><span style="flex:1">💰 ${TR.tg}g</span></div>`;
  h+=`<h3 style="margin-top:6px">You offer</h3>`+me.map(s=>xrow(s,'trm',s.u,'Remove')).join('')+`<div class="row"><span style="flex:1">💰 ${TR.mg}g <span class="tip">(have ${P.gold})</span></span>${bt('trg','-100','−100',TR.mg<100)}${bt('trg','100','+100',P.gold-TR.mg<100)}${bt('trg','all','All',P.gold<=TR.mg)}</div>`;
  h+=TR.p2p?`<div class="row">${bt('tra',0,TR.my?'✅ Confirmed – waiting for them…':'✅ Confirm trade',!!TR.my)}${bt('trx',0,'Cancel trade')}</div>`:`<div class="row">${bt('trp',0,'📨 Propose',!me.length&&!TR.mg)}${bt('tra',0,'✅ Accept trade',!TR.bot)}${bt('trx',0,'Leave table')}</div>`;
- h+=`<h3 style="margin-top:6px">Add from backpack</h3>`;P.inv.forEach(s=>{if(!isEq(s)&&!me.includes(s))h+=xrow(s,'tri',s.u,'Offer')});return h}
+ h+=`<h3 style="margin-top:6px">Add from backpack</h3>`;P.inv.forEach((s,i)=>{const sl=ITEMS[s.id].slot;if(sl){if(!isEq(s)&&!me.includes(s))h+=xrow(s,'tri',i,'Offer')}else{const e=me.find(x=>x.src===s),k=e?e.n:0;if(k<s.n)h+=`<div class="row"><span style="font-size:22px">${ITEMS[s.id].e}</span><div style="flex:1;color:${RARC[s.rar|0]}">${nameOf(s)} ×${s.n-k}${k?'<div class="tip">offering '+k+'</div>':''}</div>${bt('trs',i+':1','+1')}${bt('trs',i+':a','All')}</div>`}});return h}
+function trTake(){for(const e of TR.mine){if(e.src){const s=e.src;s.n-=e.n;const i=P.inv.indexOf(s);if(s.n<=0&&i>=0)P.inv.splice(i,1)}else{const i=P.inv.indexOf(e);if(i>=0)P.inv.splice(i,1)}}}
 function xAct(a,v){
  if(a==='bg'){const b=P.bank;let n=0;if(v==='d100')n=Math.min(100,P.gold);else if(v==='dall')n=P.gold;else if(v==='w100')n=-Math.min(100,b.gold);else n=-b.gold;P.gold-=n;b.gold+=n;sfx('pick');return true}
  if(a==='bdep'){const s=P.inv[v],b=P.bank;if(!s||isEq(s))return true;if(ITEMS[s.id].slot){if(b.items.length>=60)return toast('Vault full','#f66'),true;b.items.push(s)}else{const t=b.items.find(i=>i.id===s.id&&!ITEMS[i.id].slot);if(t)t.n+=s.n;else{if(b.items.length>=60)return toast('Vault full','#f66'),true;b.items.push(s)}}P.inv.splice(v,1);sfx('pick');return true}
@@ -1064,13 +1072,14 @@ function xAct(a,v){
  if(a==='trq'){netSend({t:'tq',to:+v});toast('📨 Trade offer sent');return true}
  if(a==='trA'){netSend({t:'ta',to:+v});NET.treq=null;return true}
  if(a==='trD'){NET.treq=null;return true}
- if(a==='tri'){const s=P.inv.find(x=>x.u==v);if(s&&TR&&!TR.mine.includes(s)){TR.mine.push(s);TR.bot=0;if(TR.p2p)trSync()}return true}
+ if(a==='trs'&&TR){const [i,q]=String(v).split(':'),s=P.inv[+i];if(!s||ITEMS[s.id].slot)return true;let e=TR.mine.find(x=>x.src===s);if(!e){e={id:s.id,n:0,u:uid(),src:s};if(s.rar)e.rar=s.rar;TR.mine.push(e)}e.n=q==='a'?s.n:Math.min(s.n,e.n+1);TR.bot=0;if(TR.p2p)trSync();return true}
+ if(a==='tri'){const s=P.inv[+v];if(s&&TR&&!TR.mine.includes(s)){TR.mine.push(s);TR.bot=0;if(TR.p2p)trSync()}return true}
  if(a==='trm'){TR.mine=TR.mine.filter(x=>x.u!=v);TR.bot=0;if(TR.p2p)trSync();return true}
  if(a==='trg'){TR.mg=v==='all'?P.gold:clamp(TR.mg+(+v),0,P.gold);TR.bot=0;if(TR.p2p)trSync();return true}
  if(a==='trp'){const m=trVal(TR.mine,TR.mg),t=trVal(TR.theirs,TR.tg),r=m/Math.max(1,t);if(r>=1){TR.bot=1;TR.msg='"Deal! Press Accept."'}else if(r>=.8){TR.bot=0;TR.msg=`"Add about ${Math.ceil(t*.98-m)}g more and we have a deal."`}else{TR.bot=0;TR.msg='"Not even close."'}return true}
- if(a==='tra'&&TR&&TR.p2p){if(TR.my)return true;const sp=P.inv.length-TR.mine.length+TR.theirs.length;if(sp>24)return toast('Not enough bag space','#f66'),true;if(TR.mg>P.gold)return toast('Not enough gold','#f66'),true;TR.my=1;netSend({t:'tk'});return true}
- if(a==='tra'){if(!TR.bot)return true;const sp=P.inv.length-TR.mine.length+TR.theirs.length;if(sp>24)return toast('Not enough bag space','#f66'),true;
-  for(const s of TR.mine){const i=P.inv.indexOf(s);if(i>=0)P.inv.splice(i,1)}P.gold-=TR.mg;TR.b.gold+=TR.mg;TR.b.gold=Math.max(0,TR.b.gold-TR.tg);P.gold+=TR.tg;for(const s of TR.theirs)giveItem(s);
+ if(a==='tra'&&TR&&TR.p2p){if(TR.my)return true;const sp=P.inv.length+TR.theirs.length-TR.mine.filter(e=>!e.src||e.n>=e.src.n).length;if(sp>24)return toast('Not enough bag space','#f66'),true;if(TR.mg>P.gold)return toast('Not enough gold','#f66'),true;TR.my=1;netSend({t:'tk'});return true}
+ if(a==='tra'){if(!TR.bot)return true;const sp=P.inv.length+TR.theirs.length-TR.mine.filter(e=>!e.src||e.n>=e.src.n).length;if(sp>24)return toast('Not enough bag space','#f66'),true;
+  trTake();P.gold-=TR.mg;TR.b.gold+=TR.mg;TR.b.gold=Math.max(0,TR.b.gold-TR.tg);P.gold+=TR.tg;for(const s of TR.theirs)giveItem(s);
   sys('🤝 Trade complete with '+TR.b.name+'!','#9fe3ff');sfx('lvl');TR=null;return true}
  return false}
 /* ---------- dungeon ---------- */
@@ -1183,7 +1192,7 @@ function drawPortal(p){const px=p.x*T,py=p.y*T,o=PT.open,tt=clock;g.fillStyle='#
   g.fillStyle='#d9a8ff';g.fillRect(px+7,py-30,2,2);if(Math.random()<.15)parts.push({x:p.x+.5,y:p.y-1.4,vx:rnd(-.4,.4),vy:rnd(-1.2,-.4),life:rnd(.5,1),c:'#c9f',sz:1})}
  else{g.fillStyle='#55525c';g.fillRect(px+3,py-20,2,6);g.fillRect(px+9,py-12,3,2)}}
 /* ---------- online layer (accounts, cloud save, other players, chat) ---------- */
-const NET={gnd:new Map(),gpend:new Map(),on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'0.4.0',board:[],lastSave:0,reg:false,tpT:0};
+const NET={gnd:new Map(),gpend:new Map(),on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'0.5.0',board:[],lastSave:0,reg:false,tpT:0};
 async function netProbe(){try{const r=await fetch('/api/ping',{cache:'no-store'});const j=await r.json();if(j&&j.ok){NET.on=true;NET.ver=j.version;authUi();}}catch(e){}}
 function authUi(){$('#pw').style.display='block';$('#regt').style.display='block';$('#nm').placeholder='Username';$('#nm').maxLength=16;$('#nm').value=localStorage.getItem('emberfall.user')||'';$('#go').textContent='Log in';}
 function authMsg(t){$('#authmsg').textContent=t||''}
@@ -1197,8 +1206,8 @@ function netSave(force){if(!NET.on||!NET.tok||!P)return;const n=Date.now();if(!f
 function netFlush(){try{if(NET.on&&NET.tok&&P){netSave(true)}}catch(e){}}
 addEventListener('pagehide',netFlush);addEventListener('beforeunload',netFlush);document.addEventListener('visibilitychange',()=>{if(document.hidden)netFlush()});
 function netConnect(){if(!NET.on||!NET.tok)return;const w=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws?token='+encodeURIComponent(NET.tok));NET.ws=w;w.binaryType='arraybuffer';NET.rx=0;
- $('#chatin').style.display='block';w.onmessage=ev=>{if(typeof ev.data!=='string'){NET.rx+=ev.data.byteLength;return netBin(ev.data)}NET.rx+=ev.data.length;let m;try{m=JSON.parse(ev.data)}catch{return}
-  if(m.t==='players'){NET.online=m.online;const seen=new Set();for(const p of m.l){seen.add(p.id);let o=NET.others.get(p.id);if(!o){o={id:p.id,x:p.x,y:p.y,remote:true,act:true,xp:{},gold:0};NET.others.set(p.id,o)}Object.assign(o,{bd:p.bd||0,rx:p.rx||0,ry:p.ry||0,rdir:p.rd|0,rm:p.rm|0,rs:p.rs|0,ac:p.a||'',name:p.n,lk:p.l||{},s:p.s|0,mhp:p.mh||20,flag:p.f||null,fT:p.f?clock+3:0,n:p.n,tx:p.x,ty:p.y,dir:p.d,eq:p.e,hp:p.h,ch:p.c,col:p.k||'#8fd',seen:clock})}
+ $('#chatin').style.display='block';w.onmessage=ev=>{if(typeof ev.data!=='string'){NET.rx+=ev.data.byteLength;return netBin(ev.data)}NET.rx+=ev.data.length;let m;try{m=JSON.parse(ev.data)}catch{return}if(pNet(m))return;
+  if(m.t==='players'){NET.online=m.online;const seen=new Set();for(const p of m.l){seen.add(p.id);let o=NET.others.get(p.id);if(!o){o={id:p.id,x:p.x,y:p.y,remote:true,act:true,xp:{},gold:0};NET.others.set(p.id,o)}Object.assign(o,{ti:p.ti||'',bd:p.bd||0,rx:p.rx||0,ry:p.ry||0,rdir:p.rd|0,rm:p.rm|0,rs:p.rs|0,ac:p.a||'',name:p.n,lk:p.l||{},s:p.s|0,mhp:p.mh||20,flag:p.f||null,fT:p.f?clock+3:0,n:p.n,tx:p.x,ty:p.y,dir:p.d,eq:p.e,hp:p.h,ch:p.c,col:p.k||'#8fd',seen:clock})}
    for(const id of [...NET.others.keys()])if(!seen.has(id))NET.others.delete(id)}
   else if(m.t==='m')netSnap(m);
   else if(m.t==='pong'){NET.ping=Math.round(performance.now()-m.c);NET.ld=m.ld;NET.q=m.q;netPingUi()}
@@ -1217,18 +1226,18 @@ function netConnect(){if(!NET.on||!NET.tok)return;const w=new WebSocket((locatio
   else if(m.t==='ts'){TR={p2p:1,who:m.who,name:m.n,mine:[],mg:0,theirs:[],tg:0,bot:0,my:0,msg:'Offer items and gold, then confirm.'};thTab='tbl';NET.treq=null;sys('🤝 Trading with '+m.n,'#9fe3ff');if(panelKind==='trade')renderPanel()}
   else if(m.t==='tu'&&TR&&TR.p2p){TR.theirs=m.items.map(i=>({...i,u:uid()}));TR.tg=m.gold|0;TR.bot=0;TR.my=0;if(panelKind==='trade')renderPanel()}
   else if(m.t==='tk'&&TR&&TR.p2p){TR.bot=1;if(panelKind==='trade')renderPanel()}
-  else if(m.t==='td'&&TR&&TR.p2p){for(const s of TR.mine){const i=P.inv.indexOf(s);if(i>=0)P.inv.splice(i,1)}P.gold-=TR.mg;P.gold+=m.gold|0;for(const i of m.items)giveItem({...i,u:uid(),n:i.n||1});sys('🤝 Trade complete with '+TR.name+'!','#9fe3ff');sfx('lvl');TR=null;netSave(true);if(panelKind==='trade')renderPanel()}
+  else if(m.t==='td'&&TR&&TR.p2p){trTake();P.gold-=TR.mg;P.gold+=m.gold|0;for(const i of m.items)giveItem({...i,u:uid(),n:i.n||1});sys('🤝 Trade complete with '+TR.name+'!','#9fe3ff');sfx('lvl');TR=null;netSave(true);if(panelKind==='trade')renderPanel()}
   else if(m.t==='tx'){if(TR&&TR.p2p){TR=null;sys('🤝 Trade '+(m.why==='left'?'cancelled – they left':'cancelled'),'#fc6');if(panelKind==='trade')renderPanel()}}
-  else if(m.t==='chat'){sys('💬 '+m.n+': '+m.m,'#cfe8ff');if(m.id===NET.id){NET.mySay=m.m;NET.mySayT=7}else{const o=NET.others.get(m.id);if(o){o.say=m.m;o.sayT=7}}}else if(m.t==='sys')sys('· '+m.m,'#8aa');
+  else if(m.t==='chat'){sys('💬 '+m.n+': '+m.m,'#cfe8ff');if(m.id===NET.id){NET.mySay=m.m;NET.mySayT=7}else{const o=NET.others.get(m.id);if(o){o.say=m.m;o.sayT=7}}}else if(m.t==='sys')sys('· '+m.m,m.c||'#8aa');
   else if(m.t==='snap'){P.x=m.x;P.y=m.y;P.path=null;sys('⚠ Movement corrected by server','#fc6')}
   else if(m.t==='hello'){sys('🌐 Connected · '+m.online+' online','#9fe3ff');NET.id=m.id;NET.gnd=new Map((m.gnd||[]).map(d=>[d.id,d]));if(m.world){NET.sim=true;NET.em=new Map();E.length=0;boss=null;bots.length=0;roosterT=bossTimer=1e9;m.world.pts.forEach((q,i)=>{if(PTS[i]){PTS[i].x=q[0];PTS[i].y=q[1]}});sys('⚔ Shared world active','#9fe3ff')}}};
- w.onclose=ev=>{NET.ws=null;NET.sim=false;NET.ping=null;netPingUi();if(ev.code===4000)sys('⚠ Logged in from another place','#f66');else setTimeout(netConnect,3000)}}
-setInterval(()=>{const w=NET.ws;if(!w||w.readyState!==1||!P||P.dead&&0)return;const tp=NET.lx!=null&&Math.hypot(P.x-NET.lx,P.y-NET.ly)>5;NET.lx=P.x;NET.ly=P.y;w.send(JSON.stringify({t:'pos',x:+P.x.toFixed(2),y:+P.y.toFixed(2),dir:P.dir|0,eq:armLv(eqId('a')),hp:Math.ceil(P.hp),ch:!!P.chicken,col:ARMC[armLv(eqId('a'))],tp,lk:netLook(),bz:shopSt?1:0,ac:NET.ac||'',bd:netBid(),rx:shopSt?shopSt.x:0,ry:shopSt?shopSt.y:0,rd:shopSt?shopSt.dir:0,rm:shopSt&&shopSt.mv?1:0,rs:P.inside?1:0,mhp:maxHp(),dead:P.dead>0,inside:!!P.inside,f:flagOf(P),xp:P.xp}))},200);
+ w.onclose=ev=>{NET.ws=null;NET.sim=false;NET.ping=null;netPingUi();if(ev.code===4000)sys('⚠ Logged in from another place','#f66');else setTimeout(netConnect,NET.kicked>Date.now()?NET.kicked-Date.now():3000)}}
+setInterval(()=>{const w=NET.ws;if(!w||w.readyState!==1||!P||P.dead&&0)return;const tp=NET.lx!=null&&Math.hypot(P.x-NET.lx,P.y-NET.ly)>5;NET.lx=P.x;NET.ly=P.y;w.send(JSON.stringify({t:'pos',x:+P.x.toFixed(2),y:+P.y.toFixed(2),dir:P.dir|0,eq:armLv(eqId('a')),hp:Math.ceil(P.hp),ch:!!P.chicken,col:ARMC[armLv(eqId('a'))],tp,lk:netLook(),bz:shopSt?1:0,ac:NET.ac||'',bd:netBid(),rx:shopSt?shopSt.x:0,ry:shopSt?shopSt.y:0,rd:shopSt?shopSt.dir:0,rm:shopSt&&shopSt.mv?1:0,rs:P.inside?1:0,ti:titleOf(P.xp)||'',mhp:maxHp(),dead:P.dead>0,inside:!!P.inside,f:flagOf(P),xp:P.xp}))},200);
 $('#chatin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){netSay(e.target.value);e.target.value='';e.target.blur()}});['keyup','keypress'].forEach(t=>$('#chatin').addEventListener(t,e=>e.stopPropagation()));
 function bldId(b){return b?b.x*1000+b.y:0}
 function netBid(){return shopSt?shopSt.bid:P.inside?bldId(houses[P.inside]):0}
 function netLook(){const t=eqTint();return{w:eqId('w')||null,tw:t.tw||null,ta:t.ta||null,a:armLv(eqId('a')),h:eqTier('h'),b:eqTier('b')}}
-function netPingUi(){const e=$('#ping');if(!e)return;if(NET.ping==null){e.style.display='none';return}e.style.display='block';const n=performance.now(),kb=NET.rt?((NET.rx-NET.rb)/1024/((n-NET.rt)/1000)):0;NET.rt=n;NET.rb=NET.rx;e.textContent='ping '+NET.ping+' ms'+(NET.ping>250?' ⚠ LAG':'')+'  srv '+(NET.ld??'?')+'ms  ↓'+kb.toFixed(1)+'KB/s'+(NET.q>16384?'  q'+Math.round(NET.q/1024)+'K':'')}
+function netPingUi(){const e=$('#ping');if(!e)return;if(NET.ping==null){e.style.display='none';return}e.style.display='block';const n=performance.now(),kb=NET.rt?((NET.rx-NET.rb)/1024/((n-NET.rt)/1000)):0;NET.rt=n;NET.rb=NET.rx;e.textContent='ping '+NET.ping+' ms'+(NET.ping>250?' ⚠ LAG':'')+'  srv '+(NET.ld??'?')+'ms  ↓'+kb.toFixed(1)+'KB/s'+(NET.q>16384?'  q'+Math.round(NET.q/1024)+'K':'')+(typeof jailUi==='function'?jailUi():'')+(NET.sim?'  🌀 '+(PT.open?'open':'closed '+Math.max(0,Math.ceil((PT.reopen-clock)/60))+'m'):'')}
 setInterval(()=>{const w=NET.ws;if(w&&w.readyState===1)w.send(JSON.stringify({t:'ping',c:performance.now()}))},2000);
 const netSend=o=>{const w=NET.ws;if(w&&w.readyState===1)w.send(JSON.stringify(o))};
 function netHit(e,d){if(e.id)netSend({t:'hit',id:e.id,d:Math.round(d)})}
@@ -1252,14 +1261,14 @@ function netSnap(m){const em=NET.em;if(!em)return;
  PT.open=!!m.pt[0];PT.reopen=clock+m.pt[1]}
 function netKill(l){for(const k of l){const e=NET.em&&NET.em.get(k.id);if(!e)continue;if(k.by===NET.id||(e.t==='wyrm'&&(P.bossDmg||0)>=40)){e.dead=0;try{meleeT=clock;killEnemy(e)}catch(x){}}if(e.t==='wyrm')P.bossDmg=0;e.dead=clock+1e9}}
 function netMobs(dt){const k=Math.min(1,dt*12);for(const e of E){if(e.dead)continue;e.tx+=(e.vx||0)*dt;e.ty+=(e.vy||0)*dt;const dx=e.tx-e.x,dy=e.ty-e.y;e.mv=Math.abs(dx)+Math.abs(dy)>.03;e.x+=dx*k;e.y+=dy*k;if(e.flash>0)e.flash-=dt;if(e.sw>0)e.sw-=dt}}
-function netSay(t){t=t.trim();if(t&&NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify({t:'chat',m:t}))}
-function netStep(dt){if(P&&NET.sim&&!P.dead&&!shopSt&&!P.inside&&NET.gnd.size){NET.gT=(NET.gT||0)-dt;if(NET.gT<=0){NET.gT=.4;for(const d of NET.gnd.values()){if((NET.gpend.get(d.id)||0)>clock||Math.hypot(d.x-P.x,d.y-P.y)>1.2)continue;const it=ITEMS[d.it.id];if(!it)continue;if(P.inv.length>=24&&(it.slot||!P.inv.some(x=>x.id===d.it.id)))continue;NET.gpend.set(d.id,clock+2);netSend({t:'gt',id:d.id});break}}}
+function netSay(t){t=t.trim();if(/^\/p\s/i.test(t)){if(NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify({t:'pyc',m:t.slice(3)}));return}if(t&&NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify({t:'chat',m:t}))}
+function netStep(dt){if(typeof jailTick==='function')jailTick(dt);if(P&&NET.sim&&!P.dead&&!shopSt&&!P.inside&&NET.gnd.size){NET.gT=(NET.gT||0)-dt;if(NET.gT<=0){NET.gT=.4;for(const d of NET.gnd.values()){if((NET.gpend.get(d.id)||0)>clock||Math.hypot(d.x-P.x,d.y-P.y)>1.2)continue;const it=ITEMS[d.it.id];if(!it)continue;if(P.inv.length>=24&&(it.slot||!P.inv.some(x=>x.id===d.it.id)))continue;NET.gpend.set(d.id,clock+2);netSend({t:'gt',id:d.id});break}}}
 if(P){const mv=NET.sx==null||Math.hypot(P.x-NET.sx,P.y-NET.sy)>.05||P.swing>0||CD.bolt>CDM.bolt-.2;NET.sx=P.x;NET.sy=P.y;if(mv)NET.idle=0;else NET.idle=(NET.idle||0)+dt;NET.mySayT=(NET.mySayT||0)-dt;NET.self=shopSt?2:NET.idle>30?1:0;NET.ac=(typeof act!=='undefined'&&act)?act.kind:(NET.acT>clock?NET.acK:'');if(NET.ac)NET.idle=0}for(const o of NET.others.values()){const k=Math.min(1,dt*10),dx=o.tx-o.x,dy=o.ty-o.y;o.mv=Math.abs(dx)+Math.abs(dy)>.05;o.swing=(o.swing||0)-dt;o.sayT=(o.sayT||0)-dt;if(o.bd){const k2=Math.min(1,dt*12);o.drx=(o.drx==null?o.rx:o.drx+(o.rx-o.drx)*k2);o.dry=(o.dry==null?o.ry:o.dry+(o.ry-o.dry)*k2);o.rph=(o.rph||0)+(o.rm?dt*9:0)}else{o.drx=null}o.x+=dx*k;o.y+=dy*k;o.ph=(o.ph||0)+dt*8}}
 function netDraw(R,vis){for(const d of NET.gnd.values())if(vis(d.x,d.y))R.push([d.y*T+6,()=>{const it=ITEMS[d.it.id];if(!it)return;g.fillStyle='#0005';g.fillRect(d.x*T-5,d.y*T+1,10,3);g.save();g.font='11px sans-serif';g.textAlign='center';g.fillText(it.e,d.x*T,d.y*T-1+Math.sin(clock*3+d.id)*1.5);g.restore()}]);
 for(const o of NET.others.values())if(!o.bd&&vis(o.x,o.y))R.push([o.y*T,()=>{drawChar(Math.round(o.x*T-8),Math.round(o.y*T-14),o.dir,o.ph||0,(o.lk&&o.lk.ta)?shade(o.lk.ta,.7):o.col,'#432',{moving:o.mv,wid:(o.lk||{}).w,tw:(o.lk||{}).tw,ta:(o.lk||{}).ta,arm:(o.lk||{}).a,helm:(o.lk||{}).h,boots:(o.lk||{}).b,chick:o.ch,sp:o.swing>0?1-o.swing/.25:-1})}])}
-const ACI={chop:'🪓',mine:'⛏️',fish:'🎣',cook:'🍳',bush:'🌿',fight:'⚔️',cast:'🔮',heal:'💚',shield:'🛡️',haste:'💨'};
+const ACI={chop:'🪓',mine:'⛏️',fish:'🎣',cook:'🍳',bush:'🌿',fight:'⚔️',cast:'🔮',heal:'💚',shield:'🛡️',haste:'💨',pot:'🥔'};
 function bubbleLines(t){t=String(t||'').slice(0,44);return t.length>22?[t.slice(0,22),t.slice(22)]:[t]}
-function netLabels(vis,label){for(const o of NET.others.values())if(!o.bd&&vis(o.x,o.y)){const fc=flagOf(o);label(o.n,o.x,o.y-1,fc?FCOL[fc]:'#8dffb0');const ic=o.s===1?'zZ':o.s===2?'oO':ACI[o.ac];if(ic)label(ic,o.x,o.y-1.4,o.s===1?'#9cf':'#fff');
+function netLabels(vis,label,sub){for(const o of NET.others.values())if(!o.bd&&vis(o.x,o.y)){const fc=flagOf(o);label(o.n,o.x,o.y-1,fc?FCOL[fc]:'#8dffb0');if(o.ti&&sub)sub('the '+o.ti,o.x,o.y-1.32);const ic=o.s===1?'zZ':o.s===2?'oO':ACI[o.ac];if(ic)label(ic,o.x,o.y-(o.ti?1.7:1.4),o.s===1?'#9cf':'#fff');
   if(o.sayT>0&&o.say){const L=bubbleLines(o.say);L.forEach((t,i)=>label(t,o.x,o.y-1.8-(L.length-1-i)*.32,'#fff'))}}
  if(P&&!P.dead){const s=NET.self|0,ic=s===1?'zZ':s===2?'oO':ACI[NET.ac];if(ic)label(ic,P.x,P.y-1.4,s===1?'#9cf':'#fff');if(NET.mySayT>0&&NET.mySay){const L=bubbleLines(NET.mySay);L.forEach((t,i)=>label(t,P.x,P.y-1.8-(L.length-1-i)*.32,'#fff'))}}}
 async function netBoard(){try{const r=await fetch('/api/board');NET.board=await r.json();if(panelKind==='board')renderPanel()}catch(e){}}
@@ -1311,6 +1320,52 @@ function sAct(a,v){bookInit();const b=P.book;
  if(a==='wsell'){if(WBUY.has(v)&&count(v)>0){P.gold+=Math.round(ITEMS[v].v*1.4);take(v);sfx('pick')}return true}
  if(a==='wsellall'){if(WBUY.has(v)){const n=count(v);P.gold+=Math.round(ITEMS[v].v*1.4)*n;take(v,n);sfx('pick')}return true}
  return false}
+/* ---------- v0.5: parties, admin tools, jail ---------- */
+NET.party=null;NET.pinv=null;NET.adm=0;NET.jail=null;NET.ph=new Map();NET.adl=[];NET.kicked=0;
+function pNet(m){const t=m.t;
+ if(t==='hello'){NET.adm=m.adm|0;return false}
+ if(t==='warp'){tele(m.x,m.y);cam.x=m.x;cam.y=m.y;if(shopSt)shopSt=null;return true}
+ if(t==='jl'){const first=!NET.jail;NET.jail={left:m.left,total:m.total,reason:m.reason};if(first)sys('🔒 You are in jail ('+m.reason+'). Dig '+m.left+' potatoes 🥔 to get out!','#fc6');return true}
+ if(t==='jr'){NET.jail=null;sys('🔓 You are free! '+(m.why==='admin'?'(released by an admin)':'Sentence served.'),'#9fe3ff');return true}
+ if(t==='kick'){NET.kicked=Date.now()+300000;sys('⛔ You were kicked by an admin','#f66');return true}
+ if(t==='pys'){NET.party=m.id?{id:m.id,lead:m.lead,m:m.m}:null;if(!m.id)NET.ph.clear();if(panelKind==='party')renderPanel();return true}
+ if(t==='pyi'){NET.pinv={from:m.from,n:m.n,exp:Date.now()+30000};sys('👥 '+m.n+' invites you to a party — open 👥 to accept','#b9f');toast('👥 Party invite from '+m.n,'#b9f');if(panelKind==='party')renderPanel();return true}
+ if(t==='pyc'){sys('👥 '+m.n+': '+m.m,'#b9f');return true}
+ if(t==='pyh'){NET.ph=new Map(m.h.map(h=>[h[0],h]));if(panelKind==='party')renderPanel();return true}
+ if(t==='adl'){NET.adl=m.l;if(panelKind==='admin')renderPanel();return true}
+ return false}
+function partyHtml(){let h=hdr('👥 Party');const py=NET.party;
+ if(NET.pinv&&NET.pinv.exp<Date.now())NET.pinv=null;
+ if(NET.pinv)h+=`<div class="tip" style="font-size:13px;opacity:1">📨 <b>${NET.pinv.n}</b> invites you to a party.</div><div class="row">${bt('pya',0,'✅ Accept')}${bt('pyd',0,'Decline')}</div>`;
+ if(!NET.ws)return h+'<div class="tip">Go online to use parties.</div>';
+ if(py){h+=`<div class="tip" style="font-size:13px;opacity:1">Up to 5 members · no PvP between members · type <b>/p text</b> to chat · warp to a member every 60s (not in combat, dungeon, jail or buildings).</div>`;
+  for(const m of py.m){const i=NET.ph.get(m.id),hp=i?i[1]:0,mh=i?i[2]:0,me=m.id===NET.id;h+=`<div class="row"><div style="flex:1;color:${me?'#ffe9a0':'#8dffb0'}">${m.id===py.lead?'★ ':''}${m.n}${me?' (you)':''}<div style="height:5px;background:#300;border-radius:3px;margin-top:3px"><div style="height:5px;width:${mh?Math.max(0,Math.min(100,hp/mh*100)):0}%;background:#e44;border-radius:3px"></div></div></div>${me?'':bt('pyw',m.id,'✨ Warp')}${py.lead===NET.id&&!me?bt('pyk',m.id,'Kick'):''}</div>`}
+  h+=`<div class="row">${bt('pyl',0,'Leave party')}</div>`}
+ else h+=`<div class="tip" style="font-size:13px;opacity:1">You are not in a party. Invite a nearby player:</div>`;
+ if(!py||py.lead===NET.id&&py.m.length<5){const ids=new Set(py?py.m.map(m=>m.id):[]);const near=[...NET.others.values()].filter(o=>!ids.has(o.id));if(!near.length)h+='<div class="tip">Nobody nearby to invite.</div>';for(const o of near)h+=`<div class="row"><span style="flex:1;color:#8dffb0">● ${o.n}</span>${bt('pyi',o.id,'Invite')}</div>`}
+ return h}
+function adminHtml(){let h=hdr('🛠 Admin · '+NET.adl.length+' online');h+=`<div class="row">${bt('adr',0,'↻ Refresh')}</div>`;
+ for(const p of NET.adl){const me=p.id===NET.id;h+=`<div class="row" style="flex-wrap:wrap"><div style="flex:1;min-width:120px;color:${p.j?'#fc6':'#8dffb0'}">${p.n}${me?' (you)':''}${p.j?' 🔒'+p.j:''}<div class="tip">${p.x},${p.y}</div></div>${me?'':bt('adtp',p.id,'→ TP')+bt('adbring',p.id,'Bring')+bt('adjail',p.id,'Jail 25')+bt('adj50',p.id,'Jail 50')+(p.j?bt('adun',p.id,'Unjail'):'')+bt('adkick',p.id,'Kick')}</div>`}
+ return h}
+function pAct(a,v){
+ if(a==='pyi'){netSend({t:'pyi',to:+v});return true}
+ if(a==='pya'){netSend({t:'pya'});NET.pinv=null;return true}
+ if(a==='pyd'){netSend({t:'pyd'});NET.pinv=null;return true}
+ if(a==='pyl'){netSend({t:'pyl'});return true}
+ if(a==='pyk'){netSend({t:'pyk',to:+v});return true}
+ if(a==='pyw'){netSend({t:'pyw',to:+v});closePanel();return true}
+ if(a==='adr'){netSend({t:'adm',c:'list'});return true}
+ const A={adtp:['tp'],adbring:['bring'],adjail:['jail',25],adj50:['jail',50],adun:['unjail'],adkick:['kick']}[a];
+ if(A){netSend({t:'adm',c:A[0],to:+v,n:A[1],r:'admin order'});setTimeout(()=>netSend({t:'adm',c:'list'}),500);if(a==='adtp')closePanel();return true}
+ return false}
+/* jail: dig potatoes while standing next to a ready plant */
+function jailTick(dt){const j=NET.jail;if(!j||!P||P.dead)return;
+ if(input.x||input.y||P.path){JAIL.dig=0;return}
+ let best=null,bd=1.5;for(const p of JAIL.pl){if(clock<p.t)continue;const d=Math.hypot(p.x+.5-P.x,p.y+.5-P.y);if(d<bd){bd=d;best=p}}
+ if(!best){JAIL.dig=0;return}
+ JAIL.dig=(JAIL.dig||0)+dt;NET.acK='pot';NET.acT=clock+.3;
+ if(JAIL.dig>=1.1){JAIL.dig=0;best.t=clock+8;j.left=Math.max(0,j.left-1);fl(best.x+.5,best.y,'+🥔 '+j.left+' left','#fc6');sfx('pick');netSend({t:'jd'})}}
+function jailUi(){const j=NET.jail;return j?'  🔒 '+j.left+'🥔 left':''}
 /* ---------- UI panels ---------- */
 const pn=$('#panel');let panelKind=null,sel=-1,npcCur=null;
 function openPanel(k,ref){panelKind=k;if(ref)npcCur=ref;sel=-1;pn.style.display='block';renderPanel()}
@@ -1326,7 +1381,7 @@ function openNpc(n){if(n.dead)return;if(flagOf(P)==='red')return toast('🚫 "We
 function activeQuest(){return QUESTS.find(q=>P.q[q.id])}
 function nextQuest(){return QUESTS.find(q=>!P.done[q.id]&&!P.q[q.id])}
 function renderPanel(){let h='';const k=panelKind;pn.className=k==='bag'?'bag':'';
- if(k==='book'){h=bookHtml()}else if(k==='mage'){h=mageHtml(false)}else if(k==='witch'){h=mageHtml(true)}else if(k==='skills'){const tot=SK.reduce((s,x)=>s+lv(x[0]),0);h=hdr('📜 Skills · total '+tot);
+ if(k==='book'){h=bookHtml()}else if(k==='mage'){h=mageHtml(false)}else if(k==='witch'){h=mageHtml(true)}else if(k==='party'){h=partyHtml()}else if(k==='admin'){h=adminHtml()}else if(k==='skills'){const tot=SK.reduce((s,x)=>s+lv(x[0]),0);h=hdr('📜 Skills · total '+tot);
   for(const [id,n,e,tip] of SK){const l=lv(id),a=xpAt(l),b=xpAt(l+1),p=l>=99?1:(P.xp[id]-a)/(b-a);h+=`<div class="row"><span class="nm">${e} ${n}</span><span class="lv">${l}</span><div class="b"><i style="width:${p*100}%"></i></div></div><div class="tip" style="margin:-3px 0 4px 100px;opacity:.55">${tip}</div>`}
   h+=`<div class="tip" style="opacity:1">🏷️ Title: <b style="color:#d8c27a">${titleOf(P.xp)?'the '+titleOf(P.xp):'Novice (reach level 10 in a skill)'}</b><br>🎨 Gear color shifts every 10 levels: ⚔️ sword = Melee · 🪄 staff = Magic · 🛡️ armor = Defense</div>`;
   const q=activeQuest();h+=`<div class="tip">❤️ ${Math.ceil(P.hp)}/${maxHp()} · ⚡ ${Math.ceil(P.st)}/${maxSt()} · 🔮 ${Math.floor(P.mp)}/${maxMp()} · 💰 ${P.gold}<br>Kills ${P.kills} · Status ${flagOf(P)?flagOf(P).toUpperCase():'lawful'} · Played ${Math.floor(P.play/60)}m${q?`<br>📜 ${q.t}: ${P.q[q.id].ok?'Done – return to Elder!':P.q[q.id].n+'/'+q.n+' · '+q.d}`:''}</div>`}
@@ -1356,7 +1411,7 @@ function renderPanel(){let h='';const k=panelKind;pn.className=k==='bag'?'bag':'
  pn.innerHTML=h;if(k==='bag')drawDoll();drawBanner(k)}
 function drawDoll(){const c=$('#doll');if(!c)return;const x=c.getContext('2d');x.imageSmoothingEnabled=false;const old=g;g=x;x.setTransform(8,0,0,8,0,0);x.clearRect(0,0,16,16);drawChar(0,0,0,0,(eqTint().ta?shade(eqTint().ta,.7):ARMC[armLv(eqId('a'))]),'#3a2a1a',{wid:eqId('w'),tw:eqTint().tw,ta:eqTint().ta,arm:armLv(eqId('a')),helm:eqTier('h'),boots:eqTier('b')});g=old}
 pn.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,v=b.dataset.v;
- if(a==='close')return closePanel();if(xAct(a,v)||sAct(a,v)){renderPanel();return}if(a==='sel'){sel=+v;return renderPanel()}
+ if(a==='close')return closePanel();if(xAct(a,v)||sAct(a,v)||pAct(a,v)){renderPanel();return}if(a==='sel'){sel=+v;return renderPanel()}
  if(a==='unq'){P.eq[v]=null}else if(a==='equip'){const s=P.inv[v],it=ITEMS[s.id];if(P.eq[it.slot]===s.u)P.eq[it.slot]=null;else if(it.req&&lv(it.req[0])<it.req[1])toast(`Need ${it.req[0]} ${it.req[1]}`,'#f66');else{P.eq[it.slot]=s.u;sfx('pick')}}
  else if(a==='use'){const id=P.inv[v].id,it=ITEMS[id];if(it.shroom){take(id);sel=-1;closePanel();return eatShroom()}if(it.heal){if(P.hp>=maxHp())return;P.hp=Math.min(maxHp(),P.hp+it.heal);gainXp('vitality',it.heal*.25)}else{P.mp=Math.min(maxMp(),P.mp+it.mana)}take(id);sfx('heal');sel=-1}
  else if(a==='drop'){P.inv.splice(v,1);sel=-1}
@@ -1371,7 +1426,7 @@ pn.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)retur
  else if(a==='turnin'){const q=QUESTS.find(q=>q.id===v);P.gold+=q.g;gainXp(q.xp[0],q.xp[1]);P.done[v]=1;delete P.q[v];sfx('lvl');toast('Quest complete! +'+q.g+'g')}
  else if(a==='hvisit'){closePanel();enterGuest(houses[+v]);return}else if(a==='hrent')rentHouse(npcCur,+v);else if(a==='henter')return enterHouse(npcCur);
  renderPanel()});
-$('#bSk').onpointerdown=()=>panelKind==='skills'?closePanel():openPanel('skills');{const bb=document.createElement('div');bb.className='btn';bb.id='bBook';bb.textContent='📖';bb.onpointerdown=()=>panelKind==='book'?closePanel():openPanel('book');$('#top').appendChild(bb)}
+$('#bSk').onpointerdown=()=>panelKind==='skills'?closePanel():openPanel('skills');{const bb=document.createElement('div');bb.className='btn';bb.id='bBook';bb.textContent='📖';bb.onpointerdown=()=>panelKind==='book'?closePanel():openPanel('book');$('#top').appendChild(bb)}{const pb=document.createElement('div');pb.className='btn';pb.id='bParty';pb.textContent='👥';pb.onpointerdown=()=>panelKind==='party'?closePanel():openPanel('party');$('#top').appendChild(pb);const ab=document.createElement('div');ab.className='btn';ab.id='bAdm';ab.textContent='🛠';ab.style.display='none';ab.onpointerdown=()=>{if(panelKind==='admin')return closePanel();netSend({t:'adm',c:'list'});openPanel('admin')};$('#top').appendChild(ab);setInterval(()=>{ab.style.display=NET.adm?'':'none'},1000)}
 $('#bBag').onpointerdown=()=>panelKind==='bag'?closePanel():openPanel('bag');
 $('#bDev').onpointerdown=ev=>{ev.preventDefault();P.dev=!P.dev;const on=P.dev;
  if(on){P.devBak=JSON.parse(JSON.stringify(P.xp));P.devT=9;for(const s of SK)P.xp[s[0]]=18*98*98+1;P.hp=maxHp();P.mp=maxMp();toast('🛠 DEV ON: all skills 99, all spells (tap 🔮 to switch)','#ffd36b')}

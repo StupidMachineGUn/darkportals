@@ -21,7 +21,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   const send = (res, code, obj) => { const b = JSON.stringify(obj); res.writeHead(code, { 'content-type': 'application/json', 'cache-control': 'no-store' }); res.end(b); };
   const body = req => new Promise((res, rej) => { let s = '', n = 0; req.on('data', c => { n += c.length; if (n > MAX_BODY) { rej(new Error('big')); req.destroy() } else s += c }); req.on('end', () => { try { res(s ? JSON.parse(s) : {}) } catch (e) { rej(e) } }); });
   const authed = req => readToken((req.headers.authorization || '').replace(/^Bearer /, ''));
-  const ip = req => (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const ip = req => (process.env.CF === '1' && req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
   const nameOk = s => typeof s === 'string' && /^[A-Za-z0-9_]{3,16}$/.test(s);
 
   const server = http.createServer(async (req, res) => {
@@ -87,6 +87,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   });
 
   /* ---------- realtime presence + chat ---------- */
+  const blocked = new Map(); // uid -> until (kicked)
   const players = new Map(); // uid -> {ws,name,x,y,dir,eq,t,lastChat}
   const wss = new WebSocketServer({ noServer: true, maxPayload: 16384 });
   server.on('upgrade', (req, sock, head) => {
@@ -94,6 +95,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     sock.setNoDelay?.(true);
     const a = u.pathname === '/ws' ? readToken(u.searchParams.get('token')) : null;
     if (!a) { sock.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); return sock.destroy(); }
+    if ((blocked.get(a.uid) || 0) > Date.now()) { sock.write('HTTP/1.1 403 Forbidden\r\n\r\n'); return sock.destroy(); }
     wss.handleUpgrade(req, sock, head, ws => wss.emit('connection', ws, a));
   });
   let sim = null;
@@ -105,24 +107,68 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   const trades = new Map(); // uid -> session
   const sendTo = (uid, o) => { const q = players.get(uid); if (q && q.ws.readyState === 1) q.ws.send(JSON.stringify(o)) };
   const endTrade = (uid, why) => { const t = trades.get(uid); if (!t) return; trades.delete(t.a); trades.delete(t.b); const other = t.a === uid ? t.b : t.a; sendTo(other, { t: 'tx', why }) };
+
+  /* ---------- v0.5: jail, parties, admin ---------- */
+  const ADMINS = new Set((process.env.ADMINS || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
+  const isAdm = p => ADMINS.has(String(p.name).toLowerCase());
+  const J = (() => { try { if (sim) return JSON.parse(sim.run('JSON.stringify({x0:JAIL.x0,y0:JAIL.y0,x1:JAIL.x1,y1:JAIL.y1,gx:JAIL.gx})')) } catch {} return { x0: 159, y0: 154, x1: 166, y1: 160, gx: 162 } })();
+  const DUNR = (() => { try { if (sim) return JSON.parse(sim.run('JSON.stringify(DUN)')) } catch {} return { x0: 10, y0: 8, w: 106, h: 40 } })();
+  const jStart = { x: (J.x0 + J.x1) / 2 + .5, y: (J.y0 + J.y1) / 2 + .5 }, jExit = { x: J.gx + .5, y: J.y0 - 1.5 };
+  const inYard = (x, y) => x >= J.x0 + .9 && x <= J.x1 + .1 && y >= J.y0 + .9 && y <= J.y1 + .1;
+  const inDun = p => p.x >= DUNR.x0 - 2 && p.x <= DUNR.x0 + DUNR.w + 2 && p.y >= DUNR.y0 - 2 && p.y <= DUNR.y0 + DUNR.h + 2;
+  const sysTo = (p, m, c) => { if (p && p.ws.readyState === 1) p.ws.send(JSON.stringify({ t: 'sys', m, c })) };
+  const safeXY = (x, y) => { try { return !!sim && sim.run(`safeAt(${+x || 0},${+y || 0})`) } catch { return false } };
+  const jailSave = async (uid, j) => { try { if (!j) { await db.query('DELETE FROM jails WHERE user_id=$1', [uid]); return } const u = await db.query('UPDATE jails SET left_n=$2,total=$3,reason=$4,by=$5 WHERE user_id=$1', [uid, j.left, j.total, j.reason, j.by]); if (!u.rowCount) await db.query('INSERT INTO jails(user_id,left_n,total,reason,by) VALUES($1,$2,$3,$4,$5)', [uid, j.left, j.total, j.reason, j.by]) } catch (e) { console.error('jail save:', e.message) } };
+  const place = (p, x, y) => { p.x = x; p.y = y; p.wu = Date.now() + 3000; if (p.sp) { p.sp.x = x; p.sp.y = y } p.ws.send(JSON.stringify({ t: 'warp', x, y })) };
+  const jailMsg = p => p.ws.send(JSON.stringify({ t: 'jl', left: p.jail.left, total: p.jail.total, reason: p.jail.reason }));
+  const doJail = (q, n, reason, by) => { endTrade(q.uid, 'jailed'); q.jail = { left: Math.max(1, Math.min(500, n | 0)), total: Math.max(1, Math.min(500, n | 0)), reason: String(reason || 'crime').slice(0, 30), by: String(by || 'Guard').slice(0, 16) }; jailSave(q.uid, q.jail); leaveParty(q); place(q, jStart.x, jStart.y); jailMsg(q); broadcast({ t: 'sys', m: `🔒 ${q.name} was thrown in jail (${q.jail.reason})`, c: '#fc6' }) };
+  const unjail = (q, why) => { if (!q.jail) return; q.jail = null; jailSave(q.uid, null); place(q, jExit.x, jExit.y); q.ws.send(JSON.stringify({ t: 'jr', why })); broadcast({ t: 'sys', m: `🔓 ${q.name} was released from jail`, c: '#9fe3ff' }) };
+  const parties = new Map(), invites = new Map(); let pid = 0;
+  const pmem = pt => [...pt.m].map(u => players.get(u)).filter(Boolean);
+  const pstate = pt => { const o = JSON.stringify({ t: 'pys', id: pt.id, lead: pt.lead, m: pmem(pt).map(p => ({ id: p.uid, n: p.name })) }); for (const p of pmem(pt)) if (p.ws.readyState === 1) p.ws.send(o) };
+  function leaveParty(p, why) { const pt = parties.get(p.party); if (!pt) return; pt.m.delete(p.uid); p.party = 0; if (p.ws.readyState === 1) p.ws.send(JSON.stringify({ t: 'pys', id: 0, why })); if (pt.m.size < 2) { for (const u of pt.m) { const q = players.get(u); if (q) { q.party = 0; sysTo(q, '👥 Party disbanded', '#9fe3ff'); if (q.ws.readyState === 1) q.ws.send(JSON.stringify({ t: 'pys', id: 0 })) } } parties.delete(pt.id) } else { if (pt.lead === p.uid) pt.lead = [...pt.m][0]; pstate(pt); for (const q of pmem(pt)) sysTo(q, `👥 ${p.name} left the party`, '#9fe3ff') } }
+  const sameParty = (a, b) => a.party && a.party === b.party;
+  const social = (me, m, now) => {
+    const t = m.t;
+    if (t === 'jd') { const j = me.jail; if (!j || now - (me.lastJd || 0) < 1000 || !inYard(me.x, me.y)) return true; me.lastJd = now; j.left--; if (j.left <= 0) unjail(me, 'served'); else { jailMsg(me); if (j.left % 3 === 0) jailSave(me.uid, j) } return true }
+    if (t === 'pyi') { const q = players.get(m.to); if (!q || q === me || now - (me.lastPy || 0) < 1000) return true; me.lastPy = now; if (me.jail || q.jail) return sysTo(me, 'Not possible right now', '#f99'), true; if (q.party) return sysTo(me, `${q.name} is already in a party`, '#f99'), true; let pt = parties.get(me.party); if (pt && pt.lead !== me.uid) return sysTo(me, 'Only the party leader can invite', '#f99'), true; if (pt && pt.m.size >= 5) return sysTo(me, 'Party is full (5)', '#f99'), true; invites.set(q.uid, { from: me.uid, exp: now + 30000 }); sendTo(q.uid, { t: 'pyi', from: me.uid, n: me.name }); sysTo(me, `👥 Invited ${q.name}`, '#9fe3ff'); return true }
+    if (t === 'pya') { const iv = invites.get(me.uid); invites.delete(me.uid); if (!iv || iv.exp < now || me.party || me.jail) return true; const h = players.get(iv.from); if (!h || h.ws.readyState !== 1) return true; let pt = parties.get(h.party); if (!pt) { pt = { id: ++pid, lead: h.uid, m: new Set([h.uid]) }; parties.set(pt.id, pt); h.party = pt.id } if (pt.m.size >= 5) return sysTo(me, 'Party is full', '#f99'), true; pt.m.add(me.uid); me.party = pt.id; pstate(pt); for (const q of pmem(pt)) sysTo(q, `👥 ${me.name} joined the party`, '#9fe3ff'); return true }
+    if (t === 'pyd') { invites.delete(me.uid); return true }
+    if (t === 'pyl') { leaveParty(me, 'left'); return true }
+    if (t === 'pyk') { const pt = parties.get(me.party); if (!pt || pt.lead !== me.uid) return true; const q = players.get(m.to); if (!q || q === me || q.party !== me.party) return true; leaveParty(q, 'kicked'); sysTo(q, '👥 You were removed from the party', '#f99'); return true }
+    if (t === 'pyc' && typeof m.m === 'string') { const pt = parties.get(me.party); if (!pt || now - (me.lastPc || 0) < 700) return true; me.lastPc = now; const o = JSON.stringify({ t: 'pyc', n: me.name, m: m.m.slice(0, 120) }); for (const q of pmem(pt)) if (q.ws.readyState === 1) q.ws.send(o); return true }
+    if (t === 'pyw') { const q = players.get(m.to); if (!q || q === me || !sameParty(me, q)) return true; const w = 60000 - (now - (me.lastWarp || 0)); if (w > 0) return sysTo(me, `Warp ready in ${Math.ceil(w / 1000)}s`, '#f99'), true; if (me.jail || q.jail) return sysTo(me, 'Not possible while jailed', '#f99'), true; if (me.bd || q.bd || me.rs || q.rs) return sysTo(me, 'Leave the building first (both of you)', '#f99'), true; if (inDun(me) || inDun(q)) return sysTo(me, 'Cannot warp to or from the dungeon', '#f99'), true; if (now - (me.hurtT || 0) < 10000) return sysTo(me, 'Cannot warp while in combat', '#f99'), true; me.lastWarp = now; place(me, q.x + .6, q.y + .3); sysTo(me, `✨ Warped to ${q.name}`, '#b9f'); return true }
+    if (t === 'adm') { if (!isAdm(me)) return true; const q = players.get(m.to);
+      if (m.c === 'list') { me.ws.send(JSON.stringify({ t: 'adl', l: [...players.values()].map(p => ({ id: p.uid, n: p.name, x: Math.round(p.x), y: Math.round(p.y), j: p.jail ? p.jail.left : 0 })) })); return true }
+      if (!q || q === me) return true;
+      if (m.c === 'tp') { place(me, q.x + .6, q.y + .3); sysTo(me, `Teleported to ${q.name}`, '#b9f') }
+      else if (m.c === 'bring') { if (q.jail) return sysTo(me, 'Target is jailed – unjail first', '#f99'), true; place(q, me.x + .6, me.y + .3); sysTo(q, 'You were summoned by an admin', '#b9f') }
+      else if (m.c === 'kick') { blocked.set(q.uid, now + 300000); sendTo(q.uid, { t: 'kick' }); try { q.ws.close(4001, 'Kicked by admin') } catch {} sysTo(me, `Kicked ${q.name} (5 min block)`, '#fc6'); broadcast({ t: 'sys', m: `${q.name} was kicked by an admin`, c: '#fc6' }) }
+      else if (m.c === 'jail') doJail(q, Number.isFinite(+m.n) ? +m.n : 25, m.r || 'admin order', 'Admin');
+      else if (m.c === 'unjail') unjail(q, 'admin');
+      return true }
+    return false };
   wss.on('connection', (ws, a) => {
     const old = players.get(a.uid); if (old) { try { old.ws.close(4000, 'Logged in elsewhere') } catch {} }
     const me = { ws, uid: a.uid, name: a.name, x: 0, y: 0, dir: 0, eq: 0, t: Date.now(), lastChat: 0, init: false };
     players.set(a.uid, me);
     me.sp = sim ? sim.add(a.uid, a.name) : null;
-    ws.send(JSON.stringify({ t: 'hello', id: a.uid, online: players.size, world: sim ? sim.world() : null, gnd: [...ground.values()].map(g => ({ id: g.id, x: g.x, y: g.y, it: g.it })) }));
+    ws.send(JSON.stringify({ t: 'hello', id: a.uid, adm: isAdm(me) ? 1 : 0, online: players.size, world: sim ? sim.world() : null, gnd: [...ground.values()].map(g => ({ id: g.id, x: g.x, y: g.y, it: g.it })) }));
     broadcast({ t: 'sys', m: `${a.name} entered the world` }, me);
+    db.query('SELECT left_n,total,reason,by FROM jails WHERE user_id=$1', [a.uid]).then(r => { const j = r.rows[0]; if (j && players.get(a.uid) === me) { me.jail = { left: j.left_n, total: j.total, reason: j.reason, by: j.by }; place(me, jStart.x, jStart.y); jailMsg(me) } }).catch(() => {});
     ws.on('message', raw => {
       let m; try { m = JSON.parse(raw) } catch { return }
       const now = Date.now();
+      if (social(me, m, now)) return;
       if (m.t === 'pos' && Number.isFinite(m.x) && Number.isFinite(m.y)) {
         if (me.init) {
           const dt = Math.max(.05, (now - me.t) / 1000), d = Math.hypot(m.x - me.x, m.y - me.y);
           const tpOk = m.tp && now - (me.lastTp || 0) > 3000; if (tpOk) me.lastTp = now;
-          if (d > MAX_SPEED * dt + 3 && !tpOk) { ws.send(JSON.stringify({ t: 'snap', x: me.x, y: me.y })); return; }
+          if (me.jail && !inYard(m.x, m.y)) { ws.send(JSON.stringify({ t: 'snap', x: jStart.x, y: jStart.y })); me.x = jStart.x; me.y = jStart.y; return }
+          if (d > MAX_SPEED * dt + 3 && !tpOk && now > (me.wu || 0)) { ws.send(JSON.stringify({ t: 'snap', x: me.x, y: me.y })); return; }
         }
-        if (Math.hypot(m.x - me.x, m.y - me.y) > .05) me.mvT = now; me.x = m.x; me.y = m.y; me.dir = m.dir | 0; me.eq = m.eq | 0; me.name = a.name; me.t = now; me.init = true; me.hp = m.hp | 0; me.ch = m.ch ? 1 : 0; me.bz = m.bz ? 1 : 0; me.ac = typeof m.ac === 'string' ? m.ac.slice(0, 8) : ''; me.bd = Number.isFinite(m.bd) ? m.bd | 0 : 0; me.rd = m.rd | 0; me.rm = m.rm ? 1 : 0; me.rs = m.rs ? 1 : 0; if (Number.isFinite(m.rx) && Number.isFinite(m.ry)) { if (Math.hypot(m.rx - (me.rx || 0), m.ry - (me.ry || 0)) > .5) me.mvT = now; me.rx = +m.rx.toFixed(1); me.ry = +m.ry.toFixed(1) } if (me.ac) me.mvT = now; { const l = m.lk || {}, cs = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : null, ci = v => Number.isInteger(v) && v >= -1 && v < 20 ? v : 0; me.lk = { w: typeof l.w === 'string' ? l.w.slice(0, 16) : null, tw: cs(l.tw), ta: cs(l.ta), a: ci(l.a), h: ci(l.h), b: ci(l.b) } } me.mh = m.mhp | 0; me.f = m.f === 'red' || m.f === 'orange' || m.f === 'blue' ? m.f : null; me.col = String(m.col || '').slice(0, 9);
-        const sp = me.sp; if (sp) { sp.x = m.x; sp.y = m.y; sp.dir = m.dir | 0; sp.hp = m.hp | 0; sp.mhp = m.mhp | 0 || sp.mhp; sp.dead = m.dead ? 1 : 0; sp.inside = m.inside ? 1 : 0; sp.ready = true; if (m.xp && typeof m.xp === 'object') { const x = {}; for (const k in m.xp) if (Number.isFinite(m.xp[k])) x[k] = Math.min(1e8, m.xp[k]); sp.xp = x } }
+        if (Math.hypot(m.x - me.x, m.y - me.y) > .05) me.mvT = now; me.x = m.x; me.y = m.y; me.dir = m.dir | 0; me.eq = m.eq | 0; me.name = a.name; me.t = now; me.init = true; me.hp = m.hp | 0; me.ch = m.ch ? 1 : 0; me.bz = m.bz ? 1 : 0; me.ac = typeof m.ac === 'string' ? m.ac.slice(0, 8) : ''; me.bd = Number.isFinite(m.bd) ? m.bd | 0 : 0; me.rd = m.rd | 0; me.rm = m.rm ? 1 : 0; me.rs = m.rs ? 1 : 0; if (Number.isFinite(m.rx) && Number.isFinite(m.ry)) { if (Math.hypot(m.rx - (me.rx || 0), m.ry - (me.ry || 0)) > .5) me.mvT = now; me.rx = +m.rx.toFixed(1); me.ry = +m.ry.toFixed(1) } if (me.ac) me.mvT = now; { const l = m.lk || {}, cs = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : null, ci = v => Number.isInteger(v) && v >= -1 && v < 20 ? v : 0; me.lk = { w: typeof l.w === 'string' ? l.w.slice(0, 16) : null, tw: cs(l.tw), ta: cs(l.ta), a: ci(l.a), h: ci(l.h), b: ci(l.b) } } me.mh = m.mhp | 0; me.ti = typeof m.ti === 'string' ? m.ti.replace(/[^A-Za-z ]/g, '').slice(0, 24) : ''; me.f = m.f === 'red' || m.f === 'orange' || m.f === 'blue' ? m.f : null; me.col = String(m.col || '').slice(0, 9);
+        const sp = me.sp; if (sp) { sp.x = m.x; sp.y = m.y; sp.dir = m.dir | 0; sp.hp = m.hp | 0; sp.mhp = m.mhp | 0 || sp.mhp; sp.dead = m.dead ? 1 : 0; sp.inside = m.inside || me.jail ? 1 : 0; sp.ready = true; if (m.xp && typeof m.xp === 'object') { const x = {}; for (const k in m.xp) if (Number.isFinite(m.xp[k])) x[k] = Math.min(1e8, m.xp[k]); sp.xp = x } }
       } else if (m.t === 'ping') { ws.send(JSON.stringify({ t: 'pong', c: m.c, ld: Math.max(0, Math.round((eld.mean / 1e6 - 10) * 10) / 10), q: ws.bufferedAmount }));
       } else if (m.t === 'hit' && sim && me.sp) { sim.hit(me.sp, m.id | 0, +m.d);
       } else if (m.t === 'fx' && sim && me.sp) { sim.fx(me.sp, m.id | 0, String(m.sp), +m.d);
@@ -132,7 +178,10 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
       } else if (m.t === 'pvp') { // melee hit on another player; relayed to victim for them to apply
         const q = players.get(m.to); if (!q || q === me || !q.init || q.ws.readyState !== 1 || q.bd || me.bd) return;
         if (now - (me.lastPvp || 0) < 150) return; me.lastPvp = now;
+        if (me.jail || q.jail || sameParty(me, q)) return;
         if (Math.hypot(q.x - me.x, q.y - me.y) > 4) return;
+        if (safeXY(me.x, me.y) || safeXY(q.x, q.y)) { if (q.f !== 'red' && now - (me.lastArrest || 0) > 3000) { me.lastArrest = now; broadcast({ t: 'sys', m: `🛡 Guards seize ${me.name} for attacking ${q.name} in town!`, c: '#fc6' }); doJail(me, 25, 'assault', 'Guard') } return }
+        q.hurtT = now; me.hurtT = now;
         q.ws.send(JSON.stringify({ t: 'phit', from: a.uid, fn: a.name, d: Math.max(1, Math.min(+m.d || 1, 400)) }));
       } else if (m.t === 'pkill') { // victim reports death by player
         const k = players.get(m.by); if (k && k.ws.readyState === 1) { const sx = {}; if (m.sx && typeof m.sx === 'object') for (const kk in m.sx) if (Number.isFinite(+m.sx[kk])) sx[kk.slice(0, 16)] = Math.min(+m.sx[kk], 1e6); k.ws.send(JSON.stringify({ t: 'pk', who: a.uid, n: a.name, g: Math.max(0, Math.min(+m.g || 0, 1e7)), sx, b: Math.max(0, Math.min(+m.b || 0, 5000)), fl: m.fl ? 1 : 0, it: cleanItem(m.it) })) }
@@ -164,17 +213,19 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
         broadcast({ t: 'chat', id: a.uid, n: a.name, m: m.m.slice(0, 120) });
       }
     });
-    ws.on('close', () => { if (players.get(a.uid) === me) { endTrade(a.uid, 'left'); players.delete(a.uid); sim?.remove(a.uid); broadcast({ t: 'sys', m: `${a.name} left the world` }) } });
+    ws.on('close', () => { if (players.get(a.uid) === me) { endTrade(a.uid, 'left'); if (me.jail) jailSave(a.uid, me.jail); leaveParty(me); invites.delete(a.uid); players.delete(a.uid); sim?.remove(a.uid); broadcast({ t: 'sys', m: `${a.name} left the world` }) } });
   });
   function broadcast(obj, except) { const s = JSON.stringify(obj); for (const p of players.values()) if (p !== except && p.ws.readyState === 1) p.ws.send(s) }
   const gsweep = setInterval(() => { const now = Date.now(); for (const g of ground.values()) if (now > g.exp) { ground.delete(g.id); broadcast({ t: 'gx', id: g.id }) } }, 5000);
+  let ptk = 0;
   const tick = setInterval(() => {
     const all = [...players.values()].filter(p => p.init); const now0 = Date.now();
     for (const p of players.values()) {
       if (p.ws.readyState !== 1 || !p.init) continue;
-      const near = all.filter(q => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < 45).map(q => ({ id: q.uid, n: q.name, x: +q.x.toFixed(2), y: +q.y.toFixed(2), d: q.dir, e: q.eq, h: q.hp, c: q.ch, k: q.col, l: q.lk, a: q.ac, bd: q.bd, rx: q.rx, ry: q.ry, rd: q.rd, rm: q.rm, rs: q.rs, s: q.bz ? 2 : (now0 - (q.mvT || now0) > 30000 ? 1 : 0), mh: q.mh, f: q.f }));
+      const near = all.filter(q => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < 45).map(q => ({ id: q.uid, n: q.name, x: +q.x.toFixed(2), y: +q.y.toFixed(2), d: q.dir, e: q.eq, h: q.hp, c: q.ch, k: q.col, l: q.lk, a: q.ac, bd: q.bd, rx: q.rx, ry: q.ry, rd: q.rd, rm: q.rm, rs: q.rs, s: q.bz ? 2 : (now0 - (q.mvT || now0) > 30000 ? 1 : 0), mh: q.mh, f: q.f, ti: q.ti }));
       p.ws.send(JSON.stringify({ t: 'players', l: near, online: players.size }));
     }
+    if (++ptk % 5 === 0) for (const pt of parties.values()) { const ms = pmem(pt), o = JSON.stringify({ t: 'pyh', h: ms.map(q => [q.uid, q.hp | 0, q.mh | 0, Math.round(q.x), Math.round(q.y)]) }); for (const q of ms) if (q.ws.readyState === 1) q.ws.send(o) }
   }, 200);
 
   function encU(u) { if (!u.length) return null; const b = Buffer.allocUnsafe(3 + u.length * 13); b[0] = 1; b.writeUInt16LE(u.length, 1); let o = 3; for (const e of u) { b.writeUInt32LE(e[0], o); b.writeUInt16LE(Math.max(0, Math.min(65535, Math.round(e[1] * 16))), o + 4); b.writeUInt16LE(Math.max(0, Math.min(65535, Math.round(e[2] * 16))), o + 6); b.writeInt8(Math.round(e[3] * 8), o + 8); b.writeInt8(Math.round(e[4] * 8), o + 9); b.writeUInt16LE(Math.max(0, Math.min(65535, e[5])), o + 10); b[o + 12] = e[6]; o += 13 } return b }
@@ -183,7 +234,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     if (![...players.values()].some(p => p.sp?.ready)) return;
     sim.step(.05); st++;
     const dr = sim.drain();
-    for (const h of dr.hits) { const q = players.get(h.to); if (q?.ws.readyState === 1) q.ws.send(JSON.stringify({ t: 'hurt', d: h.d })) }
+    for (const h of dr.hits) { const q = players.get(h.to); if (q) q.hurtT = Date.now(); if (q?.ws.readyState === 1) q.ws.send(JSON.stringify({ t: 'hurt', d: h.d })) }
     for (const g of dr.glob) broadcast(g);
     for (const e of dr.evs) broadcast(e);
     const ks = dr.kills.length ? JSON.stringify({ t: 'kill', l: dr.kills }) : null;

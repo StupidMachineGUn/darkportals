@@ -20,3 +20,12 @@ Create a release: `deploy/release.sh 0.2.0 "message"`. DB schema changes must be
 ## Status / roadmap
 v0.1: accounts, cloud saves, presence, chat. Game rules still run in each browser (not cheat-proof).
 v0.2: server-authoritative world: mobs, combat, loot, PvP, bank/auction/trade between real players, parties + dungeon.
+
+## HTTPS with your domain
+1. Create an `A` record `game.yourdomain.com` -> your server's IP; open ports 80 and 443.
+2. In `deploy/.env` set `DOMAIN=game.yourdomain.com`, then `docker compose up -d --build`. Caddy gets and renews a free certificate automatically.
+3. Own certificate: see the comment at the bottom of `deploy/Caddyfile`.
+4. Hiding the server IP: put the domain behind Cloudflare (proxied, SSL mode Full) or a Cloudflare Tunnel, and set `CF=1` in `.env`.
+
+## Admins
+Set `ADMINS=yourusername` (comma separated) in `deploy/.env` and rebuild; those accounts get a 🛠 button (teleport, bring, kick, jail, unjail).

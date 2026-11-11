@@ -4,3 +4,11 @@
 	encode gzip
 	reverse_proxy game:8080
 }
+
+# Own certificate instead of Let's Encrypt: replace the site block with
+#   {$DOMAIN} {
+#       tls /certs/fullchain.pem /certs/privkey.pem
+#       encode gzip
+#       reverse_proxy game:8080
+#   }
+# and add  - ./certs:/certs:ro  to the caddy volumes in docker-compose.yml.

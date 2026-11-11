@@ -172,6 +172,8 @@ function render(){if(P.inside){drawInside();return}if(insideOn)hideInside();if(s
  drawAura(CX,CY,TOWN_R);for(const v of VIL)drawAura(v.x,v.y,VIL_R);for(const w of WITCH)drawAura(w.x,w.y,w.r);
  drawDecals();drawShadows(x0,x1,y0,y1);
  const R=[],vis=(x,y)=>x>=x0-2&&x<=x1+2&&y>=y0-3&&y<=y1+3;
+ {const J=JAIL;if(vis(J.x0+4,J.y0+3)||vis(J.x0,J.y0)||vis(J.x1,J.y1)){for(let y=J.y0;y<=J.y1;y++)for(let x=J.x0;x<=J.x1;x++){const e=x===J.x0||x===J.x1||y===J.y0||y===J.y1;if(!e||(y===J.y0&&x===J.gx)||!vis(x,y))continue;R.push([y*T+14,()=>{const px=x*T,py=y*T;g.fillStyle='#0003';g.fillRect(px+3,py+13,10,2);g.fillStyle='#5a3d22';if(y===J.y0||y===J.y1){g.fillRect(px,py+6,16,2);g.fillRect(px,py+10,16,2)}else{g.fillRect(px+6,py,4,16)}g.fillStyle='#7a5530';g.fillRect(px+6,py+2,4,12);g.fillStyle='#9a7040';g.fillRect(px+6,py+2,4,2)}])}
+  for(const p of J.pl)if(vis(p.x,p.y))R.push([p.y*T+10,()=>{const px=p.x*T,py=p.y*T,rd=clock>=p.t;g.fillStyle='#3b2a18';g.fillRect(px+2,py+8,12,6);g.fillStyle='#4a3520';g.fillRect(px+3,py+8,10,3);if(rd){g.fillStyle='#3f9a3a';g.fillRect(px+4,py+3,3,6);g.fillRect(px+9,py+4,3,5);g.fillRect(px+7,py+1,2,7);g.fillStyle='#c9a05a';g.fillRect(px+6,py+10,4,3)}else{g.fillStyle='#2e6a2a';g.fillRect(px+7,py+6,2,3)}}])}}
  for(const o of objs)if(vis(o.x,o.y))R.push([o.y*T+16,()=>{const px=o.x*T,py=o.y*T;
   if(o.t==='tree')o.dead?g.drawImage(SPR.stump,px,py):g.drawImage(SPR.tree,px-8,py-24);else if(o.t==='rock')g.drawImage(o.dead?SPR.rockdead:SPR[o.ore],px,py);
   else if(o.t==='gate'){g.fillStyle='#0004';g.fillRect(px-2,py+13,20,3);const gl=.5+.3*Math.sin(clock*3);g.fillStyle='rgba(150,60,255,'+gl*.35+')';g.beginPath();g.arc(px+8,py-2,16,0,6.3);g.fill();g.fillStyle='#4a4650';g.fillRect(px,py-14,4,30);g.fillRect(px+12,py-14,4,30);g.fillRect(px-1,py-18,18,6);g.fillStyle='#2f2c36';g.fillRect(px+1,py-14,1,28);g.fillRect(px+13,py-14,1,28);g.fillStyle='#12081e';g.fillRect(px+4,py-12,8,28);g.fillStyle='hsl(280,85%,'+(45+20*Math.sin(clock*4))+'%)';g.fillRect(px+5,py-10+((clock*14)|0)%20,6,2);g.fillRect(px+6,py-6+((clock*9)|0)%18,4,2);g.fillStyle='#e8e0d0';g.fillRect(px+6,py-17,4,3);g.fillRect(px+7,py-14,2,1)}
@@ -207,7 +209,7 @@ function render(){if(P.inside){drawInside();return}if(insideOn)hideInside();if(s
  for(const n of npcs)if(!n.dead&&vis(n.x,n.y))label(n.n+(n.role==='elder'&&Object.values(P.q).some(q=>q.ok)?' ❗':''),n.x+.5,n.y-.15,FCOL[flagOf(n)]||'#ffd36b');
  for(const gd of guards)if(!gd.dead&&vis(gd.x,gd.y))label(gd.name||'Guard',gd.x,gd.y-1,gd.gob?'#9be36b':'#e8c060');
  const sub=(t,x,y)=>{const [sx,sy]=w2s(x,y);g.font=`italic ${Math.round(8.5*DPR)}px Georgia,serif`;g.lineWidth=2.5*DPR;g.strokeText(t,sx,sy);g.fillStyle='#d8c27a';g.fillText(t,sx,sy);g.font=`bold ${FS}px system-ui,sans-serif`;g.lineWidth=3*DPR};
- netLabels(vis,label);
+ netLabels(vis,label,sub);
  for(const b of bots)if(!b.dead&&vis(b.x,b.y)){label(b.name,b.x,b.y-1,FCOL[flagOf(b)]||'#9fe3ff');const tt=titleOf(b.xp);if(tt)sub('the '+tt,b.x,b.y-1.32)}
  label(P.name,P.x,P.y-1.05,FCOL[flagOf(P)]||'#fff');{const tt=titleOf(P.xp);if(tt)sub('the '+tt,P.x,P.y-1.37)}
  for(const e of E)if(!e.dead&&e.el&&vis(e.x,e.y))label(ELL(e),e.x,e.y-1.2*e.sc,e.el==='shaman'?'#8cf':e.el==='lord'?'#f6f':e.el==='elite'?'#f96':'#fb4');

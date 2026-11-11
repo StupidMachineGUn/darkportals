@@ -9,8 +9,9 @@ function roomOthers(bid){return bid?[...NET.others.values()].filter(o=>o.bd===bi
 function roomPeople(x,bid,me){const L=roomOthers(bid).filter(o=>!(o.rs&&o.bd===bid&&me.house)).map(o=>({y:o.dry,o}));L.push({y:me.y,me:1});L.sort((a,b)=>a.y-b.y);const old=g;g=x;x.textAlign='center';x.font='bold 7px monospace';x.lineWidth=2;x.strokeStyle='#000';
  for(const e of L){if(e.me){playerSpr(Math.round(me.x-8),Math.round(me.y-14),me.dir,me.ph,me.mv);x.fillStyle='#ffe9a0';x.strokeText(P.name,me.x,me.y-17);x.fillText(P.name,me.x,me.y-17);if(NET.mySayT>0&&NET.mySay)roomBubble(x,me.x,me.y-24,NET.mySay);continue}
   const o=e.o;otherSpr(o,Math.round(o.drx-8),Math.round(o.dry-14),o.rm);const fc=flagOf(o);x.fillStyle=fc?FCOL[fc]:'#8dffb0';x.strokeText(o.n,o.drx,o.dry-17);x.fillText(o.n,o.drx,o.dry-17);
-  const ic=o.s===1?'zZ':o.s===2?'oO':ACI[o.ac];if(ic){x.fillStyle='#fff';x.strokeText(ic,o.drx,o.dry-24);x.fillText(ic,o.drx,o.dry-24)}
-  if(o.sayT>0&&o.say)roomBubble(x,o.drx,o.dry-(ic?31:24),o.say)}
+  const ty=o.ti?7:0;if(o.ti){x.font='italic 6px Georgia,serif';x.fillStyle='#d8c27a';x.strokeText('the '+o.ti,o.drx,o.dry-23);x.fillText('the '+o.ti,o.drx,o.dry-23);x.font='bold 7px monospace'}
+  const ic=o.s===1?'zZ':o.s===2?'oO':ACI[o.ac];if(ic){x.fillStyle='#fff';x.strokeText(ic,o.drx,o.dry-24-ty);x.fillText(ic,o.drx,o.dry-24-ty)}
+  if(o.sayT>0&&o.say)roomBubble(x,o.drx,o.dry-(ic?31:24)-ty,o.say)}
  x.textAlign='left';g=old}
 function roomBubble(x,px,py,t){const L=bubbleLines(t);x.fillStyle='#fff';L.forEach((s,i)=>{const yy=py-(L.length-1-i)*8;x.strokeText(s,px,yy);x.fillText(s,px,yy)})}
 function enterShop(b){if(chickenForm()&&b.npc.role!=='inn')return toast('🐔 The shopkeeper shoos the chicken out. "Bawk off!"','#fc6');if(flagOf(P)==='red')return toast('🚫 "We don\'t serve murderers!"','#f66');shopSt={b,bid:bldId(b),x:120,y:136,dir:3,ph:0,tx:null,talk:false,mv:false};P.path=null;P.chase=null;stopAct();goal=null;toast('🚪 '+b.n)}

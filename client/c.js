@@ -113,7 +113,7 @@ function setFlag(a,f,dur){const cur=flagOf(a);if(cur&&FL[cur]>FL[f])return;if(cu
  if(a===P){sys({orange:'🟠 You are now a CRIMINAL (orange) for 60s.',red:'🔴 You are now a MURDERER (red) until you die or are killed! Guards will hunt you.',blue:'🔵 You are flagged lawful (blue) for attacking a murderer.'}[f],FCOL[f])}}
 function actorHit(A,V,dmg){if(V.dead||V===A||(V===P&&(P.dead||P.inside||shopSt)))return;const vf=flagOf(V);
  if(!A.guard){if(vf==='red')setFlag(A,'blue',90);else if(vf!=='orange')setFlag(A,'orange',60)}
- if(V.remote){if(safeAt(P.x,P.y)||safeAt(V.x,V.y)||V.hp<=0)return;netPvp(V,dmg);fl(V.x,V.y-.8,dmg,'#fff');return}
+ if(V.remote){if(V.hp<=0)return;if(safeAt(P.x,P.y)||safeAt(V.x,V.y)){netPvp(V,dmg);return}netPvp(V,dmg);fl(V.x,V.y-.8,dmg,'#fff');return}
  if((V.isBot||V.npc)&&A!==V){V.target=A;V.tT=clock+15}if(V.guard){V.fightWho=A;V.fightT=clock+20}
  if(V===P)return playerHit(dmg,A);
  V.hp-=dmg;V.flash=.15;if(A!==P)fl(AX(V),AY(V)-.8,'-'+dmg,'#f88');if(V.hp<=0)killActor(A,V)}
@@ -308,8 +308,10 @@ function updPlayer(dt){
  if(mag>.15){P.path=null;goal=null;P.chase=null;if(act)stopAct();if(mag>1){vx/=mag;vy/=mag}}else{vx=vy=0}
  if(P.chase&&P.chase.act&&!stance&&!isCrim(P.chase))P.chase=null;
  if(P.chase){if(P.chase.dead)P.chase=null;else{const d=Math.hypot(AX(P.chase)-P.x,AY(P.chase)-P.y);if(d<1.5){P.path=null;playerAttack()}else{chaseT-=dt;if(chaseT<=0||!P.path){chaseT=.35;P.path=setPath(Math.floor(AX(P.chase)),Math.floor(AY(P.chase)),true)}}}}
+ if(!mag&&P.path&&P.path.length){const L=P.path[P.path.length-1];if(!P.sk||Math.hypot(P.x-P.sk.x,P.y-P.sk.y)>.2){P.sk={x:P.x,y:P.y,t:0}}else{P.sk.t+=dt;if(P.sk.t>1.3){P.sk=null;if(!P.rep){P.rep=1;const np=setPath(L[0],L[1],!!goal);if(np&&np.length)P.path=np;else{P.path=null;goal=null}}else{P.rep=0;P.path=null;goal=null;toast('🚧 Path blocked','#fc9')}}}}
+ if(!P.path)P.sk=null;
  if(!mag&&P.path){if(P.path.length){const [tx,ty]=P.path[0],dx=tx+.5-P.x,dy=ty+.5-P.y,d=Math.hypot(dx,dy);if(d<.14)P.path.shift();else{vx=dx/d;vy=dy/d}}
-  if(!P.path.length){P.path=null;if(goal){const g=goal;goal=null;startInteract(g)}}}
+  if(!P.path.length){P.path=null;P.rep=0;if(goal){const g=goal;goal=null;startInteract(g)}}}
  const moving=vx||vy;if(input.atk&&!P.chase)playerAttack();
  const sprint=input.run&&moving&&P.st>0&&!P.tired;
  if(P.tired&&P.st>maxSt()*.25)P.tired=false;if(P.st<=0)P.tired=true;

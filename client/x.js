@@ -30,7 +30,7 @@ function aucHtml(){let h=`<div class="tip" style="font-size:13px;opacity:1">💰
  h+=`<h3 style="margin-top:10px">List an item (10 min)</h3><div class="row"><span style="flex:1">Price: ${Math.round(listMul*100)}% of value</span>${bt('alm',0,'Change')}</div>`;
  P.inv.forEach((s,i)=>{if(!isEq(s)&&P.sales.length<5){const p=Math.max(1,Math.round(valOf(s)*s.n*listMul));h+=xrow(s,'alist',s.u,'List '+p+'g')}});return h}
 /* trade table */
-function trSync(){TR.my=0;TR.bot=0;netSend({t:'tu',items:TR.mine.map(i=>{const o={...i};delete o.u;return o}),gold:TR.mg})}
+function trSync(){TR.my=0;TR.bot=0;netSend({t:'tu',items:TR.mine.map(i=>{const o={...i};delete o.u;delete o.src;return o}),gold:TR.mg})}
 function trVal(items,g){return g+items.reduce((a,s)=>a+valOf(s)*s.n,0)}
 function trStart(b){const th=[];for(let i=0;i<ri(1,2);i++){const s={id:pick(AUCPOOL),n:1,u:uid()};rollGear(s,'mob',false);th.push(s)}
  TR={b,mine:[],mg:0,theirs:th,tg:ri(20,200),bot:0,msg:`${b.name} lays out an offer.`}}
@@ -46,7 +46,8 @@ function tradeHtml(){let h=hdr('🤝 Trade House')+`<div class="row">${bt('tab',
  h+=`<h3>They offer ${TR.bot?'✅':'⬜'}</h3>`+TR.theirs.map(s=>xrow(s,'',0,'')).join('')+`<div class="row"><span style="flex:1">💰 ${TR.tg}g</span></div>`;
  h+=`<h3 style="margin-top:6px">You offer</h3>`+me.map(s=>xrow(s,'trm',s.u,'Remove')).join('')+`<div class="row"><span style="flex:1">💰 ${TR.mg}g <span class="tip">(have ${P.gold})</span></span>${bt('trg','-100','−100',TR.mg<100)}${bt('trg','100','+100',P.gold-TR.mg<100)}${bt('trg','all','All',P.gold<=TR.mg)}</div>`;
  h+=TR.p2p?`<div class="row">${bt('tra',0,TR.my?'✅ Confirmed – waiting for them…':'✅ Confirm trade',!!TR.my)}${bt('trx',0,'Cancel trade')}</div>`:`<div class="row">${bt('trp',0,'📨 Propose',!me.length&&!TR.mg)}${bt('tra',0,'✅ Accept trade',!TR.bot)}${bt('trx',0,'Leave table')}</div>`;
- h+=`<h3 style="margin-top:6px">Add from backpack</h3>`;P.inv.forEach(s=>{if(!isEq(s)&&!me.includes(s))h+=xrow(s,'tri',s.u,'Offer')});return h}
+ h+=`<h3 style="margin-top:6px">Add from backpack</h3>`;P.inv.forEach((s,i)=>{const sl=ITEMS[s.id].slot;if(sl){if(!isEq(s)&&!me.includes(s))h+=xrow(s,'tri',i,'Offer')}else{const e=me.find(x=>x.src===s),k=e?e.n:0;if(k<s.n)h+=`<div class="row"><span style="font-size:22px">${ITEMS[s.id].e}</span><div style="flex:1;color:${RARC[s.rar|0]}">${nameOf(s)} ×${s.n-k}${k?'<div class="tip">offering '+k+'</div>':''}</div>${bt('trs',i+':1','+1')}${bt('trs',i+':a','All')}</div>`}});return h}
+function trTake(){for(const e of TR.mine){if(e.src){const s=e.src;s.n-=e.n;const i=P.inv.indexOf(s);if(s.n<=0&&i>=0)P.inv.splice(i,1)}else{const i=P.inv.indexOf(e);if(i>=0)P.inv.splice(i,1)}}}
 function xAct(a,v){
  if(a==='bg'){const b=P.bank;let n=0;if(v==='d100')n=Math.min(100,P.gold);else if(v==='dall')n=P.gold;else if(v==='w100')n=-Math.min(100,b.gold);else n=-b.gold;P.gold-=n;b.gold+=n;sfx('pick');return true}
  if(a==='bdep'){const s=P.inv[v],b=P.bank;if(!s||isEq(s))return true;if(ITEMS[s.id].slot){if(b.items.length>=60)return toast('Vault full','#f66'),true;b.items.push(s)}else{const t=b.items.find(i=>i.id===s.id&&!ITEMS[i.id].slot);if(t)t.n+=s.n;else{if(b.items.length>=60)return toast('Vault full','#f66'),true;b.items.push(s)}}P.inv.splice(v,1);sfx('pick');return true}
@@ -62,13 +63,14 @@ function xAct(a,v){
  if(a==='trq'){netSend({t:'tq',to:+v});toast('📨 Trade offer sent');return true}
  if(a==='trA'){netSend({t:'ta',to:+v});NET.treq=null;return true}
  if(a==='trD'){NET.treq=null;return true}
- if(a==='tri'){const s=P.inv.find(x=>x.u==v);if(s&&TR&&!TR.mine.includes(s)){TR.mine.push(s);TR.bot=0;if(TR.p2p)trSync()}return true}
+ if(a==='trs'&&TR){const [i,q]=String(v).split(':'),s=P.inv[+i];if(!s||ITEMS[s.id].slot)return true;let e=TR.mine.find(x=>x.src===s);if(!e){e={id:s.id,n:0,u:uid(),src:s};if(s.rar)e.rar=s.rar;TR.mine.push(e)}e.n=q==='a'?s.n:Math.min(s.n,e.n+1);TR.bot=0;if(TR.p2p)trSync();return true}
+ if(a==='tri'){const s=P.inv[+v];if(s&&TR&&!TR.mine.includes(s)){TR.mine.push(s);TR.bot=0;if(TR.p2p)trSync()}return true}
  if(a==='trm'){TR.mine=TR.mine.filter(x=>x.u!=v);TR.bot=0;if(TR.p2p)trSync();return true}
  if(a==='trg'){TR.mg=v==='all'?P.gold:clamp(TR.mg+(+v),0,P.gold);TR.bot=0;if(TR.p2p)trSync();return true}
  if(a==='trp'){const m=trVal(TR.mine,TR.mg),t=trVal(TR.theirs,TR.tg),r=m/Math.max(1,t);if(r>=1){TR.bot=1;TR.msg='"Deal! Press Accept."'}else if(r>=.8){TR.bot=0;TR.msg=`"Add about ${Math.ceil(t*.98-m)}g more and we have a deal."`}else{TR.bot=0;TR.msg='"Not even close."'}return true}
- if(a==='tra'&&TR&&TR.p2p){if(TR.my)return true;const sp=P.inv.length-TR.mine.length+TR.theirs.length;if(sp>24)return toast('Not enough bag space','#f66'),true;if(TR.mg>P.gold)return toast('Not enough gold','#f66'),true;TR.my=1;netSend({t:'tk'});return true}
- if(a==='tra'){if(!TR.bot)return true;const sp=P.inv.length-TR.mine.length+TR.theirs.length;if(sp>24)return toast('Not enough bag space','#f66'),true;
-  for(const s of TR.mine){const i=P.inv.indexOf(s);if(i>=0)P.inv.splice(i,1)}P.gold-=TR.mg;TR.b.gold+=TR.mg;TR.b.gold=Math.max(0,TR.b.gold-TR.tg);P.gold+=TR.tg;for(const s of TR.theirs)giveItem(s);
+ if(a==='tra'&&TR&&TR.p2p){if(TR.my)return true;const sp=P.inv.length+TR.theirs.length-TR.mine.filter(e=>!e.src||e.n>=e.src.n).length;if(sp>24)return toast('Not enough bag space','#f66'),true;if(TR.mg>P.gold)return toast('Not enough gold','#f66'),true;TR.my=1;netSend({t:'tk'});return true}
+ if(a==='tra'){if(!TR.bot)return true;const sp=P.inv.length+TR.theirs.length-TR.mine.filter(e=>!e.src||e.n>=e.src.n).length;if(sp>24)return toast('Not enough bag space','#f66'),true;
+  trTake();P.gold-=TR.mg;TR.b.gold+=TR.mg;TR.b.gold=Math.max(0,TR.b.gold-TR.tg);P.gold+=TR.tg;for(const s of TR.theirs)giveItem(s);
   sys('🤝 Trade complete with '+TR.b.name+'!','#9fe3ff');sfx('lvl');TR=null;return true}
  return false}
 /* ---------- dungeon ---------- */

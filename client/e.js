@@ -13,7 +13,7 @@ function openNpc(n){if(n.dead)return;if(flagOf(P)==='red')return toast('🚫 "We
 function activeQuest(){return QUESTS.find(q=>P.q[q.id])}
 function nextQuest(){return QUESTS.find(q=>!P.done[q.id]&&!P.q[q.id])}
 function renderPanel(){let h='';const k=panelKind;pn.className=k==='bag'?'bag':'';
- if(k==='book'){h=bookHtml()}else if(k==='mage'){h=mageHtml(false)}else if(k==='witch'){h=mageHtml(true)}else if(k==='skills'){const tot=SK.reduce((s,x)=>s+lv(x[0]),0);h=hdr('📜 Skills · total '+tot);
+ if(k==='book'){h=bookHtml()}else if(k==='mage'){h=mageHtml(false)}else if(k==='witch'){h=mageHtml(true)}else if(k==='party'){h=partyHtml()}else if(k==='admin'){h=adminHtml()}else if(k==='skills'){const tot=SK.reduce((s,x)=>s+lv(x[0]),0);h=hdr('📜 Skills · total '+tot);
   for(const [id,n,e,tip] of SK){const l=lv(id),a=xpAt(l),b=xpAt(l+1),p=l>=99?1:(P.xp[id]-a)/(b-a);h+=`<div class="row"><span class="nm">${e} ${n}</span><span class="lv">${l}</span><div class="b"><i style="width:${p*100}%"></i></div></div><div class="tip" style="margin:-3px 0 4px 100px;opacity:.55">${tip}</div>`}
   h+=`<div class="tip" style="opacity:1">🏷️ Title: <b style="color:#d8c27a">${titleOf(P.xp)?'the '+titleOf(P.xp):'Novice (reach level 10 in a skill)'}</b><br>🎨 Gear color shifts every 10 levels: ⚔️ sword = Melee · 🪄 staff = Magic · 🛡️ armor = Defense</div>`;
   const q=activeQuest();h+=`<div class="tip">❤️ ${Math.ceil(P.hp)}/${maxHp()} · ⚡ ${Math.ceil(P.st)}/${maxSt()} · 🔮 ${Math.floor(P.mp)}/${maxMp()} · 💰 ${P.gold}<br>Kills ${P.kills} · Status ${flagOf(P)?flagOf(P).toUpperCase():'lawful'} · Played ${Math.floor(P.play/60)}m${q?`<br>📜 ${q.t}: ${P.q[q.id].ok?'Done – return to Elder!':P.q[q.id].n+'/'+q.n+' · '+q.d}`:''}</div>`}
@@ -43,7 +43,7 @@ function renderPanel(){let h='';const k=panelKind;pn.className=k==='bag'?'bag':'
  pn.innerHTML=h;if(k==='bag')drawDoll();drawBanner(k)}
 function drawDoll(){const c=$('#doll');if(!c)return;const x=c.getContext('2d');x.imageSmoothingEnabled=false;const old=g;g=x;x.setTransform(8,0,0,8,0,0);x.clearRect(0,0,16,16);drawChar(0,0,0,0,(eqTint().ta?shade(eqTint().ta,.7):ARMC[armLv(eqId('a'))]),'#3a2a1a',{wid:eqId('w'),tw:eqTint().tw,ta:eqTint().ta,arm:armLv(eqId('a')),helm:eqTier('h'),boots:eqTier('b')});g=old}
 pn.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,v=b.dataset.v;
- if(a==='close')return closePanel();if(xAct(a,v)||sAct(a,v)){renderPanel();return}if(a==='sel'){sel=+v;return renderPanel()}
+ if(a==='close')return closePanel();if(xAct(a,v)||sAct(a,v)||pAct(a,v)){renderPanel();return}if(a==='sel'){sel=+v;return renderPanel()}
  if(a==='unq'){P.eq[v]=null}else if(a==='equip'){const s=P.inv[v],it=ITEMS[s.id];if(P.eq[it.slot]===s.u)P.eq[it.slot]=null;else if(it.req&&lv(it.req[0])<it.req[1])toast(`Need ${it.req[0]} ${it.req[1]}`,'#f66');else{P.eq[it.slot]=s.u;sfx('pick')}}
  else if(a==='use'){const id=P.inv[v].id,it=ITEMS[id];if(it.shroom){take(id);sel=-1;closePanel();return eatShroom()}if(it.heal){if(P.hp>=maxHp())return;P.hp=Math.min(maxHp(),P.hp+it.heal);gainXp('vitality',it.heal*.25)}else{P.mp=Math.min(maxMp(),P.mp+it.mana)}take(id);sfx('heal');sel=-1}
  else if(a==='drop'){P.inv.splice(v,1);sel=-1}
@@ -58,7 +58,7 @@ pn.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)retur
  else if(a==='turnin'){const q=QUESTS.find(q=>q.id===v);P.gold+=q.g;gainXp(q.xp[0],q.xp[1]);P.done[v]=1;delete P.q[v];sfx('lvl');toast('Quest complete! +'+q.g+'g')}
  else if(a==='hvisit'){closePanel();enterGuest(houses[+v]);return}else if(a==='hrent')rentHouse(npcCur,+v);else if(a==='henter')return enterHouse(npcCur);
  renderPanel()});
-$('#bSk').onpointerdown=()=>panelKind==='skills'?closePanel():openPanel('skills');{const bb=document.createElement('div');bb.className='btn';bb.id='bBook';bb.textContent='📖';bb.onpointerdown=()=>panelKind==='book'?closePanel():openPanel('book');$('#top').appendChild(bb)}
+$('#bSk').onpointerdown=()=>panelKind==='skills'?closePanel():openPanel('skills');{const bb=document.createElement('div');bb.className='btn';bb.id='bBook';bb.textContent='📖';bb.onpointerdown=()=>panelKind==='book'?closePanel():openPanel('book');$('#top').appendChild(bb)}{const pb=document.createElement('div');pb.className='btn';pb.id='bParty';pb.textContent='👥';pb.onpointerdown=()=>panelKind==='party'?closePanel():openPanel('party');$('#top').appendChild(pb);const ab=document.createElement('div');ab.className='btn';ab.id='bAdm';ab.textContent='🛠';ab.style.display='none';ab.onpointerdown=()=>{if(panelKind==='admin')return closePanel();netSend({t:'adm',c:'list'});openPanel('admin')};$('#top').appendChild(ab);setInterval(()=>{ab.style.display=NET.adm?'':'none'},1000)}
 $('#bBag').onpointerdown=()=>panelKind==='bag'?closePanel():openPanel('bag');
 $('#bDev').onpointerdown=ev=>{ev.preventDefault();P.dev=!P.dev;const on=P.dev;
  if(on){P.devBak=JSON.parse(JSON.stringify(P.xp));P.devT=9;for(const s of SK)P.xp[s[0]]=18*98*98+1;P.hp=maxHp();P.mp=maxMp();toast('🛠 DEV ON: all skills 99, all spells (tap 🔮 to switch)','#ffd36b')}

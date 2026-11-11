@@ -84,7 +84,7 @@ const idx=(x,y)=>y*MW+x,inb=(x,y)=>x>=0&&y>=0&&x<MW&&y<MH;
 const isWater=(x,y)=>inb(x,y)&&map[idx(x,y)]<=1;
 const objs=[],objAt=new Map(),buildings=[],npcs=[],inNpcs=[],houses=[];
 const GYS=[{x:CX+45,y:CY-42},{x:CX-93,y:CY+69},{x:CX+87,y:CY+93},{x:CX-51,y:CY-108}];
-const VIL=[],guards=[],WITCH=[];const TOWN_R=20,VIL_R=12,safeAt=(x,y)=>Math.hypot(x-CX,y-CY)<TOWN_R||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R)||WITCH.some(w=>Math.hypot(x-w.x,y-w.y)<w.r);
+const VIL=[],guards=[],WITCH=[],JAIL={x0:CX+9,y0:CY+4,x1:CX+16,y1:CY+10,gx:CX+12,pl:[]};const TOWN_R=20,VIL_R=12,safeAt=(x,y)=>Math.hypot(x-CX,y-CY)<TOWN_R||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R)||WITCH.some(w=>Math.hypot(x-w.x,y-w.y)<w.r);
 function genWorld(){
  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){
   const dx=(x-CX)/(MW/2),dy=(y-CY)/(MH/2),d=Math.sqrt(dx*dx+dy*dy);
@@ -109,7 +109,7 @@ function genWorld(){
  const npc=(b,n,role,col)=>{b.npc={n,name:n,role,col,npc:true,dead:0,x:b.dx,y:b.dy-1};inNpcs.push(b.npc)};
  const guard=(x,y)=>guards.push({guard:true,act:true,name:'Guard',x:x+.5,y:y+.5,hx:x+.5,hy:y+.5,hp:600,mhp:600,dead:0,flag:null,fT:0,vic:0,cd:0,sw:0,flash:0,dir:0});
  npc(buildings[0],'Pip','shop','#34527f');npc(buildings[1],'Brakka','smith','#8a3a22');npc(buildings[2],'Rosa','inn','#8a6a2a');npc(buildings[3],'Elder Maren','elder','#4e3d6e');npc(buildings[4],'Gorm','bank','#6b5a2a');npc(buildings[5],'Vessa','trade','#2a5a5a');npc(buildings[6],'Sorin','mage','#4a3a7a');
- guard(CX-1,CY-12);guard(CX+2,CY+13);guard(CX-13,CY);guard(CX+14,CY+1);guard(CX-9,CY-9);guard(CX+10,CY+10);
+ guard(CX-1,CY-12);guard(CX+2,CY+13);guard(CX-13,CY);guard(CX+14,CY+1);guard(CX-9,CY-9);guard(CX+10,CY+12);
  const pre=new Uint8Array(MW*MH);{const q=[idx(CX,CY)];pre[q[0]]=1;for(let h=0;h<q.length;h++){const k=q[h],x=k%MW,y=(k/MW)|0;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+a,ny=y+b;if(inb(nx,ny)&&!pre[idx(nx,ny)]&&map[idx(nx,ny)]>1){pre[idx(nx,ny)]=1;q.push(idx(nx,ny))}}}}
  const VT=[[70,10,'Oakhollow',1,[['orc',12],['wolf',6]],['Hobb','Mara']],[-12,-76,'Stonereach',2,[['ogre',8],['orc',8]],['Dren','Sela']],[-76,44,'Gravewatch',3,[['wraith',10],['skeleton',10],['ogre',4]],['Orin','Vesk']],[14,88,'Emberkeep',4,[['troll',8],['ogre',8]],['Tamsin','Rook']],[100,-52,'Frostmere',5,[['troll',10],['wraith',8]],['Bjorn','Ilsa']],[-92,-84,'Dragonwatch',6,[['demon',8],['troll',8]],['Kael','Nyra']]];
  const cands=[];for(let vy=10;vy<MH-10;vy+=2)for(let vx=11;vx<MW-10;vx+=2){if(Math.hypot(vx-CX,vy-CY)<50)continue;let ok=true;for(let y=vy-8;y<=vy+8&&ok;y++)for(let x=vx-9;x<=vx+9;x++){const k=idx(x,y);if(!pre[k]){ok=false;break}}if(ok)cands.push([vx,vy])}
@@ -130,6 +130,8 @@ function genWorld(){
  /* ---- rentable cottages ---- */
  const canPlace=(x,y,w,h,okPath,town)=>{for(let j=y-1;j<=y+h+1;j++)for(let i=x-1;i<x+w+1;i++){if(!inb(i,j))return false;const k=idx(i,j);if(map[k]<2||solid[k])return false;if(!okPath&&map[k]===TL.PATH)return false;if(town&&(i>=CX-1&&i<=CX+2||j>=CY-1&&j<=CY+2))return false}return true};
  const HC=['#6a5a3a','#7a4a3a','#4a6a5a','#5a4a6a','#8a6a4a','#4a5a7a','#7a6a3a','#6a3a3a'];
+ {const J=JAIL;for(let y=J.y0;y<=J.y1;y++)for(let x=J.x0;x<=J.x1;x++){const edge=x===J.x0||x===J.x1||y===J.y0||y===J.y1;if(edge&&!(y===J.y0&&x===J.gx))solid[idx(x,y)]=1;if(!edge&&map[idx(x,y)]>=2)map[idx(x,y)]=TL.PATH}
+  if(solid[idx(J.gx,J.y0)]===0)map[idx(J.gx,J.y0)]=TL.PATH;for(const y of [J.y0+2,J.y0+4])for(let x=J.x0+1;x<J.x1;x++)J.pl.push({x,y,t:0})}
  const addHouse=(x,y,town)=>{const b={n:'Cottage',x,y,w:3,h:3,c:HC[houses.length%HC.length],dx:x+1,dy:y+3,house:true,id:houses.length,town};houses.push(b);buildings.push(b);for(let j=0;j<3;j++)for(let i=0;i<3;i++)solid[idx(x+i,y+j)]=1;map[idx(b.dx,b.dy)]=TL.PATH};
  {let cnt=0;for(const r of [11.5,14.5,17.5]){const n=Math.floor(6.283*r/5);for(let i=0;i<n&&cnt<34;i++){const a=i/n*6.283+r;const x=Math.round(CX+Math.cos(a)*r)-1,y=Math.round(CY+Math.sin(a)*r)-1;if(canPlace(x,y,3,3,false,true)){addHouse(x,y,'Hearthmoor Town');cnt++}}}}
  for(const v of VIL){let cnt=0;const n=14;for(let i=0;i<n&&cnt<5;i++){const a=i/n*6.283;const x=Math.round(v.x+Math.cos(a)*8.3)-1,y=Math.round(v.y+Math.sin(a)*8.3)-1;if(canPlace(x,y,3,3,true,false)){addHouse(x,y,v.name);cnt++}}}
