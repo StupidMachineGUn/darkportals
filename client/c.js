@@ -195,9 +195,9 @@ function killEnemy(e){if(meleeT===clock)goreKill(e);if(e.dun)dunKill(e);e.dead=c
  if(e.t==='orc'){dr('tusk',.6);dr('iron',.25)}if(e.t==='ogre'){dr('tusk',.8,2);dr('iron',.6,2);dr('gem',.05)}if(e.t==='wraith'){dr('essence',.6);dr('gem',.04);dr('potion',.1)}
  if(e.t==='slime'){dr('gel',.6);dr('potion',.03)}if(e.t==='wolf'){dr('pelt',.55);dr('bread',.1)}if(e.t==='skeleton'){dr('bone',.7);dr('gem',.012)}
  if(e.t==='wyrm'){boss=null;if((P.bossDmg||0)>=40){dropGear('wyrm',true);dropGear('wyrm',true);addItem('scale',ri(1,3));if(Math.random()<.5)addItem('gem');P.gold+=ri(...s.gold);gainXp('magic',200);gainXp('melee',200);sys('🐉 You helped slay the Ember Wyrm! Rewards granted.','#ff9bff');toast('🐉 WYRM SLAIN!')}else sys('The Ember Wyrm was slain by others… you did too little to earn loot.','#f99');}}
-function playerHit(d,by){if(P.dead||P.inside||shopSt)return;const df=A_().def||0;let dmg=Math.max(1,Math.round(d*(1-df*.035)-lv('defense')*.12+rnd(-1,1)));
+function playerHit(d,by){if(P.dead||P.inside||shopSt)return;const df=A_().def||0;let dmg=Math.max(1,Math.round(d*(1-df*.035)-lv('defense')*.12+rnd(-1,1)));if(P.shield&&P.shield.v>0){const ab=Math.min(P.shield.v,dmg);P.shield.v-=ab;dmg-=ab;fl(P.x,P.y-.8,'🛡️'+ab,'#6af');if(dmg<=0){sfx('hit');return}}
  P.hp-=dmg;P.hurt=5;fl(P.x,P.y-.8,'-'+dmg,'#f55');sfx('hurt');gainXp('defense',2+dmg);gainXp('vitality',1+dmg*.6);burst(P.x,P.y-.4,'#d33',5);
- if(P.hp<=0){if(by&&by.remote)netDied(by);else if(by&&by.act)killActor(by,P);P.flag=null;P.fT=0;P.vic=0;P.dead=2.2;P.deaths=(P.deaths|0)+1;if(by&&by.act)P.pvpD=(P.pvpD|0)+1;if(!(by&&by.isBot)){P.gold=Math.floor(P.gold*.9);sys('💀 You were knocked out and lost 10% gold.','#f66')}P.path=null;stopAct();P.chase=null}}
+ if(P.hp<=0){if(by&&by.remote)netDied(by,netDeathItem());else{netDeathDrop();if(by&&by.act)killActor(by,P)}P.flag=null;P.fT=0;P.vic=0;P.dead=2.2;P.deaths=(P.deaths|0)+1;if(by&&by.act)P.pvpD=(P.pvpD|0)+1;if(!(by&&by.isBot)){P.gold=Math.floor(P.gold*.9);sys('💀 You were knocked out and lost 10% gold.','#f66')}P.path=null;stopAct();P.chase=null}}
 function nearestEnemy(r,fr=P){let b=null,bd=r;for(const e of E){if(e.dead)continue;const d=Math.hypot(e.x-fr.x,e.y-fr.y);if(d<bd){bd=d;b=e}}return b}
 const actorsList=()=>[...bots,...guards,...npcs,...netRem()];
 let wardT=0;
@@ -221,7 +221,7 @@ const DOTC={burn:'#ff8a2a',poison:'#7be24a',slow:'#8fe8ff'},fxs=[];
 const SPELLS=[{n:'Arcane Bolt',e:'🔮',c:'#8cf'},{n:'Venom Bolt',e:'☠️',c:'#5ac85a',dot:['poison',.14,6]},{n:'Frost Bolt',e:'❄️',c:'#5a9aff',slow:[.5,4]},{n:'Chain Bolt',e:'⚡',c:'#b46aff',chain:6},
  {n:'Fireball',e:'🔥',c:'#ff9a1a',aoe:2,dot:['burn',.16,4]},{n:'Inferno',e:'🌋',c:'#ff4a4a',aoe:2.6,dot:['burn',.22,5]},{n:'Blizzard Shard',e:'🌨️',c:'#4af0ff',aoe:3,slow:[.55,5]},
  {n:'Storm Call',e:'🌩️',c:'#ffd34a',aoe:3,chain:9},{n:'Plague Nova',e:'☣️',c:'#ff7ad9',aoe:3.5,dot:['poison',.25,7]},{n:'Meteor',e:'☄️',c:null,aoe:4,dot:['burn',.3,5],slow:[.5,3]}];
-const spellTier=()=>P.dev?(P.devT|0):Math.min(9,Math.floor(lv('magic')/10)),spCol=sp=>sp.c||hsl2hex((clock*80)%360,.85,.6);
+const spellTier=()=>P.dev?(P.devT|0):((P.book&&P.book.ea)|0),spCol=sp=>sp.c||hsl2hex((clock*80)%360,.85,.6);
 const healAmt=it=>it.pot?Math.max(it.heal,Math.round(maxHp()*.35)):it.heal,manaAmt=it=>Math.max(it.mana,Math.round(maxMp()*.35));
 function applyFx(e,sp,dmg){if(e.dead)return;if(sp.dot){e.dots=e.dots||[];const d=e.dots.find(x=>x.k===sp.dot[0]),dps=Math.max(1,dmg*sp.dot[1]);if(d){d.left=sp.dot[2];d.dps=Math.max(d.dps,dps)}else e.dots.push({k:sp.dot[0],dps,left:sp.dot[2]})}if(sp.slow)e.slow={m:sp.slow[0],left:sp.slow[1]}}
 function spellAoe(p,hit){const sp=SPELLS[p.sp],col=spCol(sp);fxs.push({k:'ring',x:p.x,y:p.y,r:sp.aoe,life:.45,max:.45,c:col});burst(p.x,p.y,col,24,5);let n=0;
@@ -232,7 +232,7 @@ function spellHit(p,e0){const sp=SPELLS[p.sp],col=spCol(sp),hit=new Set([e0]);hu
   fxs.push({k:'line',x:from.x,y:from.y-.4,x2:best.x,y2:best.y-.4,life:.3,max:.3,c:col});const d2=Math.round(p.dmg*.7);hurtEnemy(best,d2);fl(best.x,best.y-.7,d2,col);applyFx(best,sp,d2);hit.add(best);gainXp('magic',2);from=best}}}
 function castBolt(){if(chickenForm())return toast('🐔 Bawk! (chickens cannot cast)','#fc6');if(safeAt(P.x,P.y))return wardMsg();const tier=spellTier(),sp=SPELLS[tier],cost=4+tier*2;if(P.dead||CD.bolt>0)return;if(P.mp<cost)return toast('Not enough mana','#6af');const t=nearestEnemy(8+tier*.3);let a=DIR[P.dir],vx=a[0],vy=a[1];
  if(t){const d=Math.hypot(t.x-P.x,t.y-P.y);vx=(t.x-P.x)/d;vy=(t.y-P.y)/d;P.dir=Math.abs(vx)>Math.abs(vy)?(vx>0?2:1):(vy>0?0:3)}
- P.mp-=cost;CDM.bolt=.9+tier*.04;CD.bolt=CDM.bolt;P.swing=.25;netAct('bolt',tier);proj.push({x:P.x,y:P.y-.3,vx:vx*9,vy:vy*9,dmg:Math.round((3+lv('magic')*.9+(W_().mag||0))*rnd(.9,1.15)),life:1.1,own:'p',sp:tier,sz:3+tier*.5});if(t)gainXp('magic',2+tier);sfx('bolt')}
+ if(!P.dev&&lv('magic')<tier*10)return toast(sp.n+' needs Magic '+tier*10,'#6af');if(fizzle(tier*10)){P.mp-=Math.ceil(cost/2);CDM.bolt=.7;CD.bolt=.7;return}P.mp-=cost;CDM.bolt=.9+tier*.04;CD.bolt=CDM.bolt;P.swing=.25;netAct('bolt',tier);proj.push({x:P.x,y:P.y-.3,vx:vx*9,vy:vy*9,dmg:Math.round((3+lv('magic')*.9+(W_().mag||0))*rnd(.9,1.15)),life:1.1,own:'p',sp:tier,sz:3+tier*.5});if(t)gainXp('magic',2+tier);sfx('bolt')}
 function castMend(){if(chickenForm())return toast('🐔 Bawk! (chickens cannot cast)','#fc6');if(CD.mend>0||P.dead)return;if(lv('magic')<5)return toast('Mend unlocks at Magic 5','#6af');const tier=spellTier(),cost=8+tier;if(P.mp<cost)return toast('Not enough mana','#6af');if(P.hp>=maxHp())return;
  P.mp-=cost;CD.mend=2;const h=Math.round(10+lv('magic')*1.5),col=spCol(SPELLS[tier]);P.hp=Math.min(maxHp(),P.hp+h);if(tier>=2)P.hot={left:5,per:2+tier*.9};gainXp('magic',8);gainXp('vitality',3);fl(P.x,P.y-.8,'+'+h,'#6f6');burst(P.x,P.y-.4,col,12+tier*3);fxs.push({k:'ring',x:P.x,y:P.y,r:1.2+tier*.15,life:.5,max:.5,c:col});sfx('heal')}
 function eatBest(){if(CD.eat>0||P.dead)return;let b=null;for(const i of P.inv){const it=ITEMS[i.id];if(it.heal&&!it.pot&&(!b||it.heal>ITEMS[b.id].heal))b=i}
@@ -313,7 +313,7 @@ function updPlayer(dt){
  const moving=vx||vy;if(input.atk&&!P.chase)playerAttack();
  const sprint=input.run&&moving&&P.st>0&&!P.tired;
  if(P.tired&&P.st>maxSt()*.25)P.tired=false;if(P.st<=0)P.tired=true;
- let sp=(P.shroomT>0?1.6:(chickenForm()?1.15:1))*3.3*(1+lv('agility')*.004+G().spd/100)*(sprint?1.7:1)*(act?0:1);
+ let sp=(P.shroomT>0?1.6:(chickenForm()?1.15:1))*(P.hasteT>0?1.4:1)*3.3*(1+lv('agility')*.004+G().spd/100)*(sprint?1.7:1)*(act?0:1);
  if(moving){moveEnt(P,vx*sp*dt,vy*sp*dt);P.dir=Math.abs(vx)>Math.abs(vy)?(vx>0?2:1):(vy>0?0:3);P.walk=(P.walk||0)+dt*(sprint?12:8);P.play+=0}
  if(sprint){P.st-=7*dt;P.agT=(P.agT||0)+dt;if(P.agT>1.4){P.agT=0;gainXp('agility',3)}}else{P.st=Math.min(maxSt(),P.st+(moving?2.5:5.5)*dt)}
  if(moving&&!sprint){P.wT=(P.wT||0)+dt;if(P.wT>6){P.wT=0;gainXp('agility',1)}}
@@ -340,7 +340,7 @@ function castPortal(){if(P.dead)return;if(chickenForm())return toast('🐔 Bawk!
 function updPortal(dt){trackVillage();if(!portCh)return;if(P.dead||P.hp<portCh.hp-.01||Math.hypot(P.x-portCh.x,P.y-portCh.y)>.6){portCh=null;return toast('Portal interrupted','#f66')}
  portCh.hp=P.hp;portCh.left-=dt;if(Math.random()<dt*30)parts.push({x:P.x+rnd(-.5,.5),y:P.y,vx:0,vy:-2,life:.6,c:'#b46aff',sz:2});
  if(portCh.left<=0){const v=P.lastV;burst(P.x,P.y-.4,'#b46aff',30,5);fxs.push({k:'ring',x:P.x,y:P.y,r:2,life:.6,max:.6,c:'#b46aff'});P.x=v.x;P.y=v.y;P.path=null;P.chase=null;cam.x=P.x;cam.y=P.y;burst(P.x,P.y-.4,'#b46aff',30,5);fxs.push({k:'ring',x:P.x,y:P.y,r:2,life:.6,max:.6,c:'#b46aff'});P.portAt=Date.now()+PORT_CD;portCh=null;sys('🌀 Portal to '+v.n+'. Recharges in 30 min.','#c9f');sfx('lvl')}}
-function update(dt){clock+=dt;xTick(dt);netStep(dt);updPortal(dt);roosterT-=dt;if(roosterT<=0){spawnRooster();roosterT=rnd(300,540)}shroomSpawnT-=dt;if(shroomSpawnT<=0){spawnShroom();shroomSpawnT=rnd(60,150)}shroomTick(dt);if(P.inside)insideTick(dt);else if(shopSt)shopTick(dt);else updPlayer(dt);updEnemies(dt);updBots(dt);updNpcs(dt);updGuards(dt);updProj(dt);
+function update(dt){clock+=dt;suppTick(dt);xTick(dt);netStep(dt);updPortal(dt);roosterT-=dt;if(roosterT<=0){spawnRooster();roosterT=rnd(300,540)}shroomSpawnT-=dt;if(shroomSpawnT<=0){spawnShroom();shroomSpawnT=rnd(60,150)}shroomTick(dt);if(P.inside)insideTick(dt);else if(shopSt)shopTick(dt);else updPlayer(dt);updEnemies(dt);updBots(dt);updNpcs(dt);updGuards(dt);updProj(dt);
  for(let i=objs.length-1;i>=0;i--){const o=objs[i];if(o.exp&&clock>o.exp){objs.splice(i,1);objAt.delete(idx(o.x,o.y));continue}
   if(o.dead&&clock>o.dead){o.dead=0;if(o.t==='tree'){o.hp=ri(2,4);solid[idx(o.x,o.y)]=1}else if(o.t==='rock'){o.hp=ri(2,3);solid[idx(o.x,o.y)]=1}else o.hp=1}}
  for(const o of objs)if(o.hp===1&&(o.t==='tree'||o.t==='rock')&&!o.init){o.init=1;o.hp=o.t==='tree'?ri(2,4):ri(2,3)}

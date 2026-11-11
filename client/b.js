@@ -84,7 +84,7 @@ const idx=(x,y)=>y*MW+x,inb=(x,y)=>x>=0&&y>=0&&x<MW&&y<MH;
 const isWater=(x,y)=>inb(x,y)&&map[idx(x,y)]<=1;
 const objs=[],objAt=new Map(),buildings=[],npcs=[],inNpcs=[],houses=[];
 const GYS=[{x:CX+45,y:CY-42},{x:CX-93,y:CY+69},{x:CX+87,y:CY+93},{x:CX-51,y:CY-108}];
-const VIL=[],guards=[];const TOWN_R=20,VIL_R=12,safeAt=(x,y)=>Math.hypot(x-CX,y-CY)<TOWN_R||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R);
+const VIL=[],guards=[],WITCH=[];const TOWN_R=20,VIL_R=12,safeAt=(x,y)=>Math.hypot(x-CX,y-CY)<TOWN_R||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R)||WITCH.some(w=>Math.hypot(x-w.x,y-w.y)<w.r);
 function genWorld(){
  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){
   const dx=(x-CX)/(MW/2),dy=(y-CY)/(MH/2),d=Math.sqrt(dx*dx+dy*dy);
@@ -101,14 +101,14 @@ function genWorld(){
  for(let i=0;i<MW;i++){for(const [x,y] of [[i,CY],[CX,i],[i,CY+1],[CX+1,i]]){const k=idx(x,y);if(map[k]>=2&&map[k]!==TL.PLAZA&&map[k]!==TL.STONE)map[k]=TL.PATH}}
  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(map[idx(x,y)]<=1)solid[idx(x,y)]=1;
  // buildings (x,y = top-left in tiles relative to center)
- const B=[['Shop',-6,-6,5,4,'#34527f'],['Forge',3,-6,5,4,'#8a3a22'],['Inn',3,2,5,4,'#8a6a2a'],['Elder Hall',-6,2,5,4,'#4e3d6e'],['Bank',-6,-12,5,4,'#6b5a2a'],['Trade House',3,-12,5,4,'#2a5a5a']];
+ const B=[['Shop',-6,-6,5,4,'#34527f'],['Forge',3,-6,5,4,'#8a3a22'],['Inn',3,2,5,4,'#8a6a2a'],['Elder Hall',-6,2,5,4,'#4e3d6e'],['Bank',-6,-12,5,4,'#6b5a2a'],['Trade House',3,-12,5,4,'#2a5a5a'],['Mage Tower',-6,-18,5,4,'#4a3a7a']];
  for(const [n,dx,dy,w,h,c] of B){const b={n,x:CX+dx,y:CY+dy,w,h,c,dx:CX+dx+(w>>1),dy:CY+dy+h};buildings.push(b);
   for(let j=0;j<h;j++)for(let i=0;i<w;i++)solid[idx(b.x+i,b.y+j)]=1;
   // door tile stays blocked; NPC stands below the door
  }
  const npc=(b,n,role,col)=>{b.npc={n,name:n,role,col,npc:true,dead:0,x:b.dx,y:b.dy-1};inNpcs.push(b.npc)};
  const guard=(x,y)=>guards.push({guard:true,act:true,name:'Guard',x:x+.5,y:y+.5,hx:x+.5,hy:y+.5,hp:600,mhp:600,dead:0,flag:null,fT:0,vic:0,cd:0,sw:0,flash:0,dir:0});
- npc(buildings[0],'Pip','shop','#34527f');npc(buildings[1],'Brakka','smith','#8a3a22');npc(buildings[2],'Rosa','inn','#8a6a2a');npc(buildings[3],'Elder Maren','elder','#4e3d6e');npc(buildings[4],'Gorm','bank','#6b5a2a');npc(buildings[5],'Vessa','trade','#2a5a5a');
+ npc(buildings[0],'Pip','shop','#34527f');npc(buildings[1],'Brakka','smith','#8a3a22');npc(buildings[2],'Rosa','inn','#8a6a2a');npc(buildings[3],'Elder Maren','elder','#4e3d6e');npc(buildings[4],'Gorm','bank','#6b5a2a');npc(buildings[5],'Vessa','trade','#2a5a5a');npc(buildings[6],'Sorin','mage','#4a3a7a');
  guard(CX-1,CY-12);guard(CX+2,CY+13);guard(CX-13,CY);guard(CX+14,CY+1);guard(CX-9,CY-9);guard(CX+10,CY+10);
  const pre=new Uint8Array(MW*MH);{const q=[idx(CX,CY)];pre[q[0]]=1;for(let h=0;h<q.length;h++){const k=q[h],x=k%MW,y=(k/MW)|0;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+a,ny=y+b;if(inb(nx,ny)&&!pre[idx(nx,ny)]&&map[idx(nx,ny)]>1){pre[idx(nx,ny)]=1;q.push(idx(nx,ny))}}}}
  const VT=[[70,10,'Oakhollow',1,[['orc',12],['wolf',6]],['Hobb','Mara']],[-12,-76,'Stonereach',2,[['ogre',8],['orc',8]],['Dren','Sela']],[-76,44,'Gravewatch',3,[['wraith',10],['skeleton',10],['ogre',4]],['Orin','Vesk']],[14,88,'Emberkeep',4,[['troll',8],['ogre',8]],['Tamsin','Rook']],[100,-52,'Frostmere',5,[['troll',10],['wraith',8]],['Bjorn','Ilsa']],[-92,-84,'Dragonwatch',6,[['demon',8],['troll',8]],['Kael','Nyra']]];
@@ -118,7 +118,15 @@ function genWorld(){
   if(!found)continue;const [vx,vy]=found;VIL.push({name,tier,mobs,x:vx,y:vy});
   for(let y=vy-8;y<=vy+8;y++)for(let x=vx-8;x<=vx+8;x++)if(Math.hypot(x-vx,y-vy)<6.2)map[idx(x,y)]=TL.PATH;
   const bds=[];for(const [n,bx,c] of [['Smithy',vx-7,'#6a4a2a'],['Inn',vx+3,'#553a20']]){const bd={n,x:bx,y:vy-5,w:4,h:3,c,dx:bx+2,dy:vy-2};buildings.push(bd);bds.push(bd);for(let j=0;j<3;j++)for(let i=0;i<4;i++)solid[idx(bd.x+i,bd.y+j)]=1;map[idx(bd.dx,bd.dy)]=TL.PATH}
+  if(tier>=4){const mb={n:'Mage Tower',x:vx-1,y:vy-5,w:3,h:3,c:'#4a3a7a',dx:vx,dy:vy-2};buildings.push(mb);for(let j=0;j<3;j++)for(let i=0;i<3;i++)solid[idx(mb.x+i,mb.y+j)]=1;map[idx(mb.dx,mb.dy)]=TL.PATH;npc(mb,'Magus '+nn[0],'mage','#4a3a7a')}
   npc(bds[0],nn[0],'shop','#6a4a2a');npc(bds[1],nn[1],'inn','#7a5a30');guard(vx-3,vy+2);guard(vx+3,vy+2);guard(vx-9,vy);guard(vx+9,vy)}
+ /* ---- the Witch's hut (forest) ---- */
+ {let best=null,bd2=1e9;const tx=CX-52,ty=CY+34,forestN=(vx,vy)=>{let n=0;for(let y=vy-5;y<=vy+5;y++)for(let x=vx-5;x<=vx+5;x++)if(map[idx(x,y)]===TL.FOREST)n++;return n};
+  for(const need of [30,12,0]){for(const [vx,vy] of cands){if(VIL.some(v=>Math.hypot(v.x-vx,v.y-vy)<30)||Math.hypot(vx-CX,vy-CY)<45)continue;if(forestN(vx,vy)<need)continue;const d=Math.hypot(vx-tx,vy-ty);if(d<bd2){bd2=d;best=[vx,vy]}}if(best)break}
+  if(best){const [wx,wy]=best;WITCH.push({x:wx,y:wy,r:7});
+   for(let y=wy-6;y<=wy+6;y++)for(let x=wx-6;x<=wx+6;x++){const k=idx(x,y);if(Math.hypot(x-wx,y-wy)<6&&map[k]>=2)map[k]=Math.hypot(x-wx,y-wy)<3.5?TL.PATH:TL.GRASS}
+   const hb={n:"Witch's Hut",x:wx-2,y:wy-4,w:4,h:3,c:'#3a5a3a',dx:wx,dy:wy-1};buildings.push(hb);for(let j=0;j<3;j++)for(let i=0;i<4;i++)solid[idx(hb.x+i,hb.y+j)]=1;map[idx(hb.dx,hb.dy)]=TL.PATH;npc(hb,'Morgaine','witch','#2f6a3a');
+   for(const [gx,gy] of [[wx-4,wy+1],[wx+4,wy+1],[wx,wy+4]])guards.push({guard:true,gob:true,act:true,name:'Goblin Guard',x:gx+.5,y:gy+.5,hx:gx+.5,hy:gy+.5,hp:400,mhp:400,dead:0,flag:null,fT:0,vic:0,cd:0,sw:0,flash:0,dir:0})}}
  /* ---- rentable cottages ---- */
  const canPlace=(x,y,w,h,okPath,town)=>{for(let j=y-1;j<=y+h+1;j++)for(let i=x-1;i<x+w+1;i++){if(!inb(i,j))return false;const k=idx(i,j);if(map[k]<2||solid[k])return false;if(!okPath&&map[k]===TL.PATH)return false;if(town&&(i>=CX-1&&i<=CX+2||j>=CY-1&&j<=CY+2))return false}return true};
  const HC=['#6a5a3a','#7a4a3a','#4a6a5a','#5a4a6a','#8a6a4a','#4a5a7a','#7a6a3a','#6a3a3a'];
@@ -130,11 +138,11 @@ function genWorld(){
  for(let h=0;h<q.length;h++){const [x,y]=q[h];for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+a,ny=y+b;if(inb(nx,ny)&&!solid[idx(nx,ny)]&&!reach[idx(nx,ny)]){reach[idx(nx,ny)]=1;q.push([nx,ny])}}}
  // resources
  const add=(x,y,t,extra={})=>{const o={x,y,t,hp:1,dead:0,...extra};objs.push(o);objAt.set(idx(x,y),o);if(t==='tree'||t==='rock'||t==='anvil')solid[idx(x,y)]=1;return o};
- for(const v of VIL)add(v.x,v.y-1,'fire');
+ for(const v of VIL)add(v.x,v.y-1,'fire');for(const w of WITCH)add(w.x+2,w.y+2,'fire');
  add(CX+4,CY-2,'anvil');add(CX+1,CY-3,'fire');add(CX-2,CY+3,'fire');
  for(let y=2;y<MH-2;y++)for(let x=2;x<MW-2;x++){
   const k=idx(x,y);if(!reach[k]||solid[k]||objAt.has(k))continue;
-  const t=map[k],r=hash(x,y,7),dc=Math.hypot(x-CX,y-CY);if(dc<22||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<13))continue;
+  const t=map[k],r=hash(x,y,7),dc=Math.hypot(x-CX,y-CY);if(dc<22||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<13)||WITCH.some(w=>Math.hypot(x-w.x,y-w.y)<8))continue;
   if(t===TL.FOREST&&r<.2)add(x,y,'tree');
   else if(t===TL.GRASS&&r<.025)add(x,y,'tree');
   else if(t===TL.STONE&&r<.07)add(x,y,'rock',{ore:hash(x,y,9)<.35?'iron':'copper'});

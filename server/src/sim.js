@@ -14,7 +14,7 @@ export function createSim() {
     requestAnimationFrame() {}, setInterval() {}, setTimeout() {}, clearTimeout() {}, addEventListener() {}, navigator: {}, location: { protocol: 'http:', host: 'x', hostname: 'x' },
     innerWidth: 400, innerHeight: 800, devicePixelRatio: 2, performance: { now: () => 0 }, fetch: () => Promise.reject(new Error('no')), WebSocket: function () {}, AudioContext: undefined };
   sb.window = sb; vm.createContext(sb);
-  const src = ['b.js', 'c.js', 'd.js', 'f.js', 'x.js', 'n.js'].map(rd).join('\n');
+  const src = ['b.js', 'c.js', 'd.js', 'f.js', 'x.js', 'n.js', 's.js'].map(rd).join('\n');
   vm.runInContext(src, sb, { filename: 'game.js' });
   vm.runInContext(fs.readFileSync(path.join(here, 'glue.vm.js'), 'utf8'), sb, { filename: 'glue.js' });
   const info = vm.runInContext('SRV.init()', sb);

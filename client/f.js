@@ -1,30 +1,44 @@
 /* ---------- interiors (shops + cottages) ---------- */
 let insideOn=false,infT=0,shopSt=null,shopOn=false;
-const KINDR={shop:'shop',smith:'smith',inn:'inn',elder:'elder',bank:'bank',trade:'trade'},NPCX={shop:80,smith:74,inn:132,elder:86,bank:80,trade:80};
+const KINDR={shop:'shop',smith:'smith',inn:'inn',elder:'elder',bank:'bank',trade:'trade',mage:'mage',witch:'witch'},NPCX={shop:80,smith:74,inn:132,elder:86,bank:80,trade:80,mage:80,witch:68};
 function playerSpr(px,py,dir,ph,moving){const et=eqTint();drawChar(px,py,dir,ph,et.ta?shade(et.ta,.7):ARMC[armLv(eqId('a'))],'#3a2a1a',{moving,wid:eqId('w'),tw:et.tw,ta:et.ta,arm:armLv(eqId('a')),helm:eqTier('h'),boots:eqTier('b'),sp:-1})}
-function enterShop(b){if(chickenForm()&&b.npc.role!=='inn')return toast('🐔 The shopkeeper shoos the chicken out. "Bawk off!"','#fc6');if(flagOf(P)==='red')return toast('🚫 "We don\'t serve murderers!"','#f66');shopSt={b,x:80,y:90,dir:3,ph:0,tx:null,talk:false,mv:false};P.path=null;P.chase=null;stopAct();goal=null;toast('🚪 '+b.n)}
+const RW=240,RH=144,RK=1.5,WY0=112,WY1=140;
+const npcX=role=>(NPCX[role]||80)*RK;
+function otherSpr(o,px,py,moving){const l=o.lk||{};drawChar(px,py,o.rdir|0,o.rph||0,l.ta?shade(l.ta,.7):(ARMC[l.a|0]||'#8fd'),'#3a2a1a',{moving,wid:l.w,tw:l.tw,ta:l.ta,arm:l.a|0,helm:l.h,boots:l.b,sp:-1})}
+function roomOthers(bid){return bid?[...NET.others.values()].filter(o=>o.bd===bid&&o.drx!=null):[]}
+function roomPeople(x,bid,me){const L=roomOthers(bid).filter(o=>!(o.rs&&o.bd===bid&&me.house)).map(o=>({y:o.dry,o}));L.push({y:me.y,me:1});L.sort((a,b)=>a.y-b.y);const old=g;g=x;x.textAlign='center';x.font='bold 7px monospace';x.lineWidth=2;x.strokeStyle='#000';
+ for(const e of L){if(e.me){playerSpr(Math.round(me.x-8),Math.round(me.y-14),me.dir,me.ph,me.mv);x.fillStyle='#ffe9a0';x.strokeText(P.name,me.x,me.y-17);x.fillText(P.name,me.x,me.y-17);if(NET.mySayT>0&&NET.mySay)roomBubble(x,me.x,me.y-24,NET.mySay);continue}
+  const o=e.o;otherSpr(o,Math.round(o.drx-8),Math.round(o.dry-14),o.rm);const fc=flagOf(o);x.fillStyle=fc?FCOL[fc]:'#8dffb0';x.strokeText(o.n,o.drx,o.dry-17);x.fillText(o.n,o.drx,o.dry-17);
+  const ic=o.s===1?'zZ':o.s===2?'oO':ACI[o.ac];if(ic){x.fillStyle='#fff';x.strokeText(ic,o.drx,o.dry-24);x.fillText(ic,o.drx,o.dry-24)}
+  if(o.sayT>0&&o.say)roomBubble(x,o.drx,o.dry-(ic?31:24),o.say)}
+ x.textAlign='left';g=old}
+function roomBubble(x,px,py,t){const L=bubbleLines(t);x.fillStyle='#fff';L.forEach((s,i)=>{const yy=py-(L.length-1-i)*8;x.strokeText(s,px,yy);x.fillText(s,px,yy)})}
+function enterShop(b){if(chickenForm()&&b.npc.role!=='inn')return toast('🐔 The shopkeeper shoos the chicken out. "Bawk off!"','#fc6');if(flagOf(P)==='red')return toast('🚫 "We don\'t serve murderers!"','#f66');shopSt={b,bid:bldId(b),x:120,y:136,dir:3,ph:0,tx:null,talk:false,mv:false};P.path=null;P.chase=null;stopAct();goal=null;toast('🚪 '+b.n)}
+function enterGuest(b){if(!b||P.inside)return;if(chickenForm())return toast('🐔 Bawk off!','#fc6');shopSt={b:{n:'Cottage #'+(b.id+1),x:b.x,y:b.y,npc:null},bid:bldId(b),guest:1,house:1,x:120,y:136,dir:3,ph:0,tx:null,talk:false,mv:false};P.path=null;P.chase=null;stopAct();goal=null;toast('🚪 Visiting cottage #'+(b.id+1))}
 function leaveShop(){shopSt=null;closePanel()}
-function nearNpc(){const s=shopSt,nx=NPCX[s.b.npc.role];return Math.hypot(s.x-nx,s.y-60)<34}
-function shopTalk(){const s=shopSt;if(!nearNpc()){s.talk=true;s.tx=NPCX[s.b.npc.role];s.ty=78;return toast('Walking over…')}openNpc(s.b.npc)}
+function nearNpc(){const s=shopSt;if(!s.b.npc)return false;return Math.hypot(s.x-npcX(s.b.npc.role),s.y-108)<44}
+function shopTalk(){const s=shopSt;if(!s.b.npc)return;if(!nearNpc()){s.talk=true;s.tx=npcX(s.b.npc.role);s.ty=WY0+4;return toast('Walking over…')}openNpc(s.b.npc)}
 function shopTick(dt){const s=shopSt;const rv=P.shroomT>0?-1:1;let vx=input.x*rv,vy=input.y*rv;const mag=Math.hypot(vx,vy);
  if(mag>.15){s.tx=null;s.talk=false;if(mag>1){vx/=mag;vy/=mag}}else{vx=vy=0;if(s.tx!=null){const dx=s.tx-s.x,dy=s.ty-s.y,d=Math.hypot(dx,dy);if(d<2){s.tx=null;if(s.talk){s.talk=false;if(nearNpc())openNpc(s.b.npc)}}else{vx=dx/d;vy=dy/d}}}
- const sp=48*(input.run?1.6:1);s.x=clamp(s.x+vx*sp*dt,10,150);s.y=clamp(s.y+vy*sp*dt,76,95);s.mv=!!(vx||vy);if(s.mv){s.dir=Math.abs(vx)>Math.abs(vy)?(vx>0?2:1):(vy>0?0:3);s.ph+=dt*(input.run?14:9)}
- if(s.y>=94&&s.x>64&&s.x<96&&vy>0)leaveShop()}
-function drawShop(){const el=$('#shopin');if(!shopOn){shopOn=true;el.style.display='flex'}const s=shopSt,x=$('#shc').getContext('2d');roomScene(x,KINDR[s.b.npc.role],clock,{col:s.b.npc.col});
- x.fillStyle='#5a3a1a';x.fillRect(64,93,32,3);x.fillStyle='#d9b24a';x.fillRect(64,93,32,1);const old=g;g=x;playerSpr(Math.round(s.x-8),Math.round(s.y-14),s.dir,s.ph,s.mv);g=old;
- const nr=nearNpc();$('#shTalk').style.opacity=nr?1:.5;$('#shTalk').textContent='💬 '+s.b.npc.n;if(s.tx!=null&&Math.hypot(s.tx-s.x,s.ty-s.y)>2){x.strokeStyle='#fff8';x.strokeRect(s.tx-2,s.ty-2,4,4)}}
+ const sp=70*(input.run?1.6:1);s.x=clamp(s.x+vx*sp*dt,12,RW-12);s.y=clamp(s.y+vy*sp*dt,WY0,WY1);s.mv=!!(vx||vy);if(s.mv){s.dir=Math.abs(vx)>Math.abs(vy)?(vx>0?2:1):(vy>0?0:3);s.ph+=dt*(input.run?14:9)}
+ if(s.y>=WY1-1&&s.x>96&&s.x<144&&vy>0)leaveShop()}
+function drawShop(){const el=$('#shopin');if(!shopOn){shopOn=true;el.style.display='flex'}const s=shopSt,x=$('#shc').getContext('2d');const rs=roomOthers(s.bid).some(o=>o.rs);
+ roomScene(x,s.house?'house':KINDR[s.b.npc.role],clock,{col:s.b.npc&&s.b.npc.col,player:rs,bc:s.house&&houses.find(h=>bldId(h)===s.bid)?.c});
+ x.fillStyle='#5a3a1a';x.fillRect(96,138,48,4);x.fillStyle='#d9b24a';x.fillRect(96,138,48,1);roomPeople(x,s.bid,{x:s.x,y:s.y,dir:s.dir,ph:s.ph,mv:s.mv,house:s.house});
+ const nr=s.b.npc&&nearNpc();$('#shTalk').style.display=s.b.npc?'':'none';$('#shTalk').style.opacity=nr?1:.5;if(s.b.npc)$('#shTalk').textContent='💬 '+s.b.npc.n;if(s.tx!=null&&Math.hypot(s.tx-s.x,s.ty-s.y)>2){x.strokeStyle='#fff8';x.strokeRect(s.tx-2,s.ty-2,4,4)}}
 function hideShop(){shopOn=false;$('#shopin').style.display='none'}
-$('#shc').addEventListener('pointerdown',e=>{if(!shopSt)return;const r=e.target.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*160,py=(e.clientY-r.top)/r.height*96,s=shopSt,nx=NPCX[s.b.npc.role];
- if(Math.abs(px-nx)<22&&py>6&&py<64){shopTalk();return}s.talk=false;s.tx=clamp(px,10,150);s.ty=clamp(py,76,95)});
+$('#shc').addEventListener('pointerdown',e=>{if(!shopSt)return;const r=e.target.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*RW,py=(e.clientY-r.top)/r.height*RH,s=shopSt;
+ if(s.b.npc&&Math.abs(px-npcX(s.b.npc.role))<30&&py>10&&py<100){shopTalk();return}s.talk=false;s.tx=clamp(px,12,RW-12);s.ty=clamp(py,WY0,WY1)});
 $('#shTalk').addEventListener('pointerdown',()=>{if(shopSt)shopTalk()});$('#shLeave').addEventListener('pointerdown',()=>{if(shopSt)leaveShop()});
-function roomScene(x,kind,t,o={}){const W=160,H=96,old=g;g=x;x.imageSmoothingEnabled=false;
+let RS=null,NPCREC=null,CNTR=null;
+function roomScene(x0,kind,t,o={}){const big=x0.canvas&&x0.canvas.width===RW;let x=x0;if(big){RS=RS||mk(160,96,()=>{});x=RS.getContext('2d');x.clearRect(0,0,160,96)}NPCREC=null;CNTR=null;const W=160,H=96,old=g;g=x;x.imageSmoothingEnabled=false;
  const r=(c,a,b,w,h)=>{x.fillStyle=c;x.fillRect(a,b,w,h)},kk=Math.cos(((clock+90)/420%1)*6.2832),night=kk<-.1;
  r('#6b4a2a',0,0,W,58);for(let y=0;y<58;y+=6)r('#00000022',0,y,W,1);for(let xx=0;xx<W;xx+=16)r('#00000014',xx,0,1,58);r('#4a2e16',0,0,W,4);r('#3a2412',0,56,W,3);
  r('#8a6238',0,59,W,37);for(let y=59,i=0;y<96;y+=6,i++){r('#00000028',0,y,W,1);for(let xx=0;xx<W;xx+=20)r('#00000018',xx+(i%2)*10,y,1,6)}
  const win=(a,b)=>{r('#2a1608',a-2,b-2,34,32);r(night?'#0a1230':'#8ccaff',a,b,30,28);if(night){for(let i=0;i<7;i++)r('#fff',a+((i*11)%28),b+((i*7)%24),1,1);r('#f4f0c0',a+20,b+5,4,4);r('#0a1230',a+22,b+5,3,3)}else{r('#ffffffaa',a+4,b+4,10,3);r('#ffffffaa',a+16,b+12,8,2);r('#ffe080',a+22,b+3,5,5)}r('#2a1608',a+14,b,2,28);r('#2a1608',a,b+13,30,2)};
  const fire=(a,b,w)=>{r('#5a5a62',a,b,w,38);r('#44444c',a+2,b+2,w-4,2);r('#0a0604',a+5,b+10,w-10,28);for(let i=0;i<4;i++){const hh=10+Math.sin(t*7+i*1.7)*4+i%2*3,fx=a+7+i*((w-16)/3);r(i%2?'#ff9a2a':'#ff5a1a',fx,b+38-hh,5,hh);r('#ffe08a',fx+1,b+38-hh*.5,3,hh*.5)}r('#3a2412',a+4,b+36,w-8,2);r('#3a2412',a-2,b-2,w+4,3)};
- const npc=(px,py,col,wid)=>{x.save();x.translate(px,py);x.scale(2,2);drawChar(0,0,0,t,col,'#552',{wid:wid||null});x.restore()};
- const counter=(y)=>{r('#7a5230',0,y,W,4);r('#5a3a1a',0,y+4,W,22);for(let xx=0;xx<W;xx+=14)r('#00000030',xx,y+4,1,22);r('#00000040',0,y+4,W,2)};
+ const npc=(px,py,col,wid)=>{if(big){NPCREC=[px,py,col,wid];return}x.save();x.translate(px,py);x.scale(2,2);drawChar(0,0,0,t,col,'#552',{wid:wid||null});x.restore()};
+ const counter=(y)=>{CNTR=y;r('#7a5230',0,y,W,4);r('#5a3a1a',0,y+4,W,22);for(let xx=0;xx<W;xx+=14)r('#00000030',xx,y+4,1,22);r('#00000040',0,y+4,W,2)};
  if(kind==='house'){win(18,14);r('#3a2412',70,12,24,18);r('#8ab04a',72,14,20,14);r('#5a8a3a',72,22,20,6);r('#ffe080',84,16,4,4);fire(112,18,38);
   r('#7a2a2a',64,72,60,18);r('#d9b24a',64,72,60,2);r('#d9b24a',64,88,60,2);r('#9a3a3a',70,76,48,10);
   r('#4a2e16',10,64,62,28);r('#e8dcc8',12,66,58,22);r('#ffffff',14,68,14,10);r(o.bc||'#a33',30,68,38,20);r('#ffffff30',30,68,38,3);r('#00000030',30,84,38,4);
@@ -38,6 +52,12 @@ function roomScene(x,kind,t,o={}){const W=160,H=96,old=g;g=x;x.imageSmoothingEna
   x.fillStyle='rgba(255,140,40,'+(.08+.04*Math.sin(t*9))+')';x.fillRect(0,0,W,H)}
  else if(kind==='bank'){win(16,12);r('#2a2a30',4,10,40,56);r('#4a4a55',6,12,36,52);r('#b8860b',22,36,6,8);for(let i=0;i<3;i++)r('#d9b24a',96+i*14,56-i*4,10,4+i*4);r('#8a6a1a',100,40,26,12);r('#d9b24a',100,40,26,2);npc(64,14,o.col||'#6b5a2a');counter(46);for(let i=0;i<6;i++)r('#ffd36b',16+i*6,44,4,2)}
  else if(kind==='trade'){win(16,12);for(let i=0;i<3;i++){r('#7a5a2a',10+i*50,36,40,14);r('#5a3a1a',12+i*50,50,3,16);r('#5a3a1a',45+i*50,50,3,16);r(['#c33','#3a8','#e90'][i],8+i*50,30,44,6)}npc(64,12,o.col||'#2a5a5a');r('#e8dcc8',58,64,44,12);r('#3a2a1a',58,64,44,2)}
+ else if(kind==='mage'){win(14,12);r('#2a1a4a',60,0,40,22);for(let i=0;i<3;i++)r(['#7a3aff','#3aa8ff','#ff5ad8'][i],64+i*12,8+Math.sin(t*3+i)*2,6,8);for(let sy=0;sy<3;sy++){r('#2a1608',108,8+sy*14+10,46,2);for(let i=0;i<8;i++)r(['#a33','#36a','#83a','#3a8'][(i+sy)%4],109+i*5.5,8+sy*14+(i%2),4,10-i%2)}
+  npc(64,14,o.col||'#4a3a7a','staff');counter(46);for(let i=0;i<5;i++)r(['#7a3aff','#3aa8ff','#ff5ad8','#ffd36b','#5aff9a'][i],16+i*7,43,4,3);r('#3a1a6a',130,36,18,10);r('#9a6aff',134,30+Math.sin(t*4)*1.5,10,8)}
+ else if(kind==='witch'){win(112,10);r('#2a1608',6,6,70,3);for(let i=0;i<7;i++){r(['#6a8a3a','#8a5a2a','#7a3a6a','#3a7a5a'][i%4],10+i*9,9,3,12+(i%3)*3)}
+  for(let sy=0;sy<2;sy++){r('#2a1608',6,30+sy*16,60,2);for(let i=0;i<7;i++)r(['#3a8a3a','#8a3a8a','#c8a02a','#2a6aa8'][(i+sy)%4],8+i*8,22+sy*16,5,8)}
+  r('#222',100,46,30,16);r('#444',98,44,34,4);r('#3a2a1a',102,62,4,6);r('#3a2a1a',124,62,4,6);r('#5aff6a',104,40+Math.sin(t*5)*1,20,5);r('#aaffaa',108+((t*9)%12),34-((t*14)%8),3,3);
+  npc(52,16,o.col||'#2f6a3a','staff');counter(52);r('#2a5a2a',140,40,16,22);r('#8a4aff',144,34,8,8)}
  else if(kind==='inn'){win(16,12);fire(112,18,38);for(let i=0;i<2;i++){const bx=64+i*30;r('#6a4222',bx,34,22,24);r('#4a2c14',bx,40,22,2);r('#4a2c14',bx,50,22,2);r('#8a6238',bx+2,34,18,2)}
   npc(116,14,o.col||'#8a6a2a');counter(46);for(let i=0;i<4;i++){r('#d9a850',14+i*12,38,6,8);r('#fff',14+i*12,38,6,2)}r('#6a4222',2,30,12,24)}
  else{r('#3a2412',6,6,60,52);for(let sy=0;sy<4;sy++){r('#2a1608',8,10+sy*12+9,56,2);for(let i=0;i<10;i++){const c=['#a33','#36a','#3a6','#a83','#83a','#555'][(i*3+sy)%6];r(c,9+i*5.5,10+sy*12+(i%3),4,9-i%3)}}
@@ -45,10 +65,11 @@ function roomScene(x,kind,t,o={}){const W=160,H=96,old=g;g=x;x.imageSmoothingEna
   r('#5a3a1a',128,50,4,12);r('#2a5a8a',122,34,16,16);r('#4a8a4a',126,38,6,5);r('#d9b24a',122,48,16,2);fire(116,6,0)}
  if(kind!=='house'&&kind!=='elder'||kind==='elder'){}
  const gl=x.createRadialGradient(130,40,4,130,40,70);gl.addColorStop(0,'rgba(255,150,50,.10)');gl.addColorStop(1,'rgba(0,0,0,.22)');x.fillStyle=gl;x.fillRect(0,0,W,H);
+ if(big){x0.imageSmoothingEnabled=false;x0.drawImage(RS,0,0,RW,RH);if(NPCREC){const [px,py,col,wid]=NPCREC,cx=(px+16)*RK,cy=(py+28)*RK;g=x0;drawChar(Math.round(cx-8),Math.round(cy-14),0,t,col,'#552',{wid:wid||null});if(CNTR!=null)x0.drawImage(RS,0,CNTR,160,26,0,CNTR*RK,RW,26*RK)}}
  g=old}
-function drawBanner(k){const bn=$('#banner');if(!bn)return;const x=bn.getContext('2d'),KIND={shop:'shop',forge:'smith',inn:'inn',elder:'elder',house:'house',bank:'bank',trade:'trade'}[k];x.clearRect(0,0,160,70);x.save();x.translate(0,-16);roomScene(x,KIND,clock,{col:npcCur&&npcCur.col,bc:npcCur&&npcCur.c});x.restore()}
+function drawBanner(k){const bn=$('#banner');if(!bn)return;const x=bn.getContext('2d'),KIND={shop:'shop',forge:'smith',inn:'inn',elder:'elder',house:'house',bank:'bank',trade:'trade',mage:'mage',witch:'witch'}[k];x.clearRect(0,0,160,70);x.save();x.translate(0,-16);roomScene(x,KIND,clock,{col:npcCur&&npcCur.col,bc:npcCur&&npcCur.c});x.restore()}
 function drawInside(){const el=$('#inside');if(!insideOn){insideOn=true;el.style.display='flex'}
- const h=houses[P.inside]||houses[0],x=$('#room').getContext('2d');roomScene(x,'house',clock,{player:true,bc:h.c});
+ const h=houses[P.inside]||houses[0],x=$('#room').getContext('2d');roomScene(x,'house',clock,{player:true,bc:h.c});{const old=g;g=x;x.textAlign='center';x.font='bold 7px monospace';x.lineWidth=2;x.strokeStyle='#000';for(const o of roomOthers(bldId(h)).sort((a,b)=>a.dry-b.dry)){otherSpr(o,Math.round(o.drx-8),Math.round(o.dry-14),o.rm);x.fillStyle='#8dffb0';x.strokeText(o.n,o.drx,o.dry-17);x.fillText(o.n,o.drx,o.dry-17);if(o.sayT>0&&o.say)roomBubble(x,o.drx,o.dry-24,o.say)}x.textAlign='left';g=old}
  infT-=1/60;if(infT<=0){infT=.4;const m=Math.floor(rentLeft()/60000),s=Math.floor(rentLeft()/1000)%60;$('#inf').innerHTML=`<b>🏠 ${h.town} · Cottage #${h.id+1}</b><br>💤 Resting… ❤ ${Math.ceil(P.hp)}/${maxHp()} · ⚡ ${Math.ceil(P.st)}/${maxSt()} · 🔮 ${Math.floor(P.mp)}/${maxMp()}<br>⏱ Rent left: ${m}:${String(s).padStart(2,'0')}<br><span style="opacity:.7;font-size:12px">Safe from monsters and players. Rest 3+ min for a +20% xp boost.</span>`}}
 function hideInside(){insideOn=false;$('#inside').style.display='none'}
 $('#bLeave').addEventListener('pointerdown',()=>{if(P&&P.inside)leaveHouse()});

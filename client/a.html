@@ -62,13 +62,13 @@ canvas{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;d
 #title input{font-size:18px;padding:10px;border-radius:8px;border:1px solid var(--bd);background:#0b1020;color:#fff;text-align:center;touch-action:auto;user-select:text}
 #title .btn{padding:0 28px;font-size:18px;height:48px}
 #shopin{position:fixed;inset:0;z-index:0;background:#120c06;display:none;flex-direction:column;align-items:center;justify-content:flex-start;gap:12px;padding:146px 10px 0}
-#shopin canvas{position:static;inset:auto;height:auto;width:min(100%,620px);aspect-ratio:160/96;image-rendering:pixelated;border:3px solid var(--bd);border-radius:10px;touch-action:none}
+#shopin canvas{position:static;inset:auto;height:auto;width:min(100%,620px);aspect-ratio:240/144;image-rendering:pixelated;border:3px solid var(--bd);border-radius:10px;touch-action:none}
 #shopin .btn{padding:0 18px;height:42px;font-size:15px}#shb{display:flex;gap:12px}
 body.trip #c{animation:trip 4s linear infinite,wob 3s ease-in-out infinite}
 @keyframes trip{0%{filter:hue-rotate(0deg) saturate(1.8) contrast(1.1)}100%{filter:hue-rotate(360deg) saturate(1.8) contrast(1.1)}}
 @keyframes wob{0%,100%{transform:scale(1.04) rotate(-.7deg)}50%{transform:scale(1.07) rotate(.7deg)}}
 #inside{position:fixed;inset:0;z-index:8;background:#120c06;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px;color:var(--tx)}
-#inside canvas{position:static;inset:auto;height:auto;width:min(100%,620px);aspect-ratio:160/96;image-rendering:pixelated;border:3px solid var(--bd);border-radius:10px}
+#inside canvas{position:static;inset:auto;height:auto;width:min(100%,620px);aspect-ratio:240/144;image-rendering:pixelated;border:3px solid var(--bd);border-radius:10px}
 #inf{text-align:center;font-size:14px;line-height:1.5;max-width:420px}
 #story{position:fixed;inset:0;z-index:20;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px;color:var(--tx);font-family:Georgia,serif}
 #story canvas{position:static;inset:auto;height:auto;width:min(100%,640px);aspect-ratio:192/108;image-rendering:pixelated;border:3px solid var(--bd);border-radius:6px}
@@ -76,18 +76,18 @@ body.trip #c{animation:trip 4s linear infinite,wob 3s ease-in-out infinite}
 #stb{display:flex;gap:12px}#stb .btn{padding:0 22px;height:44px;font-size:16px}
 </style></head><body>
 <canvas id="c"></canvas>
-<div id="shopin"><canvas id="shc" width="160" height="96"></canvas><div id="shb"><div class="btn" id="shTalk">💬 Talk</div><div class="btn" id="shLeave">🚪 Leave</div></div><div style="font-size:12px;opacity:.65">Walk with the stick or tap the floor · tap the shopkeeper to talk · step on the mat to leave</div></div>
+<div id="shopin"><canvas id="shc" width="240" height="144"></canvas><div id="shb"><div class="btn" id="shTalk">💬 Talk</div><div class="btn" id="shLeave">🚪 Leave</div></div><div style="font-size:12px;opacity:.65">Walk with the stick or tap the floor · tap the shopkeeper to talk · step on the mat to leave</div></div>
 <div class="hud"><div class="bar" id="hp"><i></i><span></span></div><div class="bar" id="st"><i></i><span></span></div><div class="bar" id="mp"><i></i><span></span></div><div class="bar" id="xp"><i></i><span></span></div></div>
 <div id="where"></div>
 <div id="boss" class="bar"><i></i><span></span></div>
 <input id="chatin" maxlength="120" placeholder="💬 chat…" style="display:none;position:fixed;top:68px;left:8px;width:42%;height:24px;z-index:6;background:#000a;color:#fff;border:1px solid #fff3;border-radius:6px;font-size:12px;padding:0 6px"><div id="top"><div class="btn" id="bSk">📜</div><div class="btn" id="bBag">🎒</div><div class="btn" id="bSp" style="display:none">🔮</div><div class="btn" id="bDev" style="width:auto;padding:0 8px;font-size:12px;font-weight:bold;color:#ffd36b">DEV</div><div class="btn" id="bMute">🔊</div></div>
-<div id="chat"></div><div id="ping"></div>
+<div id="chat"></div><div id="ping"></div><div id="errbox" style="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(4px + env(safe-area-inset-bottom));font:10px monospace;color:#ffb0b0;background:#400a;padding:2px 6px;border-radius:6px;pointer-events:none;z-index:9;display:none;max-width:90vw"></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="hot"></div>
 <div id="acts"><div class="btn big" id="bAtk">⚔️</div><div class="btn" id="bUse">✋</div><div class="btn" id="bRun">👟</div></div>
 <div class="btn" id="bPvp">🏳️</div>
 <div id="panel"></div>
-<div id="inside"><canvas id="room" width="160" height="96"></canvas><div id="inf"></div><div class="btn" id="bLeave" style="padding:0 24px;height:46px;font-size:17px">🚪 Leave cottage</div></div>
+<div id="inside"><canvas id="room" width="240" height="144"></canvas><div id="inf"></div><div class="btn" id="bLeave" style="padding:0 24px;height:46px;font-size:17px">🚪 Leave cottage</div></div>
 <div id="story"><canvas id="stc" width="192" height="108"></canvas><div id="stt"></div><div id="stb"><div class="btn" id="stSkip">Skip</div><div class="btn" id="stNext">Next ▶</div></div></div>
 <div id="toast"></div>
 <div id="title"><h1>🌀 DARK PORTALS</h1><div style="opacity:.8;max-width:320px">A tiny MMO that grows with you. Every skill is trained by using it.</div>

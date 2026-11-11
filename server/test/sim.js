@@ -22,5 +22,5 @@ const idB = [...A.msgs.filter(m => m.t === 'players').pop().l][0]?.id; A.ws.send
 const mob = snapA[0].a.find(x => x[1] !== 'wizard' && x[1] !== 'wyrm' && Math.hypot(x[2] - 150.5, x[3] - 160.5) < 8);
 if (mob) { A.ws.send(JSON.stringify({ t: 'hit', id: mob[0], d: 9999 })); await new Promise(r => setTimeout(r, 400)); console.log('kill msg', A.msgs.some(m => m.t === 'kill' && m.l.some(k => k.id === mob[0] && k.by === hello.id))) } else console.log('no mob near');
 const last = B.msgs.filter(m => m.t === 'players').pop().l[0]; console.log('look relayed', JSON.stringify(last.l), 'state', last.s);
-A.ws.send(JSON.stringify({ t: 'chat', m: 'hi' })); await new Promise(r => setTimeout(r, 400)); console.log('chat oO', B.msgs.filter(m => m.t === 'players').pop().l[0].s === 2);
+A.ws.send(JSON.stringify({ t: 'chat', m: 'hi' })); await new Promise(r => setTimeout(r, 400)); console.log('chat has sender id', B.msgs.some(m => m.t === 'chat' && m.id === hello.id));
 A.ws.close(); B.ws.close(); await s.close(); process.exit(0);

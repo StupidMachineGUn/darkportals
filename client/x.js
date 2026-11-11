@@ -30,17 +30,22 @@ function aucHtml(){let h=`<div class="tip" style="font-size:13px;opacity:1">💰
  h+=`<h3 style="margin-top:10px">List an item (10 min)</h3><div class="row"><span style="flex:1">Price: ${Math.round(listMul*100)}% of value</span>${bt('alm',0,'Change')}</div>`;
  P.inv.forEach((s,i)=>{if(!isEq(s)&&P.sales.length<5){const p=Math.max(1,Math.round(valOf(s)*s.n*listMul));h+=xrow(s,'alist',s.u,'List '+p+'g')}});return h}
 /* trade table */
+function trSync(){TR.my=0;TR.bot=0;netSend({t:'tu',items:TR.mine.map(i=>{const o={...i};delete o.u;return o}),gold:TR.mg})}
 function trVal(items,g){return g+items.reduce((a,s)=>a+valOf(s)*s.n,0)}
 function trStart(b){const th=[];for(let i=0;i<ri(1,2);i++){const s={id:pick(AUCPOOL),n:1,u:uid()};rollGear(s,'mob',false);th.push(s)}
  TR={b,mine:[],mg:0,theirs:th,tg:ri(20,200),bot:0,msg:`${b.name} lays out an offer.`}}
 function tradeHtml(){let h=hdr('🤝 Trade House')+`<div class="row">${bt('tab','auc','🔨 Auction',thTab==='auc')}${bt('tab','tbl','🤝 Trade table',thTab==='tbl')}</div>`;
  if(thTab==='auc')return h+aucHtml();
- if(!TR){h+=`<div class="tip" style="font-size:13px;opacity:1">Pick a trader. (Adventurers shown here stand in for real players until the server arrives.)</div>`;for(const b of bots)h+=`<div class="row"><span style="flex:1;color:${b.col}">● ${b.name}${titleOf(b.xp)?' the '+titleOf(b.xp):''}</span>${bt('tr0',b.name,'Trade')}</div>`;return h}
+ if(!TR){const q=NET.treq&&NET.treq.t>clock?NET.treq:null,bid=netBid(),room=[...NET.others.values()].filter(o=>o.bd&&o.bd===bid);
+  if(q)h+=`<div class="tip" style="font-size:13px;opacity:1">📨 <b>${q.n}</b> wants to trade with you.</div><div class="row">${bt('trA',q.from,'✅ Accept')}${bt('trD',0,'Decline')}</div>`;
+  h+=`<div class="tip" style="font-size:13px;opacity:1">Trade safely with other players standing in this room. Both sides must confirm, and any change resets the confirmations.</div>`;
+  if(!NET.ws)h+='<div class="tip">You must be online to trade with players.</div>';else if(!room.length)h+='<div class="tip">Nobody else is in the Trade House right now. Ask a friend to come in.</div>';
+  for(const o of room)h+=`<div class="row"><span style="flex:1;color:#8dffb0">● ${o.n}</span>${bt('trq',o.id,'Offer trade')}</div>`;return h}
  const me=TR.mine,mv=trVal(me,TR.mg),tv=trVal(TR.theirs,TR.tg);
- h+=`<div class="tip" style="font-size:13px;opacity:1">Trading with <b style="color:${TR.b.col}">${TR.b.name}</b> · ${TR.msg}</div>`;
+ h+=`<div class="tip" style="font-size:13px;opacity:1">Trading with <b style="color:${TR.p2p?'#8dffb0':TR.b.col}">${TR.p2p?TR.name:TR.b.name}</b> · ${TR.msg}</div>`;
  h+=`<h3>They offer ${TR.bot?'✅':'⬜'}</h3>`+TR.theirs.map(s=>xrow(s,'',0,'')).join('')+`<div class="row"><span style="flex:1">💰 ${TR.tg}g</span></div>`;
  h+=`<h3 style="margin-top:6px">You offer</h3>`+me.map(s=>xrow(s,'trm',s.u,'Remove')).join('')+`<div class="row"><span style="flex:1">💰 ${TR.mg}g <span class="tip">(have ${P.gold})</span></span>${bt('trg','-100','−100',TR.mg<100)}${bt('trg','100','+100',P.gold-TR.mg<100)}${bt('trg','all','All',P.gold<=TR.mg)}</div>`;
- h+=`<div class="row">${bt('trp',0,'📨 Propose',!me.length&&!TR.mg)}${bt('tra',0,'✅ Accept trade',!TR.bot)}${bt('trx',0,'Leave table')}</div>`;
+ h+=TR.p2p?`<div class="row">${bt('tra',0,TR.my?'✅ Confirmed – waiting for them…':'✅ Confirm trade',!!TR.my)}${bt('trx',0,'Cancel trade')}</div>`:`<div class="row">${bt('trp',0,'📨 Propose',!me.length&&!TR.mg)}${bt('tra',0,'✅ Accept trade',!TR.bot)}${bt('trx',0,'Leave table')}</div>`;
  h+=`<h3 style="margin-top:6px">Add from backpack</h3>`;P.inv.forEach(s=>{if(!isEq(s)&&!me.includes(s))h+=xrow(s,'tri',s.u,'Offer')});return h}
 function xAct(a,v){
  if(a==='bg'){const b=P.bank;let n=0;if(v==='d100')n=Math.min(100,P.gold);else if(v==='dall')n=P.gold;else if(v==='w100')n=-Math.min(100,b.gold);else n=-b.gold;P.gold-=n;b.gold+=n;sfx('pick');return true}
@@ -53,11 +58,15 @@ function xAct(a,v){
  if(a==='alist'){const i=P.inv.findIndex(s=>s.u==v);if(i<0||isEq(P.inv[i])||P.sales.length>=5)return true;const s=P.inv.splice(i,1)[0],val=Math.max(1,valOf(s)*s.n);P.sales.push({it:s,cur:Math.max(1,Math.round(val*listMul)),bidder:null,exp:Date.now()+600000,max:Math.round(val*rnd(.7,1.8))});sfx('pick');toast('Listed for 10 minutes');return true}
  if(a==='acan'){const i=P.sales.findIndex(x=>x.it.u==v);if(i<0||P.sales[i].bidder)return true;giveItem(P.sales[i].it);P.sales.splice(i,1);return true}
  if(a==='tr0'){const b=bots.find(x=>x.name===v);if(b)trStart(b);return true}
- if(a==='trx'){TR=null;return true}
- if(a==='tri'){const s=P.inv.find(x=>x.u==v);if(s&&TR&&!TR.mine.includes(s)){TR.mine.push(s);TR.bot=0}return true}
- if(a==='trm'){TR.mine=TR.mine.filter(x=>x.u!=v);TR.bot=0;return true}
- if(a==='trg'){TR.mg=v==='all'?P.gold:clamp(TR.mg+(+v),0,P.gold);TR.bot=0;return true}
+ if(a==='trx'){if(TR&&TR.p2p)netSend({t:'tx'});TR=null;return true}
+ if(a==='trq'){netSend({t:'tq',to:+v});toast('📨 Trade offer sent');return true}
+ if(a==='trA'){netSend({t:'ta',to:+v});NET.treq=null;return true}
+ if(a==='trD'){NET.treq=null;return true}
+ if(a==='tri'){const s=P.inv.find(x=>x.u==v);if(s&&TR&&!TR.mine.includes(s)){TR.mine.push(s);TR.bot=0;if(TR.p2p)trSync()}return true}
+ if(a==='trm'){TR.mine=TR.mine.filter(x=>x.u!=v);TR.bot=0;if(TR.p2p)trSync();return true}
+ if(a==='trg'){TR.mg=v==='all'?P.gold:clamp(TR.mg+(+v),0,P.gold);TR.bot=0;if(TR.p2p)trSync();return true}
  if(a==='trp'){const m=trVal(TR.mine,TR.mg),t=trVal(TR.theirs,TR.tg),r=m/Math.max(1,t);if(r>=1){TR.bot=1;TR.msg='"Deal! Press Accept."'}else if(r>=.8){TR.bot=0;TR.msg=`"Add about ${Math.ceil(t*.98-m)}g more and we have a deal."`}else{TR.bot=0;TR.msg='"Not even close."'}return true}
+ if(a==='tra'&&TR&&TR.p2p){if(TR.my)return true;const sp=P.inv.length-TR.mine.length+TR.theirs.length;if(sp>24)return toast('Not enough bag space','#f66'),true;if(TR.mg>P.gold)return toast('Not enough gold','#f66'),true;TR.my=1;netSend({t:'tk'});return true}
  if(a==='tra'){if(!TR.bot)return true;const sp=P.inv.length-TR.mine.length+TR.theirs.length;if(sp>24)return toast('Not enough bag space','#f66'),true;
   for(const s of TR.mine){const i=P.inv.indexOf(s);if(i>=0)P.inv.splice(i,1)}P.gold-=TR.mg;TR.b.gold+=TR.mg;TR.b.gold=Math.max(0,TR.b.gold-TR.tg);P.gold+=TR.tg;for(const s of TR.theirs)giveItem(s);
   sys('🤝 Trade complete with '+TR.b.name+'!','#9fe3ff');sfx('lvl');TR=null;return true}

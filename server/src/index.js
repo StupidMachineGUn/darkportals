@@ -11,6 +11,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const PUB = path.join(here, '..', 'public');
 const VERSION = fs.existsSync(path.join(here, '..', 'VERSION')) ? fs.readFileSync(path.join(here, '..', 'VERSION'), 'utf8').trim() : 'dev';
 const MAX_BODY = 512 * 1024;
+const saveQ = new Map(); // per-user serialized saves (no lost/out-of-order writes)
 const SCHEMA_V = 1;
 
 export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
@@ -53,8 +54,11 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
         if (!ch || typeof ch !== 'object' || !ch.xp || typeof ch.name !== 'string' || !Array.isArray(ch.inv)) return send(res, 400, { err: 'Bad character' });
         if (ch.inv.length > 80) return send(res, 400, { err: 'Bad inventory' });
         const data = JSON.stringify(ch);
-        await db.query('DELETE FROM characters WHERE user_id=$1', [a.uid]);
-        await db.query('INSERT INTO characters(user_id,name,data,schema_v) VALUES($1,$2,$3,$4)', [a.uid, ch.name.slice(0, 12), data, SCHEMA_V]);
+        saveQ.set(a.uid, (saveQ.get(a.uid) || Promise.resolve()).catch(() => {}).then(async () => {
+          const u = await db.query('UPDATE characters SET name=$2,data=$3,schema_v=$4 WHERE user_id=$1', [a.uid, ch.name.slice(0, 12), data, SCHEMA_V]);
+          if (!u.rowCount) await db.query('INSERT INTO characters(user_id,name,data,schema_v) VALUES($1,$2,$3,$4)', [a.uid, ch.name.slice(0, 12), data, SCHEMA_V]);
+        }));
+        await saveQ.get(a.uid);
         return send(res, 200, { ok: 1 });
       }
       if (u.pathname === '/api/board' && req.method === 'GET') {
@@ -84,7 +88,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
 
   /* ---------- realtime presence + chat ---------- */
   const players = new Map(); // uid -> {ws,name,x,y,dir,eq,t,lastChat}
-  const wss = new WebSocketServer({ noServer: true, maxPayload: 4096 });
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 16384 });
   server.on('upgrade', (req, sock, head) => {
     const u = new URL(req.url, 'http://x');
     sock.setNoDelay?.(true);
@@ -96,12 +100,17 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   if (process.env.NO_SIM !== '1') { try { const { createSim } = await import('./sim.js'); sim = createSim(); console.log('world sim ready', sim.info) } catch (e) { console.error('sim disabled:', e.message) } }
   const eld = monitorEventLoopDelay({ resolution: 10 }); eld.enable(); setInterval(() => eld.reset(), 10000).unref();
   const MAX_SPEED = 14; // tiles/s incl. sprint + slack; anything faster is snapped back
+  const cleanItem = it => { try { if (!it || typeof it.id !== 'string' || it.id.length > 24) return null; const j = JSON.stringify(it); if (j.length > 500) return null; return JSON.parse(j) } catch { return null } };
+  const ground = new Map(); let gid = 0; // shared dropped items
+  const trades = new Map(); // uid -> session
+  const sendTo = (uid, o) => { const q = players.get(uid); if (q && q.ws.readyState === 1) q.ws.send(JSON.stringify(o)) };
+  const endTrade = (uid, why) => { const t = trades.get(uid); if (!t) return; trades.delete(t.a); trades.delete(t.b); const other = t.a === uid ? t.b : t.a; sendTo(other, { t: 'tx', why }) };
   wss.on('connection', (ws, a) => {
     const old = players.get(a.uid); if (old) { try { old.ws.close(4000, 'Logged in elsewhere') } catch {} }
     const me = { ws, uid: a.uid, name: a.name, x: 0, y: 0, dir: 0, eq: 0, t: Date.now(), lastChat: 0, init: false };
     players.set(a.uid, me);
     me.sp = sim ? sim.add(a.uid, a.name) : null;
-    ws.send(JSON.stringify({ t: 'hello', id: a.uid, online: players.size, world: sim ? sim.world() : null }));
+    ws.send(JSON.stringify({ t: 'hello', id: a.uid, online: players.size, world: sim ? sim.world() : null, gnd: [...ground.values()].map(g => ({ id: g.id, x: g.x, y: g.y, it: g.it })) }));
     broadcast({ t: 'sys', m: `${a.name} entered the world` }, me);
     ws.on('message', raw => {
       let m; try { m = JSON.parse(raw) } catch { return }
@@ -112,35 +121,58 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
           const tpOk = m.tp && now - (me.lastTp || 0) > 3000; if (tpOk) me.lastTp = now;
           if (d > MAX_SPEED * dt + 3 && !tpOk) { ws.send(JSON.stringify({ t: 'snap', x: me.x, y: me.y })); return; }
         }
-        if (Math.hypot(m.x - me.x, m.y - me.y) > .05) me.mvT = now; me.x = m.x; me.y = m.y; me.dir = m.dir | 0; me.eq = m.eq | 0; me.name = a.name; me.t = now; me.init = true; me.hp = m.hp | 0; me.ch = m.ch ? 1 : 0; me.bz = m.bz ? 1 : 0; { const l = m.lk || {}, cs = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : null, ci = v => Number.isInteger(v) && v >= -1 && v < 20 ? v : 0; me.lk = { w: typeof l.w === 'string' ? l.w.slice(0, 16) : null, tw: cs(l.tw), ta: cs(l.ta), a: ci(l.a), h: ci(l.h), b: ci(l.b) } } me.mh = m.mhp | 0; me.f = m.f === 'red' || m.f === 'orange' || m.f === 'blue' ? m.f : null; me.col = String(m.col || '').slice(0, 9);
+        if (Math.hypot(m.x - me.x, m.y - me.y) > .05) me.mvT = now; me.x = m.x; me.y = m.y; me.dir = m.dir | 0; me.eq = m.eq | 0; me.name = a.name; me.t = now; me.init = true; me.hp = m.hp | 0; me.ch = m.ch ? 1 : 0; me.bz = m.bz ? 1 : 0; me.ac = typeof m.ac === 'string' ? m.ac.slice(0, 8) : ''; me.bd = Number.isFinite(m.bd) ? m.bd | 0 : 0; me.rd = m.rd | 0; me.rm = m.rm ? 1 : 0; me.rs = m.rs ? 1 : 0; if (Number.isFinite(m.rx) && Number.isFinite(m.ry)) { if (Math.hypot(m.rx - (me.rx || 0), m.ry - (me.ry || 0)) > .5) me.mvT = now; me.rx = +m.rx.toFixed(1); me.ry = +m.ry.toFixed(1) } if (me.ac) me.mvT = now; { const l = m.lk || {}, cs = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : null, ci = v => Number.isInteger(v) && v >= -1 && v < 20 ? v : 0; me.lk = { w: typeof l.w === 'string' ? l.w.slice(0, 16) : null, tw: cs(l.tw), ta: cs(l.ta), a: ci(l.a), h: ci(l.h), b: ci(l.b) } } me.mh = m.mhp | 0; me.f = m.f === 'red' || m.f === 'orange' || m.f === 'blue' ? m.f : null; me.col = String(m.col || '').slice(0, 9);
         const sp = me.sp; if (sp) { sp.x = m.x; sp.y = m.y; sp.dir = m.dir | 0; sp.hp = m.hp | 0; sp.mhp = m.mhp | 0 || sp.mhp; sp.dead = m.dead ? 1 : 0; sp.inside = m.inside ? 1 : 0; sp.ready = true; if (m.xp && typeof m.xp === 'object') { const x = {}; for (const k in m.xp) if (Number.isFinite(m.xp[k])) x[k] = Math.min(1e8, m.xp[k]); sp.xp = x } }
-      } else if (m.t === 'ping') { ws.send(JSON.stringify({ t: 'pong', c: m.c, ld: Math.round(eld.mean / 1e6 * 10) / 10, q: ws.bufferedAmount }));
+      } else if (m.t === 'ping') { ws.send(JSON.stringify({ t: 'pong', c: m.c, ld: Math.max(0, Math.round((eld.mean / 1e6 - 10) * 10) / 10), q: ws.bufferedAmount }));
       } else if (m.t === 'hit' && sim && me.sp) { sim.hit(me.sp, m.id | 0, +m.d);
       } else if (m.t === 'fx' && sim && me.sp) { sim.fx(me.sp, m.id | 0, String(m.sp), +m.d);
       } else if (m.t === 'act') { me.mvT = now; // swing / spell visuals for others
         const o = JSON.stringify({ t: 'act', id: a.uid, k: String(m.k || '').slice(0, 12), x: +m.x || 0, y: +m.y || 0, dir: m.dir | 0, sp: String(m.sp || '').slice(0, 16), w: String(m.w || '').slice(0, 16) });
         for (const q of players.values()) if (q !== me && q.ws.readyState === 1 && Math.hypot(q.x - me.x, q.y - me.y) < 45) q.ws.send(o);
       } else if (m.t === 'pvp') { // melee hit on another player; relayed to victim for them to apply
-        const q = players.get(m.to); if (!q || q === me || !q.init || q.ws.readyState !== 1) return;
+        const q = players.get(m.to); if (!q || q === me || !q.init || q.ws.readyState !== 1 || q.bd || me.bd) return;
         if (now - (me.lastPvp || 0) < 150) return; me.lastPvp = now;
         if (Math.hypot(q.x - me.x, q.y - me.y) > 4) return;
         q.ws.send(JSON.stringify({ t: 'phit', from: a.uid, fn: a.name, d: Math.max(1, Math.min(+m.d || 1, 400)) }));
       } else if (m.t === 'pkill') { // victim reports death by player
-        const k = players.get(m.by); if (k && k.ws.readyState === 1) { const sx = {}; if (m.sx && typeof m.sx === 'object') for (const kk in m.sx) if (Number.isFinite(+m.sx[kk])) sx[kk.slice(0, 16)] = Math.min(+m.sx[kk], 1e6); k.ws.send(JSON.stringify({ t: 'pk', who: a.uid, n: a.name, g: Math.max(0, Math.min(+m.g || 0, 1e7)), sx, b: Math.max(0, Math.min(+m.b || 0, 5000)), fl: m.fl ? 1 : 0 })) }
+        const k = players.get(m.by); if (k && k.ws.readyState === 1) { const sx = {}; if (m.sx && typeof m.sx === 'object') for (const kk in m.sx) if (Number.isFinite(+m.sx[kk])) sx[kk.slice(0, 16)] = Math.min(+m.sx[kk], 1e6); k.ws.send(JSON.stringify({ t: 'pk', who: a.uid, n: a.name, g: Math.max(0, Math.min(+m.g || 0, 1e7)), sx, b: Math.max(0, Math.min(+m.b || 0, 5000)), fl: m.fl ? 1 : 0, it: cleanItem(m.it) })) }
         broadcast({ t: 'sys', m: `${a.name} was slain by ${k ? k.name : 'a player'}` });
+      } else if (m.t === 'gd') { // drop an item on the ground
+        const it = cleanItem(m.it); if (!it || !Number.isFinite(m.x) || !Number.isFinite(m.y) || ground.size > 300 || now - (me.lastGd || 0) < 500) return; me.lastGd = now;
+        const g = { id: ++gid, x: +m.x, y: +m.y, it, exp: now + 180000, by: me.uid, free: now + 10000 }; ground.set(g.id, g);
+        broadcast({ t: 'gd', g: { id: g.id, x: g.x, y: g.y, it } });
+      } else if (m.t === 'gt') { // pick one up
+        const g = ground.get(m.id | 0); if (!g || Math.hypot(g.x - me.x, g.y - me.y) > 3.5 || (g.by === me.uid && now < g.free)) return; ground.delete(g.id);
+        ws.send(JSON.stringify({ t: 'gt', it: g.it })); broadcast({ t: 'gx', id: g.id });
+      } else if (m.t === 'tq') { // trade request
+        const q = players.get(m.to); if (!q || q === me || trades.has(me.uid) || trades.has(q.uid) || now - (me.lastTq || 0) < 1500) return; me.lastTq = now;
+        sendTo(q.uid, { t: 'tq', from: me.uid, n: a.name });
+      } else if (m.t === 'ta') { // accept request
+        const q = players.get(m.to); if (!q || trades.has(me.uid) || trades.has(q.uid)) return;
+        const t = { a: q.uid, b: me.uid, o: { [q.uid]: { items: [], gold: 0 }, [me.uid]: { items: [], gold: 0 } }, ok: {} }; trades.set(q.uid, t); trades.set(me.uid, t);
+        sendTo(q.uid, { t: 'ts', who: me.uid, n: a.name }); sendTo(me.uid, { t: 'ts', who: q.uid, n: q.name });
+      } else if (m.t === 'tu') { // update my offer
+        const t = trades.get(me.uid); if (!t || !Array.isArray(m.items) || m.items.length > 12) return;
+        const items = m.items.map(cleanItem).filter(Boolean), gold = Math.max(0, Math.min(1e9, m.gold | 0)); t.o[me.uid] = { items, gold }; t.ok = {};
+        sendTo(t.a === me.uid ? t.b : t.a, { t: 'tu', items, gold });
+      } else if (m.t === 'tk') { // confirm
+        const t = trades.get(me.uid); if (!t) return; t.ok[me.uid] = 1; const other = t.a === me.uid ? t.b : t.a; sendTo(other, { t: 'tk' });
+        if (t.ok[t.a] && t.ok[t.b]) { trades.delete(t.a); trades.delete(t.b); sendTo(t.a, { t: 'td', items: t.o[t.b].items, gold: t.o[t.b].gold }); sendTo(t.b, { t: 'td', items: t.o[t.a].items, gold: t.o[t.a].gold }) }
+      } else if (m.t === 'tx') { endTrade(me.uid, 'cancelled');
       } else if (m.t === 'chat' && typeof m.m === 'string') {
         if (now - me.lastChat < 1000) return; me.lastChat = now; me.chT = now; me.mvT = now;
-        broadcast({ t: 'chat', n: a.name, m: m.m.slice(0, 120) });
+        broadcast({ t: 'chat', id: a.uid, n: a.name, m: m.m.slice(0, 120) });
       }
     });
-    ws.on('close', () => { if (players.get(a.uid) === me) { players.delete(a.uid); sim?.remove(a.uid); broadcast({ t: 'sys', m: `${a.name} left the world` }) } });
+    ws.on('close', () => { if (players.get(a.uid) === me) { endTrade(a.uid, 'left'); players.delete(a.uid); sim?.remove(a.uid); broadcast({ t: 'sys', m: `${a.name} left the world` }) } });
   });
   function broadcast(obj, except) { const s = JSON.stringify(obj); for (const p of players.values()) if (p !== except && p.ws.readyState === 1) p.ws.send(s) }
+  const gsweep = setInterval(() => { const now = Date.now(); for (const g of ground.values()) if (now > g.exp) { ground.delete(g.id); broadcast({ t: 'gx', id: g.id }) } }, 5000);
   const tick = setInterval(() => {
     const all = [...players.values()].filter(p => p.init); const now0 = Date.now();
     for (const p of players.values()) {
       if (p.ws.readyState !== 1 || !p.init) continue;
-      const near = all.filter(q => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < 45).map(q => ({ id: q.uid, n: q.name, x: +q.x.toFixed(2), y: +q.y.toFixed(2), d: q.dir, e: q.eq, h: q.hp, c: q.ch, k: q.col, l: q.lk, s: (now0 - (q.chT || 0) < 6000 || q.bz) ? 2 : (now0 - (q.mvT || now0) > 30000 ? 1 : 0), mh: q.mh, f: q.f }));
+      const near = all.filter(q => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < 45).map(q => ({ id: q.uid, n: q.name, x: +q.x.toFixed(2), y: +q.y.toFixed(2), d: q.dir, e: q.eq, h: q.hp, c: q.ch, k: q.col, l: q.lk, a: q.ac, bd: q.bd, rx: q.rx, ry: q.ry, rd: q.rd, rm: q.rm, rs: q.rs, s: q.bz ? 2 : (now0 - (q.mvT || now0) > 30000 ? 1 : 0), mh: q.mh, f: q.f }));
       p.ws.send(JSON.stringify({ t: 'players', l: near, online: players.size }));
     }
   }, 200);
@@ -162,7 +194,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     }
   } catch (e) { if (Date.now() - (globalThis.__le || 0) > 5000) { globalThis.__le = Date.now(); console.error('SIM ERROR:', e && e.stack || e) } } }, 50) : null;
   await new Promise(r => server.listen(port, r));
-  const close = async () => { clearInterval(tick); if (simTick) clearInterval(simTick); wss.close(); for (const p of players.values()) try { p.ws.terminate() } catch {} await new Promise(r => server.close(r)); await db.end?.() };
+  const close = async () => { clearInterval(tick); clearInterval(gsweep); if (simTick) clearInterval(simTick); wss.close(); for (const p of players.values()) try { p.ws.terminate() } catch {} await new Promise(r => server.close(r)); await db.end?.() };
   return { server, port: server.address().port, close, db };
 }
 

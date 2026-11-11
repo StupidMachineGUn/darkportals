@@ -38,3 +38,22 @@
 ## 0.3.3
 - Other players now render with your real look: weapon (or none), weapon tint, armour tint, armour/helm/boots tiers.
 - zZ above a player idle for 30s (server-decided); oO while chatting or in a shop. Shown on your own character too.
+
+## 0.4.0 – shared buildings, trade, spells, fixes
+**Fixes**
+- Criminal status: orange / red / blue player names are now shown to other players.
+- Chat now appears as a speech bubble above the player's head (the oO marker is only used inside shops).
+- Inventory not saved on exit: saves are now forced when the page is closed / hidden, trailing saves are never dropped, and the server writes saves in order (no lost or out-of-order writes).
+- Android "map or background disappears": render errors are caught and shown, tile/sprite canvases are rebuilt if the browser discards them (tab switch, memory pressure), canvas size is capped.
+- Death: equipped items are never lost. One random backpack item drops on every death (ground loot anyone can pick up after 10 s; in PvP it goes to the killer).
+- Server: kill/chat/ping reporting hardened.
+
+**New**
+- Shared interiors: players can enter shops, the inn, the bank, the Trade House and cottages together and see/chat with each other. Rooms are 50% bigger and NPCs are now player-sized. Visit a cottage when someone is home.
+- Activity icons above the head (chopping, mining, fishing, cooking, foraging, fighting, casting, healing…).
+- Real player-to-player trade at the Trade House (both sides confirm; any change resets confirmations).
+- Spell book (📖): choose one attack and one support spell for the hotbar. Spells can fizzle (chance falls as your Magic level passes the spell level).
+- Mage Tower (main town and the larger villages): attack spells to level 50 and early support spells for gold + ingredients.
+- The Witch's Hut (forest, with a campfire safe zone and friendly goblin guards): higher-tier spells (level 50–100), and she buys/sells magic mushrooms and ingredients.
+- New support spells: Ward Shield, Haste, Regrowth, Greater Mend, Aegis.
+- Existing characters keep the attack spells they had already unlocked.
