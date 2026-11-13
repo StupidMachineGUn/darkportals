@@ -29,3 +29,7 @@ v0.2: server-authoritative world: mobs, combat, loot, PvP, bank/auction/trade be
 
 ## Admins
 Set `ADMINS=yourusername` (comma separated) in `deploy/.env` and rebuild; those accounts get a 🛠 button (teleport, bring, kick, jail, unjail).
+
+## Security and maintenance
+- `IP_LIMIT=1` allows one account per IP (needs Caddy's X-Forwarded-For, which the default setup provides); list exceptions in `IP_ALLOW`.
+- 🛠 admin panel: broadcast, maintenance mode (survives restarts), kick (10s), jail. Actions are stored in the `admin_log` table.

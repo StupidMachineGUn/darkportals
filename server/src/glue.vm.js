@@ -50,6 +50,7 @@ SRV.remove = id => { SRV.players.delete(id) };
 SRV.cap = p => { let tl = 0; for (const s of SK) tl += lvOf(p.xp[s[0]] || 0); return 120 + tl * 12 };
 SRV.hit = function (p, id, d) {
   const e = SRV.idx.get(id); if (!e || e.dead || !(d > 0) || !p.ready || p.dead) return;
+  { const l = p.last && p.last.get(id); if (l) l.hp = -1 } // force HP resync so a rejected hit can't leave the client's predicted HP wrong
   d = Math.min(d, SRV.cap(p)); if (Math.hypot(e.x - p.x, e.y - p.y) > 9.5) return;
   if (!ESPEC[e.t].pass && safeAt(p.x, p.y)) return;
   e.last = p.id; hurtEnemy(e, Math.round(d));

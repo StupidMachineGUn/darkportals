@@ -24,19 +24,29 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   const ip = req => (process.env.CF === '1' && req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
   const nameOk = s => typeof s === 'string' && /^[A-Za-z0-9_]{3,16}$/.test(s);
 
+  const maint = { on: false, msg: '', allow: new Map() }; // maintenance: new logins refused except admins and recently-online players
+  const ADM = new Set((process.env.ADMINS || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
+  const IP_LIMIT = process.env.IP_LIMIT === undefined ? 1 : +process.env.IP_LIMIT; // accounts per IP (0 = unlimited)
+  const IP_ALLOW = new Set((process.env.IP_ALLOW || '').split(',').map(x => x.trim()).filter(Boolean));
+  const maintBlocks = (uid, name) => maint.on && !ADM.has(String(name).toLowerCase()) && !((maint.allow.get(uid) || 0) > Date.now());
+  const alog = (admin, action, target, info) => { console.log(`ADMIN ${admin} ${action} ${target || ''} ${info || ''}`); db.query('INSERT INTO admin_log(admin,action,target,info) VALUES($1,$2,$3,$4)', [admin, action, String(target || ''), String(info || '').slice(0, 200)]).catch(() => {}) };
+  try { const r = await db.query("SELECT v FROM settings WHERE k='maint'"); if (r.rows[0]) { const m = JSON.parse(r.rows[0].v); maint.on = !!m.on; maint.msg = String(m.msg || '') } } catch {}
   const server = http.createServer(async (req, res) => {
     try {
       const u = new URL(req.url, 'http://x');
-      if (u.pathname === '/api/ping') return send(res, 200, { ok: 1, version: VERSION, online: players.size });
+      if (u.pathname === '/api/ping') return send(res, 200, { ok: 1, version: VERSION, online: players.size, maint: maint.on, mmsg: maint.on ? maint.msg : '' });
       if (u.pathname === '/api/register' && req.method === 'POST') {
         if (limited(ip(req))) return send(res, 429, { err: 'Too many attempts, wait a minute' });
         const { username, password } = await body(req);
+        if (maint.on) return send(res, 503, { err: 'Server under maintenance' + (maint.msg ? ': ' + maint.msg : ''), maint: 1 });
         if (!nameOk(username)) return send(res, 400, { err: 'Username: 3-16 letters, numbers or _' });
         if (typeof password !== 'string' || password.length < 6 || password.length > 100) return send(res, 400, { err: 'Password must be 6+ characters' });
         const ex = await db.query('SELECT id FROM users WHERE lower(username)=lower($1)', [username]);
         if (ex.rows.length) return send(res, 409, { err: 'Username taken' });
+        const rip = ip(req);
+        if (IP_LIMIT > 0 && !IP_ALLOW.has(rip)) { const n = await db.query('SELECT count(*) AS n FROM users WHERE ip=$1', [rip]); if (+n.rows[0].n >= IP_LIMIT) return send(res, 403, { err: 'This connection already has an account' }) }
         const { salt, hash } = await hashPw(password);
-        const r = await db.query('INSERT INTO users(username,salt,hash) VALUES($1,$2,$3) RETURNING id', [username, salt, hash]);
+        const r = await db.query('INSERT INTO users(username,salt,hash,ip) VALUES($1,$2,$3,$4) RETURNING id', [username, salt, hash, rip]);
         return send(res, 200, { token: makeToken(r.rows[0].id, username), username, character: null });
       }
       if (u.pathname === '/api/login' && req.method === 'POST') {
@@ -45,21 +55,30 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
         const r = await db.query('SELECT * FROM users WHERE lower(username)=lower($1)', [String(username || '')]);
         const row = r.rows[0];
         if (!row || !(await checkPw(String(password || ''), row.salt, row.hash))) return send(res, 401, { err: 'Wrong username or password' });
-        const c = await db.query('SELECT name,data FROM characters WHERE user_id=$1', [row.id]);
-        return send(res, 200, { token: makeToken(row.id, row.username), username: row.username, character: c.rows[0] ? { name: c.rows[0].name, data: JSON.parse(c.rows[0].data) } : null });
+        if (maintBlocks(row.id, row.username)) return send(res, 503, { err: 'Server under maintenance' + (maint.msg ? ': ' + maint.msg : ''), maint: 1 });
+        const c = await db.query('SELECT name,data,ver FROM characters WHERE user_id=$1', [row.id]);
+        return send(res, 200, { token: makeToken(row.id, row.username), username: row.username, character: c.rows[0] ? { name: c.rows[0].name, data: JSON.parse(c.rows[0].data), ver: c.rows[0].ver | 0 } : null });
       }
       if (u.pathname === '/api/save' && req.method === 'PUT') {
         const a = authed(req); if (!a) return send(res, 401, { err: 'Not logged in' });
         const ch = await body(req);
         if (!ch || typeof ch !== 'object' || !ch.xp || typeof ch.name !== 'string' || !Array.isArray(ch.inv)) return send(res, 400, { err: 'Bad character' });
         if (ch.inv.length > 80) return send(res, 400, { err: 'Bad inventory' });
-        const data = JSON.stringify(ch);
+        const data = JSON.stringify(ch), baseH = req.headers['x-base'], base = baseH === undefined ? null : parseInt(baseH, 10);
+        let out = null;
         saveQ.set(a.uid, (saveQ.get(a.uid) || Promise.resolve()).catch(() => {}).then(async () => {
-          const u = await db.query('UPDATE characters SET name=$2,data=$3,schema_v=$4 WHERE user_id=$1', [a.uid, ch.name.slice(0, 12), data, SCHEMA_V]);
-          if (!u.rowCount) await db.query('INSERT INTO characters(user_id,name,data,schema_v) VALUES($1,$2,$3,$4)', [a.uid, ch.name.slice(0, 12), data, SCHEMA_V]);
+          let u;
+          if (base === null) u = await db.query('UPDATE characters SET name=$2,data=$3,schema_v=$4,ver=ver+1 WHERE user_id=$1 RETURNING ver', [a.uid, ch.name.slice(0, 12), data, SCHEMA_V]); // legacy client: no version check
+          else u = await db.query('UPDATE characters SET name=$2,data=$3,schema_v=$4,ver=ver+1 WHERE user_id=$1 AND ver=$5 RETURNING ver', [a.uid, ch.name.slice(0, 12), data, SCHEMA_V, base]);
+          if (u.rows.length) { out = u.rows[0].ver | 0; return }
+          const ex = await db.query('SELECT ver FROM characters WHERE user_id=$1', [a.uid]);
+          if (ex.rows.length) { out = -1; return } // someone else saved since this client loaded
+          try { await db.query('INSERT INTO characters(user_id,name,data,schema_v,ver) VALUES($1,$2,$3,$4,1)', [a.uid, ch.name.slice(0, 12), data, SCHEMA_V]); out = 1 } catch { out = -1 }
         }));
         await saveQ.get(a.uid);
-        return send(res, 200, { ok: 1 });
+        console.log(`save user=${a.name} bytes=${data.length} ${out === -1 ? 'CONFLICT base=' + base : 'ver=' + out}`);
+        if (out === -1) return send(res, 409, { err: 'Character was saved from another session' });
+        return send(res, 200, { ok: 1, ver: out });
       }
       if (u.pathname === '/api/board' && req.method === 'GET') {
         const r = await db.query('SELECT name,score,data FROM heroes ORDER BY score DESC LIMIT 50');
@@ -95,8 +114,9 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     sock.setNoDelay?.(true);
     const a = u.pathname === '/ws' ? readToken(u.searchParams.get('token')) : null;
     if (!a) { sock.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); return sock.destroy(); }
+    if (maintBlocks(a.uid, a.name)) { sock.write('HTTP/1.1 503 Service Unavailable\r\n\r\n'); return sock.destroy(); }
     if ((blocked.get(a.uid) || 0) > Date.now()) { sock.write('HTTP/1.1 403 Forbidden\r\n\r\n'); return sock.destroy(); }
-    wss.handleUpgrade(req, sock, head, ws => wss.emit('connection', ws, a));
+    wss.handleUpgrade(req, sock, head, ws => wss.emit('connection', ws, a, req));
   });
   let sim = null;
   if (process.env.NO_SIM !== '1') { try { const { createSim } = await import('./sim.js'); sim = createSim(); console.log('world sim ready', sim.info) } catch (e) { console.error('sim disabled:', e.message) } }
@@ -109,8 +129,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   const endTrade = (uid, why) => { const t = trades.get(uid); if (!t) return; trades.delete(t.a); trades.delete(t.b); const other = t.a === uid ? t.b : t.a; sendTo(other, { t: 'tx', why }) };
 
   /* ---------- v0.5: jail, parties, admin ---------- */
-  const ADMINS = new Set((process.env.ADMINS || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
-  const isAdm = p => ADMINS.has(String(p.name).toLowerCase());
+  const isAdm = p => ADM.has(String(p.name).toLowerCase());
   const J = (() => { try { if (sim) return JSON.parse(sim.run('JSON.stringify({x0:JAIL.x0,y0:JAIL.y0,x1:JAIL.x1,y1:JAIL.y1,gx:JAIL.gx})')) } catch {} return { x0: 159, y0: 154, x1: 166, y1: 160, gx: 162 } })();
   const DUNR = (() => { try { if (sim) return JSON.parse(sim.run('JSON.stringify(DUN)')) } catch {} return { x0: 10, y0: 8, w: 106, h: 40 } })();
   const jStart = { x: (J.x0 + J.x1) / 2 + .5, y: (J.y0 + J.y1) / 2 + .5 }, jExit = { x: J.gx + .5, y: J.y0 - 1.5 };
@@ -139,18 +158,21 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     if (t === 'pyc' && typeof m.m === 'string') { const pt = parties.get(me.party); if (!pt || now - (me.lastPc || 0) < 700) return true; me.lastPc = now; const o = JSON.stringify({ t: 'pyc', n: me.name, m: m.m.slice(0, 120) }); for (const q of pmem(pt)) if (q.ws.readyState === 1) q.ws.send(o); return true }
     if (t === 'pyw') { const q = players.get(m.to); if (!q || q === me || !sameParty(me, q)) return true; const w = 60000 - (now - (me.lastWarp || 0)); if (w > 0) return sysTo(me, `Warp ready in ${Math.ceil(w / 1000)}s`, '#f99'), true; if (me.jail || q.jail) return sysTo(me, 'Not possible while jailed', '#f99'), true; if (me.bd || q.bd || me.rs || q.rs) return sysTo(me, 'Leave the building first (both of you)', '#f99'), true; if (inDun(me) || inDun(q)) return sysTo(me, 'Cannot warp to or from the dungeon', '#f99'), true; if (now - (me.hurtT || 0) < 10000) return sysTo(me, 'Cannot warp while in combat', '#f99'), true; me.lastWarp = now; place(me, q.x + .6, q.y + .3); sysTo(me, `✨ Warped to ${q.name}`, '#b9f'); return true }
     if (t === 'adm') { if (!isAdm(me)) return true; const q = players.get(m.to);
-      if (m.c === 'list') { me.ws.send(JSON.stringify({ t: 'adl', l: [...players.values()].map(p => ({ id: p.uid, n: p.name, x: Math.round(p.x), y: Math.round(p.y), j: p.jail ? p.jail.left : 0 })) })); return true }
+      if (m.c === 'list') { me.ws.send(JSON.stringify({ t: 'adl', l: [...players.values()].map(p => ({ id: p.uid, n: p.name, ip: p.ip, x: Math.round(p.x), y: Math.round(p.y), j: p.jail ? p.jail.left : 0 })), mt: maint.on ? 1 : 0, mm: maint.msg })); return true }
+      if (m.c === 'bc') { const txt = String(m.m || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 120); if (!txt || now - (me.lastBc || 0) < 2000) return true; me.lastBc = now; broadcast({ t: 'bc', m: txt, by: me.name }); alog(me.name, 'broadcast', '', txt); return true }
+      if (m.c === 'maint') { maint.on = !!m.on; maint.msg = String(m.msg || '').slice(0, 60); if (maint.on) for (const p of players.values()) maint.allow.set(p.uid, now + 300000); db.query("INSERT INTO settings(k,v) VALUES('maint',$1) ON CONFLICT (k) DO UPDATE SET v=$1", [JSON.stringify({ on: maint.on, msg: maint.msg })]).catch(() => {}); alog(me.name, 'maintenance', maint.on ? 'on' : 'off', maint.msg); broadcast({ t: 'bc', m: maint.on ? 'Server entering maintenance mode' + (maint.msg ? ': ' + maint.msg : '') : 'Maintenance mode ended', by: me.name }); me.ws.send(JSON.stringify({ t: 'adm_ok', mt: maint.on ? 1 : 0, mm: maint.msg })); return true }
       if (!q || q === me) return true;
+      alog(me.name, m.c, q.name, m.c === 'jail' ? `n=${m.n} ip=${q.ip}` : `ip=${q.ip}`);
       if (m.c === 'tp') { place(me, q.x + .6, q.y + .3); sysTo(me, `Teleported to ${q.name}`, '#b9f') }
       else if (m.c === 'bring') { if (q.jail) return sysTo(me, 'Target is jailed – unjail first', '#f99'), true; place(q, me.x + .6, me.y + .3); sysTo(q, 'You were summoned by an admin', '#b9f') }
-      else if (m.c === 'kick') { blocked.set(q.uid, now + 300000); sendTo(q.uid, { t: 'kick' }); try { q.ws.close(4001, 'Kicked by admin') } catch {} sysTo(me, `Kicked ${q.name} (5 min block)`, '#fc6'); broadcast({ t: 'sys', m: `${q.name} was kicked by an admin`, c: '#fc6' }) }
+      else if (m.c === 'kick') { blocked.set(q.uid, now + 10000); sendTo(q.uid, { t: 'kick' }); try { q.ws.close(4001, 'Kicked by admin') } catch {} sysTo(me, `Kicked ${q.name} (10s block)`, '#fc6'); broadcast({ t: 'sys', m: `${q.name} was kicked by an admin`, c: '#fc6' }) }
       else if (m.c === 'jail') doJail(q, Number.isFinite(+m.n) ? +m.n : 25, m.r || 'admin order', 'Admin');
       else if (m.c === 'unjail') unjail(q, 'admin');
       return true }
     return false };
-  wss.on('connection', (ws, a) => {
+  wss.on('connection', (ws, a, req) => {
     const old = players.get(a.uid); if (old) { try { old.ws.close(4000, 'Logged in elsewhere') } catch {} }
-    const me = { ws, uid: a.uid, name: a.name, x: 0, y: 0, dir: 0, eq: 0, t: Date.now(), lastChat: 0, init: false };
+    const me = { ws, ip: req ? ip(req) : '', uid: a.uid, name: a.name, x: 0, y: 0, dir: 0, eq: 0, t: Date.now(), lastChat: 0, init: false };
     players.set(a.uid, me);
     me.sp = sim ? sim.add(a.uid, a.name) : null;
     ws.send(JSON.stringify({ t: 'hello', id: a.uid, adm: isAdm(me) ? 1 : 0, online: players.size, world: sim ? sim.world() : null, gnd: [...ground.values()].map(g => ({ id: g.id, x: g.x, y: g.y, it: g.it })) }));

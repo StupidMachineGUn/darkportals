@@ -68,3 +68,15 @@
 - Jail: fenced yard with potato plants in Hearthmoor; dig the sentence (25 potatoes, 50 if set higher) to go free; server-authoritative, confined to the yard, saved across logout, safe from mobs/PvP
 - Town guards: attacking a non-red player inside a safe zone does no damage and gets the attacker jailed for assault
 - Deploy: HTTPS/domain docs (Caddy auto-cert, own certificate, Cloudflare), `CF=1` makes rate limiting use the real client IP behind Cloudflare
+
+## 0.5.1 – welcome screen, safer saves, balance, admin tools
+- New welcome screen: animated night scene, ALPHA tag + version, slime mascot (green/smiling = server online, red/sad = offline, amber/sleepy = maintenance), Play online / Play offline (offline progress is separate and local)
+- Log out button (⏻): saves, waits for confirmation, returns to the welcome screen (blocked during combat); closing the page still tries a final save
+- Saves: server-side version check (an old tab/device can no longer overwrite newer progress), response is checked, failures retry, "💾 saved / ⚠ NOT SAVED" indicator, saves right after level-ups, shop/bank/trade actions and death, 5s interval, local backup, server logs every save
+- Buttons moved to a column on the left under the HP bars
+- Combat: armor now has diminishing returns (armor/(armor+60)), hits always do at least 12%, agility = capped dodge (25%) and capped speed (+25%), mob HP and damage scale with distance from town
+- Fixed mobs showing ~1 HP while actually healthy (server now resyncs HP after every hit)
+- 3 new medieval music tracks (Tavern Dance, Cloister Hymn, Knight's March) – pick one in Options > Track, or Auto
+- Security: one account per IP (IP_LIMIT, IP_ALLOW exceptions)
+- Admin: IP shown next to names, 📢 broadcast banner, maintenance mode (new logins refused; admins and players already online stay; rejoin allowed 5 min), admin action log table
+- Kick: "You got kicked", back to the welcome screen, 10 second block

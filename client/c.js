@@ -43,7 +43,7 @@ const valOf=s=>{const b=ITEMS[s.id];return b.slot?Math.round(b.v*RVAL[s.rar|0]+(
 function statLine(s){const o=statOf(s);return Object.keys(o).filter(k=>o[k]).map(k=>(ENCH[k]?ENCH[k][1]:k.toUpperCase())+' +'+o[k]).join(' · ')}
 function G(){const g={atk:0,def:0,mag:0,hp:0,mp:0,crit:0,spd:0};for(const k of['w','a','h','b']){const e=eqE(k);if(e){const o=statOf(e);for(const x in g)g[x]+=o[x]}}return g}
 const W_=()=>({atk:G().atk,mag:G().mag}),A_=()=>({def:G().def});
-function gainXp(k,a){if(P.rested>Date.now())a*=1.2;const o=lv(k);P.xp[k]+=a;const n=lv(k);if(n>o){const s=SK.find(s=>s[0]===k);toast(`${s[2]} ${s[1]} level ${n}!`);sys(`${s[2]} ${s[1]} is now level ${n}!`,'#7dff9b');sfx('lvl');burst(P.x,P.y-.5,'#ffd36b',24);
+function gainXp(k,a){if(P.rested>Date.now())a*=1.2;const o=lv(k);P.xp[k]+=a;const n=lv(k);if(n>o){const s=SK.find(s=>s[0]===k);toast(`${s[2]} ${s[1]} level ${n}!`);sys(`${s[2]} ${s[1]} is now level ${n}!`,'#7dff9b');sfx('lvl');netSaveSoon();burst(P.x,P.y-.5,'#ffd36b',24);
   if(k==='magic'&&n===5)sys('🔮 You learned Mend! (hotbar 2)','#9cf');if(k==='magic'&&Math.floor(n/10)>Math.floor(o/10)){const sp=SPELLS[Math.min(9,Math.floor(n/10))];sys(`✨ Your spell evolved: ${sp.e} ${sp.n}!`,'#d9a6ff');toast(sp.e+' '+sp.n+'!')}if(k==='vitality'||k==='defense')P.hp=Math.min(maxHp(),P.hp+5)}}
 const count=id=>P.inv.reduce((s,i)=>s+(i.id===id?i.n:0),0);
 function addItem(id,n=1,extra){const it=ITEMS[id];if(it.slot){if(P.inv.length>=24){toast('Bag full!','#f66');return false}const s={id,n:1,u:uid(),...(extra||{})};P.inv.push(s);return s}if(!it.slot){const s=P.inv.find(i=>i.id===id);if(s){s.n+=n;return true}}if(P.inv.length>=24){toast('Bag full!','#f66');return false}P.inv.push({id,n});return true}
@@ -148,7 +148,8 @@ const ESPEC={slime:{hp:10,dmg:2,spd:1.5,ag:4,xp:10,tiles:[TL.GRASS],n:50,gold:[1
  wyrm:{hp:350,dmg:18,spd:2.6,ag:14,xp:800,tiles:[],n:0,gold:[100,200]}};
 ESPEC.wizard={hp:9000,dmg:70,spd:2.4,ag:13,xp:25000,tiles:[],n:0,gold:[3000,5000]};
 const FASTM=new Set(['wolf','bat','spider','chicken','sheep']);
-function mkEnemy(t,x,y){const s=ESPEC[t];return{t,x,y,hx:x,hy:y,hp:s.hp,mhp:s.hp,cd:0,st:0,dir:0,flash:0,dead:0,ph:Math.random()*9,fire:3}}
+const NOSC=['wyrm','wizard','rooster','chicken','sheep'];
+function mkEnemy(t,x,y){const s=ESPEC[t],k=NOSC.includes(t)?1:1+clamp((Math.hypot(x-CX,y-CY)-24)/150,0,1)*.9,hp=Math.round(s.hp*k),e={t,x,y,hx:x,hy:y,hp,mhp:hp,cd:0,st:0,dir:0,flash:0,dead:0,ph:Math.random()*9,fire:3};if(k>1.02)e.dm=1+(k-1)*.7;return e}
 const RACES=['slime','goblin','wolf','bat','skeleton','spider','orc','bandit','ogre','wraith','golem','troll','demon'];
 function makeElites(){for(const t of RACES){const L=E.filter(e=>e.t===t&&!e.el);if(L.length<2)continue;const n=Math.max(2,Math.round(L.length/40));for(let i=0;i<n;i++){const e=L.splice(ri(0,L.length-1),1)[0];if(!e)break;const sh=i%2===1;e.el=sh?'shaman':'boss';const s=ESPEC[t];e.mhp=e.hp=Math.round(s.hp*(sh?3.5:6));e.dm=sh?1.2:1.7;e.xm=sh?4:6;e.sc=sh?1.15:1.4;e.fire=2}}}
 function spawnVillageMobs(){const ok=(x,y)=>inb(x,y)&&reach[idx(x,y)]&&!solid[idx(x,y)]&&!objAt.has(idx(x,y))&&!safeAt(x+.5,y+.5)&&!VIL.some(w=>Math.hypot(x-w.x,y-w.y)<VIL_R+13)&&Math.hypot(x-CX,y-CY)>=TOWN_R+14;
@@ -195,9 +196,9 @@ function killEnemy(e){if(meleeT===clock)goreKill(e);if(e.dun)dunKill(e);e.dead=c
  if(e.t==='orc'){dr('tusk',.6);dr('iron',.25)}if(e.t==='ogre'){dr('tusk',.8,2);dr('iron',.6,2);dr('gem',.05)}if(e.t==='wraith'){dr('essence',.6);dr('gem',.04);dr('potion',.1)}
  if(e.t==='slime'){dr('gel',.6);dr('potion',.03)}if(e.t==='wolf'){dr('pelt',.55);dr('bread',.1)}if(e.t==='skeleton'){dr('bone',.7);dr('gem',.012)}
  if(e.t==='wyrm'){boss=null;if((P.bossDmg||0)>=40){dropGear('wyrm',true);dropGear('wyrm',true);addItem('scale',ri(1,3));if(Math.random()<.5)addItem('gem');P.gold+=ri(...s.gold);gainXp('magic',200);gainXp('melee',200);sys('🐉 You helped slay the Ember Wyrm! Rewards granted.','#ff9bff');toast('🐉 WYRM SLAIN!')}else sys('The Ember Wyrm was slain by others… you did too little to earn loot.','#f99');}}
-function playerHit(d,by){if(P.dead||P.inside||shopSt)return;const df=A_().def||0;let dmg=Math.max(1,Math.round(d*(1-df*.035)-lv('defense')*.12+rnd(-1,1)));if(P.shield&&P.shield.v>0){const ab=Math.min(P.shield.v,dmg);P.shield.v-=ab;dmg-=ab;fl(P.x,P.y-.8,'🛡️'+ab,'#6af');if(dmg<=0){sfx('hit');return}}
+function playerHit(d,by){if(P.dead||P.inside||shopSt)return;const df=A_().def||0;let dmg=Math.max(Math.ceil(d*.12),Math.round(d*(1-df/(df+60))-Math.min(lv('defense')*.12,d*.2)+rnd(-1,1)));if(P.shield&&P.shield.v>0){const ab=Math.min(P.shield.v,dmg);P.shield.v-=ab;dmg-=ab;fl(P.x,P.y-.8,'🛡️'+ab,'#6af');if(dmg<=0){sfx('hit');return}}
  P.hp-=dmg;P.hurt=5;fl(P.x,P.y-.8,'-'+dmg,'#f55');sfx('hurt');gainXp('defense',2+dmg);gainXp('vitality',1+dmg*.6);burst(P.x,P.y-.4,'#d33',5);
- if(P.hp<=0){if(by&&by.remote)netDied(by,netDeathItem());else{netDeathDrop();if(by&&by.act)killActor(by,P)}P.flag=null;P.fT=0;P.vic=0;P.dead=2.2;P.deaths=(P.deaths|0)+1;if(by&&by.act)P.pvpD=(P.pvpD|0)+1;if(!(by&&by.isBot)){P.gold=Math.floor(P.gold*.9);sys('💀 You were knocked out and lost 10% gold.','#f66')}P.path=null;stopAct();P.chase=null}}
+ if(P.hp<=0){if(by&&by.remote)netDied(by,netDeathItem());else{netDeathDrop();if(by&&by.act)killActor(by,P)}P.flag=null;P.fT=0;P.vic=0;P.dead=2.2;P.deaths=(P.deaths|0)+1;netSaveSoon();if(by&&by.act)P.pvpD=(P.pvpD|0)+1;if(!(by&&by.isBot)){P.gold=Math.floor(P.gold*.9);sys('💀 You were knocked out and lost 10% gold.','#f66')}P.path=null;stopAct();P.chase=null}}
 function nearestEnemy(r,fr=P){let b=null,bd=r;for(const e of E){if(e.dead)continue;const d=Math.hypot(e.x-fr.x,e.y-fr.y);if(d<bd){bd=d;b=e}}return b}
 const actorsList=()=>[...bots,...guards,...npcs,...netRem()];
 let wardT=0;
@@ -263,7 +264,7 @@ function updEnemies(dt){if(NET.sim)return netMobs(dt);for(const e of E){if(e.dea
   if(e.st===1&&(P.dead||d>s.ag*(e.t==='wyrm'||e.t==='wizard'?2.2:1.5)||hd>(e.t==='wyrm'?60:e.t==='wizard'?24:13)||safeAt(P.x,P.y)))e.st=2;
   if(e.t==='wyrm'&&e.st===2){e.st=0;e.hx=e.x;e.hy=e.y}
   let tx=null,ty=null,sp=s.spd*(e.slow?e.slow.m:1)*(FASTM.has(e.t)||e.el||e.t==='wyrm'||e.t==='rooster'?1:.65);
-  if(e.st===1){tx=P.x;ty=P.y;if(d<1.05){if(e.cd<=0){e.cd=e.t==='wyrm'?1.6:1.2;e.sw=.25;if(Math.random()<clamp(.82-lv('agility')*.007-lv('defense')*.004,.4,.85))playerHit(s.dmg*(e.dm||1)*rnd(.8,1.2));else{fl(P.x,P.y-.8,'Dodge!','#9cf');gainXp('agility',3);sfx('miss')}}tx=null}
+  if(e.st===1){tx=P.x;ty=P.y;if(d<1.05){if(e.cd<=0){e.cd=e.t==='wyrm'?1.6:1.2;e.sw=.25;if(Math.random()<.88-clamp(lv('agility')*.003,0,.25))playerHit(s.dmg*(e.dm||1)*rnd(.8,1.2));else{fl(P.x,P.y-.8,'Dodge!','#9cf');gainXp('agility',3);sfx('miss')}}tx=null}
    if(e.el==='shaman'){e.fire-=dt;if(e.fire<=0&&d<8&&d>1.5){e.fire=2.4;const a=Math.atan2(P.y-e.y,P.x-e.x);proj.push({x:e.x,y:e.y-.5,vx:Math.cos(a)*5,vy:Math.sin(a)*5,dmg:Math.round(s.dmg*.9),life:2,own:'e'});sfx('bolt');for(const o of E){if(!o.dead&&o!==e&&o.t===e.t&&Math.hypot(o.x-e.x,o.y-e.y)<6&&o.hp<o.mhp)o.hp=Math.min(o.mhp,o.hp+o.mhp*.08)}}}
    if(e.t==='wizard'){e.fire-=dt;e.nova=(e.nova||6)-dt;
     if(e.fire<=0&&d<14&&d>1.5){e.fire=1.8;const a0=Math.atan2(P.y-e.y,P.x-e.x);for(const o of [-.35,0,.35])proj.push({x:e.x,y:e.y-.5,vx:Math.cos(a0+o)*6,vy:Math.sin(a0+o)*6,dmg:Math.round(s.dmg*.7),life:2.5,own:'e'});sfx('bolt')}
@@ -315,7 +316,7 @@ function updPlayer(dt){
  const moving=vx||vy;if(input.atk&&!P.chase)playerAttack();
  const sprint=input.run&&moving&&P.st>0&&!P.tired;
  if(P.tired&&P.st>maxSt()*.25)P.tired=false;if(P.st<=0)P.tired=true;
- let sp=(P.shroomT>0?1.6:(chickenForm()?1.15:1))*(P.hasteT>0?1.4:1)*3.3*(1+lv('agility')*.004+G().spd/100)*(sprint?1.7:1)*(act?0:1);
+ let sp=(P.shroomT>0?1.6:(chickenForm()?1.15:1))*(P.hasteT>0?1.4:1)*3.3*(1+Math.min(.25,lv('agility')*.004+G().spd/100))*(sprint?1.7:1)*(act?0:1);
  if(moving){moveEnt(P,vx*sp*dt,vy*sp*dt);P.dir=Math.abs(vx)>Math.abs(vy)?(vx>0?2:1):(vy>0?0:3);P.walk=(P.walk||0)+dt*(sprint?12:8);P.play+=0}
  if(sprint){P.st-=7*dt;P.agT=(P.agT||0)+dt;if(P.agT>1.4){P.agT=0;gainXp('agility',3)}}else{P.st=Math.min(maxSt(),P.st+(moving?2.5:5.5)*dt)}
  if(moving&&!sprint){P.wT=(P.wT||0)+dt;if(P.wT>6){P.wT=0;gainXp('agility',1)}}
@@ -353,5 +354,5 @@ function update(dt){clock+=dt;suppTick(dt);xTick(dt);netStep(dt);updPortal(dt);r
  for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=5*dt;if(p.life<=0)parts.splice(i,1)}
  cam.x+=(P.x-cam.x)*Math.min(1,dt*8);cam.y+=(P.y-cam.y)*Math.min(1,dt*8)}
 /* ---------- save ---------- */
-function save(){netSave();try{P.wanted=flagOf(P)==='red'?Math.max(1,P.vic|0):0;localStorage.setItem('emberfall.v1',JSON.stringify(P,(k,v)=>k==='path'||k==='chase'?undefined:v))}catch(e){}}
+function save(){netSave();try{P.wanted=flagOf(P)==='red'?Math.max(1,P.vic|0):0;if(!NET.on)localStorage.setItem('emberfall.v1',JSON.stringify(P,(k,v)=>k==='path'||k==='chase'?undefined:v))}catch(e){}}
 function load(){if(NET.on)return NET.save;try{const s=JSON.parse(localStorage.getItem('emberfall.v1'));if(s&&s.xp)return s}catch(e){}return null}

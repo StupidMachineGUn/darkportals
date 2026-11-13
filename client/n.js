@@ -1,15 +1,20 @@
 /* ---------- online layer (accounts, cloud save, other players, chat) ---------- */
 const NET={gnd:new Map(),gpend:new Map(),on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'__VERSION__',board:[],lastSave:0,reg:false,tpT:0};
-async function netProbe(){try{const r=await fetch('/api/ping',{cache:'no-store'});const j=await r.json();if(j&&j.ok){NET.on=true;NET.ver=j.version;authUi();}}catch(e){}}
 function authUi(){$('#pw').style.display='block';$('#regt').style.display='block';$('#nm').placeholder='Username';$('#nm').maxLength=16;$('#nm').value=localStorage.getItem('emberfall.user')||'';$('#go').textContent='Log in';}
 function authMsg(t){$('#authmsg').textContent=t||''}
 async function netAuth(){const username=$('#nm').value.trim(),password=$('#pw').value;if(!username||!password){authMsg('Enter username and password');return false}
  try{const r=await fetch('/api/'+(NET.reg?'register':'login'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username,password})});const j=await r.json();if(!r.ok){authMsg(j.err||'Error');return false}
-  NET.tok=j.token;NET.user=j.username;NET.save=j.character?j.character.data:null;localStorage.setItem('emberfall.user',j.username);$('#nm').value=j.username.slice(0,12);return true}catch(e){authMsg('Cannot reach server');return false}}
+  NET.tok=j.token;NET.user=j.username;NET.save=j.character?j.character.data:null;NET.ver=j.character?j.character.ver|0:0;NET.stale=0;NET.leaving=0;localStorage.setItem('emberfall.user',j.username);$('#nm').value=j.username.slice(0,12);return true}catch(e){authMsg('Cannot reach server');return false}}
 function goBtn(){if(!NET.on)return start();netAuth().then(ok=>{if(ok)start()})}
 function toggleReg(){NET.reg=!NET.reg;$('#go').textContent=NET.reg?'Create account':'Log in';$('#regt').textContent=NET.reg?'Have an account? Log in':'New here? Create account';authMsg('')}
-function netSave(force){if(!NET.on||!NET.tok||!P)return;const n=Date.now();if(!force&&n-NET.lastSave<15000){if(!NET.svT)NET.svT=setTimeout(()=>{NET.svT=0;netSave(true)},Math.max(500,15000-(n-NET.lastSave)));return}NET.lastSave=n;
- try{fetch('/api/save',{method:'PUT',keepalive:true,headers:{'content-type':'application/json',authorization:'Bearer '+NET.tok},body:(NET.body=JSON.stringify(P,(k,v)=>k==='path'||k==='chase'?undefined:v))}).then(r=>{if(r.status===401){NET.tok=null;sys('⚠ Session expired – reload to log in again','#f66')}}).catch(()=>{})}catch(e){}}
+function netSave(force){if(!NET.on||!NET.tok||!P||NET.stale||NET.leaving)return;const n=Date.now();if(!force&&n-NET.lastSave<5000){if(!NET.svT)NET.svT=setTimeout(()=>{NET.svT=0;netSave(true)},Math.max(300,5000-(n-NET.lastSave)));return}
+ if(NET.sinf){NET.sdirty=1;return}NET.lastSave=n;NET.sinf=1;NET.sdirty=0;let body;try{body=NET.body=JSON.stringify(P,(k,v)=>k==='path'||k==='chase'?undefined:v)}catch(e){NET.sinf=0;return}
+ try{localStorage.setItem('emberfall.bak.'+NET.user,body)}catch(e){}
+ return fetch('/api/save',{method:'PUT',keepalive:body.length<60000,headers:{'content-type':'application/json',authorization:'Bearer '+NET.tok,'x-base':String(NET.ver|0)},body}).then(async r=>{NET.sinf=0;
+  if(r.status===401){NET.tok=null;NET.stale=1;sys('⚠ Session expired – reload to log in again','#f66');return false}
+  if(r.status===409){NET.stale=1;sys('⚠ This character was saved from another device or tab. Reload to continue – saving is paused so nothing gets overwritten.','#f66');toast('⚠ Saved elsewhere – reload','#f66');return false}
+  if(!r.ok)throw new Error('http '+r.status);const j=await r.json();NET.ver=j.ver|0;NET.sok=Date.now();NET.sbad=0;if(NET.sdirty)setTimeout(()=>netSave(true),50);return true}).catch(()=>{NET.sinf=0;NET.sbad=(NET.sbad||0)+1;if(!NET.leaving)setTimeout(()=>netSave(true),Math.min(15000,1500*NET.sbad));return false})}
+function netSaveSoon(){if(!NET.on||NET.soonT)return;NET.soonT=setTimeout(()=>{NET.soonT=0;netSave(true)},900)}
 function netFlush(){try{if(NET.on&&NET.tok&&P){netSave(true)}}catch(e){}}
 addEventListener('pagehide',netFlush);addEventListener('beforeunload',netFlush);document.addEventListener('visibilitychange',()=>{if(document.hidden)netFlush()});
 function netConnect(){if(!NET.on||!NET.tok)return;const w=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws?token='+encodeURIComponent(NET.tok));NET.ws=w;w.binaryType='arraybuffer';NET.rx=0;
@@ -38,13 +43,13 @@ function netConnect(){if(!NET.on||!NET.tok)return;const w=new WebSocket((locatio
   else if(m.t==='chat'){sys('💬 '+m.n+': '+m.m,'#cfe8ff');if(m.id===NET.id){NET.mySay=m.m;NET.mySayT=7}else{const o=NET.others.get(m.id);if(o){o.say=m.m;o.sayT=7}}}else if(m.t==='sys')sys('· '+m.m,m.c||'#8aa');
   else if(m.t==='snap'){P.x=m.x;P.y=m.y;P.path=null;sys('⚠ Movement corrected by server','#fc6')}
   else if(m.t==='hello'){sys('🌐 Connected · '+m.online+' online','#9fe3ff');NET.id=m.id;NET.gnd=new Map((m.gnd||[]).map(d=>[d.id,d]));if(m.world){NET.sim=true;NET.em=new Map();E.length=0;boss=null;bots.length=0;roosterT=bossTimer=1e9;m.world.pts.forEach((q,i)=>{if(PTS[i]){PTS[i].x=q[0];PTS[i].y=q[1]}});sys('⚔ Shared world active','#9fe3ff')}}};
- w.onclose=ev=>{NET.ws=null;NET.sim=false;NET.ping=null;netPingUi();if(ev.code===4000)sys('⚠ Logged in from another place','#f66');else setTimeout(netConnect,NET.kicked>Date.now()?NET.kicked-Date.now():3000)}}
+ w.onclose=ev=>{NET.ws=null;NET.sim=false;NET.ping=null;netPingUi();if(ev.code===4000)sys('⚠ Logged in from another place','#f66');else if(!NET.leaving)setTimeout(netConnect,3000)}}
 setInterval(()=>{const w=NET.ws;if(!w||w.readyState!==1||!P||P.dead&&0)return;const tp=NET.lx!=null&&Math.hypot(P.x-NET.lx,P.y-NET.ly)>5;NET.lx=P.x;NET.ly=P.y;w.send(JSON.stringify({t:'pos',x:+P.x.toFixed(2),y:+P.y.toFixed(2),dir:P.dir|0,eq:armLv(eqId('a')),hp:Math.ceil(P.hp),ch:!!P.chicken,col:ARMC[armLv(eqId('a'))],tp,lk:netLook(),bz:shopSt?1:0,ac:NET.ac||'',bd:netBid(),rx:shopSt?shopSt.x:0,ry:shopSt?shopSt.y:0,rd:shopSt?shopSt.dir:0,rm:shopSt&&shopSt.mv?1:0,rs:P.inside?1:0,ti:titleOf(P.xp)||'',mhp:maxHp(),dead:P.dead>0,inside:!!P.inside,f:flagOf(P),xp:P.xp}))},200);
 $('#chatin').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){netSay(e.target.value);e.target.value='';e.target.blur()}});['keyup','keypress'].forEach(t=>$('#chatin').addEventListener(t,e=>e.stopPropagation()));
 function bldId(b){return b?b.x*1000+b.y:0}
 function netBid(){return shopSt?shopSt.bid:P.inside?bldId(houses[P.inside]):0}
 function netLook(){const t=eqTint();return{w:eqId('w')||null,tw:t.tw||null,ta:t.ta||null,a:armLv(eqId('a')),h:eqTier('h'),b:eqTier('b')}}
-function netPingUi(){const e=$('#ping');if(!e)return;if(NET.ping==null){e.style.display='none';return}e.style.display='block';const n=performance.now(),kb=NET.rt?((NET.rx-NET.rb)/1024/((n-NET.rt)/1000)):0;NET.rt=n;NET.rb=NET.rx;e.textContent='ping '+NET.ping+' ms'+(NET.ping>250?' ⚠ LAG':'')+'  srv '+(NET.ld??'?')+'ms  ↓'+kb.toFixed(1)+'KB/s'+(NET.q>16384?'  q'+Math.round(NET.q/1024)+'K':'')+(typeof jailUi==='function'?jailUi():'')+(NET.sim?'  🌀 '+(PT.open?'open':'closed '+Math.max(0,Math.ceil((PT.reopen-clock)/60))+'m'):'')}
+function netPingUi(){const e=$('#ping');if(!e)return;if(NET.ping==null){e.style.display='none';return}e.style.display='block';const n=performance.now(),kb=NET.rt?((NET.rx-NET.rb)/1024/((n-NET.rt)/1000)):0;NET.rt=n;NET.rb=NET.rx;e.textContent='ping '+NET.ping+' ms'+(NET.ping>250?' ⚠ LAG':'')+'  srv '+(NET.ld??'?')+'ms  ↓'+kb.toFixed(1)+'KB/s'+(NET.q>16384?'  q'+Math.round(NET.q/1024)+'K':'')+(typeof jailUi==='function'?jailUi():'')+(NET.stale?'  ⚠ SAVE PAUSED – reload':NET.sbad>1?'  ⚠ NOT SAVED (retrying)':NET.sok?'  💾 saved':'')+(NET.sim?'  🌀 '+(PT.open?'open':'closed '+Math.max(0,Math.ceil((PT.reopen-clock)/60))+'m'):'')}
 setInterval(()=>{const w=NET.ws;if(w&&w.readyState===1)w.send(JSON.stringify({t:'ping',c:performance.now()}))},2000);
 const netSend=o=>{const w=NET.ws;if(w&&w.readyState===1)w.send(JSON.stringify(o))};
 function netHit(e,d){if(e.id)netSend({t:'hit',id:e.id,d:Math.round(d)})}

@@ -1,4 +1,4 @@
-process.env.USE_PGMEM = '1'; process.env.JWT_SECRET = 'test';
+process.env.IP_LIMIT = '0'; process.env.USE_PGMEM = '1'; process.env.JWT_SECRET = 'test';
 import assert from 'node:assert/strict';
 import WebSocket from 'ws';
 const { createServer } = await import('../src/index.js');

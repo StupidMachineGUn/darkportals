@@ -23,6 +23,8 @@ services:
       PORT: 8080
       ADMINS: ${ADMINS:-}
       CF: ${CF:-0}
+      IP_LIMIT: ${IP_LIMIT:-1}
+      IP_ALLOW: ${IP_ALLOW:-}
   caddy:
     image: caddy:2
     restart: unless-stopped

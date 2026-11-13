@@ -1,6 +1,6 @@
 import { createServer } from '../src/index.js';
 import WebSocket from 'ws';
-process.env.USE_PGMEM = '1'; process.env.SECRET = 'x'; process.env.ADMINS = 'boss';
+process.env.IP_LIMIT = '0'; process.env.USE_PGMEM = '1'; process.env.SECRET = 'x'; process.env.ADMINS = 'boss';
 const s = await createServer({ port: 0 }); const base = `http://localhost:${s.port}`;
 const reg = async n => (await (await fetch(base + '/api/register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: n, password: 'pass1234' }) })).json());
 const mk = async n => { const j = await reg(n); const ws = new WebSocket(`ws://localhost:${s.port}/ws?token=${encodeURIComponent(j.token)}`); const st = { ws, msgs: [], n, tok: j.token }; ws.on('message', (d, bin) => { if (bin) return; st.msgs.push(JSON.parse(d)) }); await new Promise(r => ws.on('open', r)); st.id = await new Promise(r => { const t = setInterval(() => { const h = st.msgs.find(m => m.t === 'hello'); if (h) { clearInterval(t); r(h.id) } }, 20) }); return st };
