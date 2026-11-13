@@ -1,3 +1,4 @@
+import { createEcon } from './econ.js';
 import { monitorEventLoopDelay } from 'node:perf_hooks';
 import http from 'node:http';
 import fs from 'node:fs';
@@ -30,6 +31,8 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   const IP_ALLOW = new Set((process.env.IP_ALLOW || '').split(',').map(x => x.trim()).filter(Boolean));
   const maintBlocks = (uid, name) => maint.on && !ADM.has(String(name).toLowerCase()) && !((maint.allow.get(uid) || 0) > Date.now());
   const alog = (admin, action, target, info) => { console.log(`ADMIN ${admin} ${action} ${target || ''} ${info || ''}`); db.query('INSERT INTO admin_log(admin,action,target,info) VALUES($1,$2,$3,$4)', [admin, action, String(target || ''), String(info || '').slice(0, 200)]).catch(() => {}) };
+  const econ = createEcon(db, { mode: ['off', 'log', 'on'].includes(process.env.SERVER_AUTH) ? process.env.SERVER_AUTH : 'log' });
+  await econ.init(); console.log('econ mode=' + econ.mode);
   try { const r = await db.query("SELECT v FROM settings WHERE k='maint'"); if (r.rows[0]) { const m = JSON.parse(r.rows[0].v); maint.on = !!m.on; maint.msg = String(m.msg || '') } } catch {}
   const server = http.createServer(async (req, res) => {
     try {
@@ -68,6 +71,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
         let out = null;
         saveQ.set(a.uid, (saveQ.get(a.uid) || Promise.resolve()).catch(() => {}).then(async () => {
           let u;
+          if (econ.mode !== 'off') { let prev = null; try { const pr = await db.query('SELECT data FROM characters WHERE user_id=$1', [a.uid]); if (pr.rows[0]) prev = JSON.parse(pr.rows[0].data) } catch {} const ins = econ.inspect(a.uid, a.name, prev, ch); if (!ins.ok) { out = -2; return } }
           if (base === null) u = await db.query('UPDATE characters SET name=$2,data=$3,schema_v=$4,ver=ver+1 WHERE user_id=$1 RETURNING ver', [a.uid, ch.name.slice(0, 12), data, SCHEMA_V]); // legacy client: no version check
           else u = await db.query('UPDATE characters SET name=$2,data=$3,schema_v=$4,ver=ver+1 WHERE user_id=$1 AND ver=$5 RETURNING ver', [a.uid, ch.name.slice(0, 12), data, SCHEMA_V, base]);
           if (u.rows.length) { out = u.rows[0].ver | 0; return }
@@ -77,6 +81,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
         }));
         await saveQ.get(a.uid);
         console.log(`save user=${a.name} bytes=${data.length} ${out === -1 ? 'CONFLICT base=' + base : 'ver=' + out}`);
+        if (out === -2) return send(res, 422, { err: 'Save rejected (duplicate or forged items)' });
         if (out === -1) return send(res, 409, { err: 'Character was saved from another session' });
         return send(res, 200, { ok: 1, ver: out });
       }
@@ -122,6 +127,9 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   if (process.env.NO_SIM !== '1') { try { const { createSim } = await import('./sim.js'); sim = createSim(); console.log('world sim ready', sim.info) } catch (e) { console.error('sim disabled:', e.message) } }
   const eld = monitorEventLoopDelay({ resolution: 10 }); eld.enable(); setInterval(() => eld.reset(), 10000).unref();
   const MAX_SPEED = 14; // tiles/s incl. sprint + slack; anything faster is snapped back
+  const rentals = new Map();
+  const rentList = () => { const n = Date.now(); const o = []; for (const [id, r] of rentals) { if (r.exp <= n) rentals.delete(id); else o.push([id, r.n, r.exp, r.uid]) } return o };
+  const broadcastRentals = () => broadcast({ t: 'hs', l: rentList() });
   const cleanItem = it => { try { if (!it || typeof it.id !== 'string' || it.id.length > 24) return null; const j = JSON.stringify(it); if (j.length > 500) return null; return JSON.parse(j) } catch { return null } };
   const ground = new Map(); let gid = 0; // shared dropped items
   const trades = new Map(); // uid -> session
@@ -172,15 +180,17 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     return false };
   wss.on('connection', (ws, a, req) => {
     const old = players.get(a.uid); if (old) { try { old.ws.close(4000, 'Logged in elsewhere') } catch {} }
-    const me = { ws, ip: req ? ip(req) : '', uid: a.uid, name: a.name, x: 0, y: 0, dir: 0, eq: 0, t: Date.now(), lastChat: 0, init: false };
+    const me = { ws, lastMsg: Date.now(), ip: req ? ip(req) : '', uid: a.uid, name: a.name, x: 0, y: 0, dir: 0, eq: 0, t: Date.now(), lastChat: 0, init: false };
     players.set(a.uid, me);
     me.sp = sim ? sim.add(a.uid, a.name) : null;
     ws.send(JSON.stringify({ t: 'hello', id: a.uid, adm: isAdm(me) ? 1 : 0, online: players.size, world: sim ? sim.world() : null, gnd: [...ground.values()].map(g => ({ id: g.id, x: g.x, y: g.y, it: g.it })) }));
+    ws.send(JSON.stringify({ t: 'hs', l: rentList() }));
+    econ.unclaimed(a.uid).then(n => { if (n && ws.readyState === 1) ws.send(JSON.stringify({ t: 'mn', n })) }).catch(() => {});
     broadcast({ t: 'sys', m: `${a.name} entered the world` }, me);
     db.query('SELECT left_n,total,reason,by FROM jails WHERE user_id=$1', [a.uid]).then(r => { const j = r.rows[0]; if (j && players.get(a.uid) === me) { me.jail = { left: j.left_n, total: j.total, reason: j.reason, by: j.by }; place(me, jStart.x, jStart.y); jailMsg(me) } }).catch(() => {});
     ws.on('message', raw => {
       let m; try { m = JSON.parse(raw) } catch { return }
-      const now = Date.now();
+      const now = Date.now(); me.lastMsg = now;
       if (social(me, m, now)) return;
       if (m.t === 'pos' && Number.isFinite(m.x) && Number.isFinite(m.y)) {
         if (me.init) {
@@ -189,7 +199,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
           if (me.jail && !inYard(m.x, m.y)) { ws.send(JSON.stringify({ t: 'snap', x: jStart.x, y: jStart.y })); me.x = jStart.x; me.y = jStart.y; return }
           if (d > MAX_SPEED * dt + 3 && !tpOk && now > (me.wu || 0)) { ws.send(JSON.stringify({ t: 'snap', x: me.x, y: me.y })); return; }
         }
-        if (Math.hypot(m.x - me.x, m.y - me.y) > .05) me.mvT = now; me.x = m.x; me.y = m.y; me.dir = m.dir | 0; me.eq = m.eq | 0; me.name = a.name; me.t = now; me.init = true; me.hp = m.hp | 0; me.ch = m.ch ? 1 : 0; me.bz = m.bz ? 1 : 0; me.ac = typeof m.ac === 'string' ? m.ac.slice(0, 8) : ''; me.bd = Number.isFinite(m.bd) ? m.bd | 0 : 0; me.rd = m.rd | 0; me.rm = m.rm ? 1 : 0; me.rs = m.rs ? 1 : 0; if (Number.isFinite(m.rx) && Number.isFinite(m.ry)) { if (Math.hypot(m.rx - (me.rx || 0), m.ry - (me.ry || 0)) > .5) me.mvT = now; me.rx = +m.rx.toFixed(1); me.ry = +m.ry.toFixed(1) } if (me.ac) me.mvT = now; { const l = m.lk || {}, cs = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : null, ci = v => Number.isInteger(v) && v >= -1 && v < 20 ? v : 0; me.lk = { w: typeof l.w === 'string' ? l.w.slice(0, 16) : null, tw: cs(l.tw), ta: cs(l.ta), a: ci(l.a), h: ci(l.h), b: ci(l.b) } } me.mh = m.mhp | 0; me.ti = typeof m.ti === 'string' ? m.ti.replace(/[^A-Za-z ]/g, '').slice(0, 24) : ''; me.f = m.f === 'red' || m.f === 'orange' || m.f === 'blue' ? m.f : null; me.col = String(m.col || '').slice(0, 9);
+        if (Math.hypot(m.x - me.x, m.y - me.y) > .05) me.mvT = now; me.x = m.x; me.y = m.y; me.dir = m.dir | 0; me.eq = m.eq | 0; me.name = a.name; me.t = now; me.init = true; me.hp = m.hp | 0; me.ch = m.ch ? 1 : 0; me.bz = m.bz ? 1 : 0; me.ac = typeof m.ac === 'string' ? m.ac.slice(0, 8) : ''; me.bd = Number.isFinite(m.bd) ? m.bd | 0 : 0; me.rd = m.rd | 0; me.rm = m.rm ? 1 : 0; me.rs = m.rs ? 1 : 0; if (Number.isFinite(m.rx) && Number.isFinite(m.ry)) { if (Math.hypot(m.rx - (me.rx || 0), m.ry - (me.ry || 0)) > .5) me.mvT = now; me.rx = +m.rx.toFixed(1); me.ry = +m.ry.toFixed(1) } if (me.ac) me.mvT = now; { const l = m.lk || {}, cs = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : null, ci = v => Number.isInteger(v) && v >= -1 && v < 20 ? v : 0; me.lk = { w: typeof l.w === 'string' ? l.w.slice(0, 16) : null, tw: cs(l.tw), ta: cs(l.ta), a: ci(l.a), h: ci(l.h), b: ci(l.b) } } me.mh = m.mhp | 0; me.bf = (m.bf | 0) & 63; me.ti = typeof m.ti === 'string' ? m.ti.replace(/[^A-Za-z ]/g, '').slice(0, 24) : ''; me.f = m.f === 'red' || m.f === 'orange' || m.f === 'blue' ? m.f : null; me.col = String(m.col || '').slice(0, 9);
         const sp = me.sp; if (sp) { sp.x = m.x; sp.y = m.y; sp.dir = m.dir | 0; sp.hp = m.hp | 0; sp.mhp = m.mhp | 0 || sp.mhp; sp.dead = m.dead ? 1 : 0; sp.inside = m.inside || me.jail ? 1 : 0; sp.ready = true; if (m.xp && typeof m.xp === 'object') { const x = {}; for (const k in m.xp) if (Number.isFinite(m.xp[k])) x[k] = Math.min(1e8, m.xp[k]); sp.xp = x } }
       } else if (m.t === 'ping') { ws.send(JSON.stringify({ t: 'pong', c: m.c, ld: Math.max(0, Math.round((eld.mean / 1e6 - 10) * 10) / 10), q: ws.bufferedAmount }));
       } else if (m.t === 'hit' && sim && me.sp) { sim.hit(me.sp, m.id | 0, +m.d);
@@ -205,6 +215,43 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
         if (safeXY(me.x, me.y) || safeXY(q.x, q.y)) { if (q.f !== 'red' && now - (me.lastArrest || 0) > 3000) { me.lastArrest = now; broadcast({ t: 'sys', m: `🛡 Guards seize ${me.name} for attacking ${q.name} in town!`, c: '#fc6' }); doJail(me, 25, 'assault', 'Guard') } return }
         q.hurtT = now; me.hurtT = now;
         q.ws.send(JSON.stringify({ t: 'phit', from: a.uid, fn: a.name, d: Math.max(1, Math.min(+m.d || 1, 400)) }));
+      } else if (m.t === 'hrq' || m.t === 'hclaim') { // cottage rental: one owner per house, server-wide
+        const id = m.id | 0; if (id < 0 || id > 200) return;
+        const cur = rentals.get(id), mineHouse = [...rentals].find(([, r]) => r.uid === me.uid && r.exp > now);
+        if (cur && cur.exp > now && cur.uid !== me.uid) return me.ws.send(JSON.stringify({ t: 'hrr', ok: 0, id, why: 'taken' }));
+        if (mineHouse && mineHouse[0] !== id) return me.ws.send(JSON.stringify({ t: 'hrr', ok: 0, id, why: 'other' }));
+        let exp;
+        if (m.t === 'hclaim') exp = Math.min(+m.exp || 0, now + 61 * 60000);
+        else { const mm = [10, 20, 30, 45, 60].includes(m.m | 0) ? m.m | 0 : 0; if (!mm) return; exp = Math.max(now, cur && cur.uid === me.uid ? cur.exp : 0) + mm * 60000; if (exp > now + 61 * 60000) return me.ws.send(JSON.stringify({ t: 'hrr', ok: 0, id, why: 'max' })) }
+        if (exp <= now) return;
+        rentals.set(id, { uid: me.uid, n: a.name, exp });
+        if (m.t === 'hrq') me.ws.send(JSON.stringify({ t: 'hrr', ok: 1, id, exp, m: m.m | 0 }));
+        broadcastRentals();
+      } else if (m.t === 'aq') { me.ws.send(JSON.stringify({ t: 'al', l: econ.list() }));
+      } else if (m.t === 'ac' || m.t === 'ab' || m.t === 'abuy' || m.t === 'acan') { // real auction (escrow on the server)
+        if (me.jail || now - (me.lastAuc || 0) < 400) return me.ws.send(JSON.stringify({ t: 'ao', ok: 0, op: m.t, why: me.jail ? 'Not possible right now' : 'Slow down' }));
+        me.lastAuc = now;
+        (async () => { try {
+          const r = m.t === 'ac' ? await econ.create(a.uid, a.name, m) : m.t === 'ab' ? await econ.bid(a.uid, a.name, m, false) : m.t === 'abuy' ? await econ.bid(a.uid, a.name, m, true) : await econ.cancel(a.uid, m);
+          const nt = r.nt; delete r.nt; me.ws.send(JSON.stringify({ t: 'ao', op: m.t, ...r }));
+          for (const q of nt || []) { const p = players.get(q); if (p && p.ws.readyState === 1) p.ws.send(JSON.stringify({ t: 'mn', n: await econ.unclaimed(q) })) }
+          if (r.ok) me.ws.send(JSON.stringify({ t: 'mn', n: await econ.unclaimed(a.uid) }));
+        } catch (e) { console.log('auction err', e.message); me.ws.send(JSON.stringify({ t: 'ao', ok: 0, op: m.t, why: 'Server error' })) } })();
+      } else if (m.t === 'mc') { (async () => { try { me.ws.send(JSON.stringify({ t: 'mb', l: await econ.claim(a.uid) })) } catch (e) { console.log('mail err', e.message) } })();
+      } else if (m.t === 'steal') { // thievery: relay to victim, who decides the outcome
+        const q = players.get(m.to); if (!q || q === me || !q.init || q.ws.readyState !== 1 || q.bd || me.bd || me.jail || q.jail || sameParty(me, q)) return;
+        if (now - (me.lastSteal || 0) < 1800) return; me.lastSteal = now;
+        if (Math.hypot(q.x - me.x, q.y - me.y) > 3.5) return;
+        const k = m.k === 'snoop' ? 'snoop' : 'pick';
+        if (safeXY(me.x, me.y) || safeXY(q.x, q.y)) { if (now - (me.lastArrest || 0) > 3000) { me.lastArrest = now; broadcast({ t: 'sys', m: `🛡 Guards catch ${me.name} stealing in town!`, c: '#fc6' }); doJail(me, 25, 'theft', 'Guard') } return }
+        (me.stl ||= new Map()).set(q.uid, now + 6000);
+        q.ws.send(JSON.stringify({ t: 'stl', from: a.uid, fn: a.name, k, lv: Math.max(1, Math.min(+m.lv | 0, 99)) }));
+      } else if (m.t === 'stlr') { // victim's reply -> thief (only if a request is pending)
+        const th = players.get(m.to); if (!th || th.ws.readyState !== 1 || !th.stl || (th.stl.get(a.uid) || 0) < now) return; th.stl.delete(a.uid);
+        const r = { t: 'str', k: m.k === 'snoop' ? 'snoop' : 'pick', ok: m.ok ? 1 : 0, fn: a.name, g: Math.max(0, Math.min(+m.g || 0, 1e6)) };
+        if (r.ok && r.k === 'snoop') r.inv = Array.isArray(m.inv) ? m.inv.slice(0, 3).map(s => String(s).slice(0, 30)) : [];
+        if (r.ok && r.k === 'pick') r.it = cleanItem(m.it);
+        th.ws.send(JSON.stringify(r));
       } else if (m.t === 'pkill') { // victim reports death by player
         const k = players.get(m.by); if (k && k.ws.readyState === 1) { const sx = {}; if (m.sx && typeof m.sx === 'object') for (const kk in m.sx) if (Number.isFinite(+m.sx[kk])) sx[kk.slice(0, 16)] = Math.min(+m.sx[kk], 1e6); k.ws.send(JSON.stringify({ t: 'pk', who: a.uid, n: a.name, g: Math.max(0, Math.min(+m.g || 0, 1e7)), sx, b: Math.max(0, Math.min(+m.b || 0, 5000)), fl: m.fl ? 1 : 0, it: cleanItem(m.it) })) }
         broadcast({ t: 'sys', m: `${a.name} was slain by ${k ? k.name : 'a player'}` });
@@ -238,13 +285,15 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     ws.on('close', () => { if (players.get(a.uid) === me) { endTrade(a.uid, 'left'); if (me.jail) jailSave(a.uid, me.jail); leaveParty(me); invites.delete(a.uid); players.delete(a.uid); sim?.remove(a.uid); broadcast({ t: 'sys', m: `${a.name} left the world` }) } });
   });
   function broadcast(obj, except) { const s = JSON.stringify(obj); for (const p of players.values()) if (p !== except && p.ws.readyState === 1) p.ws.send(s) }
+  const asweep = setInterval(async () => { try { for (const q of await econ.sweep()) { const p = players.get(q); if (p && p.ws.readyState === 1) p.ws.send(JSON.stringify({ t: 'mn', n: await econ.unclaimed(q) })) } } catch (e) { console.log('sweep err', e.message) } }, 10000);
   const gsweep = setInterval(() => { const now = Date.now(); for (const g of ground.values()) if (now > g.exp) { ground.delete(g.id); broadcast({ t: 'gx', id: g.id }) } }, 5000);
   let ptk = 0;
   const tick = setInterval(() => {
+    { const nw = Date.now(); for (const p of players.values()) if (nw - (p.lastMsg || nw) > 10000) { console.log(`drop ${p.name}: silent 10s`); try { p.ws.terminate() } catch {} } }
     const all = [...players.values()].filter(p => p.init); const now0 = Date.now();
     for (const p of players.values()) {
       if (p.ws.readyState !== 1 || !p.init) continue;
-      const near = all.filter(q => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < 45).map(q => ({ id: q.uid, n: q.name, x: +q.x.toFixed(2), y: +q.y.toFixed(2), d: q.dir, e: q.eq, h: q.hp, c: q.ch, k: q.col, l: q.lk, a: q.ac, bd: q.bd, rx: q.rx, ry: q.ry, rd: q.rd, rm: q.rm, rs: q.rs, s: q.bz ? 2 : (now0 - (q.mvT || now0) > 30000 ? 1 : 0), mh: q.mh, f: q.f, ti: q.ti }));
+      const near = all.filter(q => q !== p && Math.hypot(q.x - p.x, q.y - p.y) < 45).map(q => ({ id: q.uid, n: q.name, x: +q.x.toFixed(2), y: +q.y.toFixed(2), d: q.dir, e: q.eq, h: q.hp, c: q.ch, k: q.col, l: q.lk, a: q.ac, bd: q.bd, rx: q.rx, ry: q.ry, rd: q.rd, rm: q.rm, rs: q.rs, s: q.bz ? 2 : (now0 - (q.mvT || now0) > 30000 ? 1 : 0), mh: q.mh, f: q.f, ti: q.ti, bf: q.bf }));
       p.ws.send(JSON.stringify({ t: 'players', l: near, online: players.size }));
     }
     if (++ptk % 5 === 0) for (const pt of parties.values()) { const ms = pmem(pt), o = JSON.stringify({ t: 'pyh', h: ms.map(q => [q.uid, q.hp | 0, q.mh | 0, Math.round(q.x), Math.round(q.y)]) }); for (const q of ms) if (q.ws.readyState === 1) q.ws.send(o) }
@@ -267,7 +316,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     }
   } catch (e) { if (Date.now() - (globalThis.__le || 0) > 5000) { globalThis.__le = Date.now(); console.error('SIM ERROR:', e && e.stack || e) } } }, 50) : null;
   await new Promise(r => server.listen(port, r));
-  const close = async () => { clearInterval(tick); clearInterval(gsweep); if (simTick) clearInterval(simTick); wss.close(); for (const p of players.values()) try { p.ws.terminate() } catch {} await new Promise(r => server.close(r)); await db.end?.() };
+  const close = async () => { clearInterval(tick); clearInterval(gsweep); clearInterval(asweep); if (simTick) clearInterval(simTick); wss.close(); for (const p of players.values()) try { p.ws.terminate() } catch {} await new Promise(r => server.close(r)); await db.end?.() };
   return { server, port: server.address().port, close, db };
 }
 

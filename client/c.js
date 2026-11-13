@@ -73,6 +73,7 @@ function stopAct(){act=null}
 function startAct(kind,ref,dur){act={kind,ref,t:0,dur};P.path=null}
 function updAct(dt){if(!act)return;act.t+=dt;if(act.kind!=='cook'&&Math.random()<dt*5)burst(act.ref.x+.5,act.ref.y+.5,act.kind==='fish'?'#bfe6ff':'#ddd',1,1.2);
  if(act.t<act.dur)return;act.t=0;const a=act;
+ if(a.kind==='fish'||a.kind==='mine'){if(P.st<5){toast('😮‍💨 Too tired – rest to recover stamina','#f99');return stopAct()}P.st-=5}
  if(a.kind==='chop'){sfx('chop');const l=lv('woodcut');if(Math.random()<clamp(.35+l*.02,.35,.92)){if(!addItem('log'))return stopAct();gainXp('woodcut',12);fl(a.ref.x+.5,a.ref.y,'+🪵','#ffd9a0');onEvent('log');sfx('pick');if(--a.ref.hp<=0){a.ref.dead=clock+28;solid[idx(a.ref.x,a.ref.y)]=0;stopAct()}}}
  else if(a.kind==='mine'){sfx('chop');const l=lv('mining'),iron=a.ref.ore==='iron';if(Math.random()<clamp(.3+l*.02-(iron?.1:0),.2,.9)){if(!addItem(a.ref.ore))return stopAct();gainXp('mining',iron?42:15);fl(a.ref.x+.5,a.ref.y,'+'+ITEMS[a.ref.ore].e,'#fff');onEvent('ore');sfx('pick');
    if(Math.random()<.004+l*.0003){addItem('gem');sys('💎 You found an Ember Gem!','#ff9bff');sfx('lvl')}
@@ -318,7 +319,7 @@ function updPlayer(dt){
  if(P.tired&&P.st>maxSt()*.25)P.tired=false;if(P.st<=0)P.tired=true;
  let sp=(P.shroomT>0?1.6:(chickenForm()?1.15:1))*(P.hasteT>0?1.4:1)*3.3*(1+Math.min(.25,lv('agility')*.004+G().spd/100))*(sprint?1.7:1)*(act?0:1);
  if(moving){moveEnt(P,vx*sp*dt,vy*sp*dt);P.dir=Math.abs(vx)>Math.abs(vy)?(vx>0?2:1):(vy>0?0:3);P.walk=(P.walk||0)+dt*(sprint?12:8);P.play+=0}
- if(sprint){P.st-=7*dt;P.agT=(P.agT||0)+dt;if(P.agT>1.4){P.agT=0;gainXp('agility',3)}}else{P.st=Math.min(maxSt(),P.st+(moving?2.5:5.5)*dt)}
+ if(sprint){P.st-=7*dt;P.agT=(P.agT||0)+dt;if(P.agT>1.4){P.agT=0;gainXp('agility',3)}}else{P.st=Math.min(maxSt(),P.st+(act&&(act.kind==='fish'||act.kind==='mine')?.6:moving?2.5:5.5)*dt)}
  if(moving&&!sprint){P.wT=(P.wT||0)+dt;if(P.wT>6){P.wT=0;gainXp('agility',1)}}
  if(P.hurt<=0){const r=(.35+lv('vitality')*.04)*dt;if(P.hp<maxHp()){P.hp=Math.min(maxHp(),P.hp+r);P.rg=(P.rg||0)+r;if(P.rg>8){P.rg=0;gainXp('vitality',2)}}}
  P.mp=Math.min(maxMp(),P.mp+(.35+lv('magic')*.05)*dt);P.hp=Math.min(P.hp,maxHp());
@@ -328,7 +329,7 @@ function updPlayer(dt){
 const HPRICE={10:20,20:35,30:50,45:70,60:90};
 function occOf(b){if(b.occ&&b.occ.exp>Date.now())return b.occ;b.occ=null;return null}
 function rentLeft(){return P.rent?Math.max(0,P.rent.exp-Date.now()):0}
-function rentHouse(b,m){const now=Date.now();if(occOf(b))return toast('Occupied','#f66');if(rentLeft()>0&&P.rent.id!==b.id)return toast('You already rent another cottage','#f66');
+function rentHouse(b,m){const now=Date.now();if(occOf(b))return toast('Occupied','#f66');if(NET.ws){if(P.gold<HPRICE[m])return toast('Not enough gold','#f66');NET.hq={id:b.id,m};return netSend({t:'hrq',id:b.id,m})}if(rentLeft()>0&&P.rent.id!==b.id)return toast('You already rent another cottage','#f66');
  const left=rentLeft(),add=m*60000;if(left+add>61*60000)return toast('Max 60 minutes at a time','#f66');const cost=HPRICE[m];if(P.gold<cost)return toast('Not enough gold','#f66');
  P.gold-=cost;P.rent={id:b.id,exp:now+left+add};sfx('pick');toast(`🏠 Cottage rented for ${m} min`)}
 function enterHouse(b){if(!(P.rent&&P.rent.id===b.id&&rentLeft()>0))return;P.inside=b.id;P.insideT=0;P.insideSince=Date.now();P.path=null;P.chase=null;stopAct();closePanel();portCh=null;save()}

@@ -24,6 +24,7 @@ services:
       ADMINS: ${ADMINS:-}
       CF: ${CF:-0}
       IP_LIMIT: ${IP_LIMIT:-1}
+      SERVER_AUTH: ${SERVER_AUTH:-log}
       IP_ALLOW: ${IP_ALLOW:-}
   caddy:
     image: caddy:2

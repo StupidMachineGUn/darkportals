@@ -69,6 +69,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;d
 #wbot{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
 .wv{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
 .wv .btn{width:min(320px,86vw);padding:0}#wbOn{background:#2f7d3b;border-color:#5bd06a}
+#buffs{position:fixed;left:8px;top:calc(46px + env(safe-area-inset-top));display:flex;gap:3px;z-index:4;pointer-events:none}.bf{position:relative;width:26px;height:26px;border-radius:7px;background:#000a;border:1px solid #fff4;font-size:15px;display:flex;align-items:center;justify-content:center}.bf b{position:absolute;bottom:-1px;right:1px;font:bold 9px system-ui;color:#fff;text-shadow:0 0 2px #000,0 0 2px #000}
 .wlink{font-size:13px;text-decoration:underline;opacity:.85;padding:6px}
 #title h1{text-shadow:0 3px 0 #2a1450,0 0 22px #8a5cff88;color:#e9dcff}
 
@@ -88,7 +89,7 @@ body.trip #c{animation:trip 4s linear infinite,wob 3s ease-in-out infinite}
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="shopin"><canvas id="shc" width="240" height="144"></canvas><div id="shb"><div class="btn" id="shTalk">💬 Talk</div><div class="btn" id="shLeave">🚪 Leave</div></div><div style="font-size:12px;opacity:.65">Walk with the stick or tap the floor · tap the shopkeeper to talk · step on the mat to leave</div></div>
-<div class="hud"><div class="bar" id="hp"><i></i><span></span></div><div class="bar" id="st"><i></i><span></span></div><div class="bar" id="mp"><i></i><span></span></div><div class="bar" id="xp"><i></i><span></span></div></div>
+<div class="hud"><div class="bar" id="hp"><i></i><span></span></div><div class="bar" id="st"><i></i><span></span></div><div class="bar" id="mp"><i></i><span></span></div></div><div id="buffs"></div>
 <div id="where"></div>
 <div id="boss" class="bar"><i></i><span></span></div>
 <input id="chatin" maxlength="120" placeholder="💬 chat…" style="display:none;position:fixed;top:68px;left:8px;width:42%;height:24px;z-index:6;background:#000a;color:#fff;border:1px solid #fff3;border-radius:6px;font-size:12px;padding:0 6px"><div id="top"><div class="btn" id="bSk">📜</div><div class="btn" id="bBag">🎒</div><div class="btn" id="bSp" style="display:none">🔮</div><div class="btn" id="bDev" style="width:auto;padding:0 8px;font-size:12px;font-weight:bold;color:#ffd36b">DEV</div><div class="btn" id="bMute">🔊</div></div>
@@ -102,7 +103,7 @@ body.trip #c{animation:trip 4s linear infinite,wob 3s ease-in-out infinite}
 <div id="story"><canvas id="stc" width="192" height="108"></canvas><div id="stt"></div><div id="stb"><div class="btn" id="stSkip">Skip</div><div class="btn" id="stNext">Next ▶</div></div></div>
 <div id="toast"></div>
 <div id="title"><canvas id="wcv"></canvas>
-<div id="wtop"><h1>🌀 DARK PORTALS</h1><div id="walpha">ALPHA v__VERSION__</div><div style="opacity:.8;max-width:320px;margin-top:8px;font-size:14px">A tiny MMO that grows with you. Every skill is trained by using it.</div></div>
+<div id="wtop"><h1>🌀 DARK PORTALS</h1><div id="walpha">ALPHA v__VERSION__</div><div style="opacity:.8;max-width:320px;margin-top:8px;font-size:14px">A tiny MMO that grows with you</div></div>
 <div id="wst">Checking server…</div>
 <div id="wbot">
 <div id="wmain" class="wv"><div class="btn" id="wbOn">Play online</div><div class="btn" id="wbOff" style="background:#1b1536">Play offline (single player)</div></div>

@@ -80,3 +80,16 @@
 - Security: one account per IP (IP_LIMIT, IP_ALLOW exceptions)
 - Admin: IP shown next to names, 📢 broadcast banner, maintenance mode (new logins refused; admins and players already online stay; rejoin allowed 5 min), admin action log table
 - Kick: "You got kicked", back to the welcome screen, 10 second block
+
+## 0.5.2 – thievery, real auction, server ledger
+- 🗝️ Thievery skill: tap ✋ near a player or mob → 🔍 Snoop / 🤏 Pickpocket. Players need PvP stance, get the 🟠 criminal flag, and guards jail thieves in town. Mobs: gold only, no flag, failure may aggro them. Success rises with level; victim's client decides the outcome (relayed by the server).
+- 🏠 Cottages online: free to rent, one owner per house server-wide (server-tracked, others see who rents it); no NPC occupants online.
+- 🔨 Real player auction (online): server escrow, bids, buy-now, cancel, 5% fee; fake listings are gone online (offline mode keeps the simulation). 📬 Mail delivers wins/refunds/payouts and shows notices at login.
+- 🧾 Server item/gold ledger: unique item registry, duplicate/forged item detection, gold/xp jump detection, `ledger` table. `SERVER_AUTH=off|log|on` (default `log`; `on` rejects saves with duplicated/forged items). Reversible, additive tables.
+- Buffs (shield etc.) as icons with timers under the HP bar and effects on the character, visible to others.
+- Fishing, mining, smithing cost stamina (no AFK macros).
+- One-tap logout (no popup loops); welcome text "A tiny MMO that grows with you".
+- 10s of silence → client saves and disconnects; server drops silent players. Local online backup removed (cheating risk).
+- Music: a different tune per town/village, 4 combat tracks (heavier for bosses/dungeon), fade between tunes.
+- Tutorial on first start (and in Options); 📱 low-detail mode for weak phones.
+- Removed the yellow level/gold bar.

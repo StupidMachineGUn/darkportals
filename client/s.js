@@ -16,10 +16,19 @@ function castMend(){if(chickenForm())return toast('🐔 Bawk! (chickens cannot c
  if(fizzle(sp.lv)){P.mp-=Math.ceil(sp.mp/2);CD.mend=1;CDM.mend=1;return}
  P.mp-=sp.mp;CD.mend=sp.cd;CDM.mend=sp.cd;const m=lv('magic');let h=0;
  if(sp.id==='mend'){h=Math.round(10+m*1.5)}else if(sp.id==='gmend'){h=Math.round(25+m*3);P.hot={left:6,per:3+m*.1}}else if(sp.id==='regen'){P.hot={left:10,per:2+m*.12}}
- else if(sp.id==='shield'){P.shield={v:20+m*2,t:15};fl(P.x,P.y-.8,'🛡️ '+Math.round(P.shield.v),'#6af')}else if(sp.id==='aegis'){P.shield={v:60+m*4,t:20};fl(P.x,P.y-.8,'🔰 '+Math.round(P.shield.v),'#fd6')}else if(sp.id==='haste'){P.hasteT=12;fl(P.x,P.y-.8,'💨 Haste','#ff6')}
+ else if(sp.id==='shield'){P.shield={v:20+m*2,t:15};fl(P.x,P.y-.8,'🛡️ '+Math.round(P.shield.v),'#6af')}else if(sp.id==='aegis'){P.shield={v:60+m*4,t:20,a:1};fl(P.x,P.y-.8,'🔰 '+Math.round(P.shield.v),'#fd6')}else if(sp.id==='haste'){P.hasteT=12;fl(P.x,P.y-.8,'💨 Haste','#ff6')}
  if(h){P.hp=Math.min(maxHp(),P.hp+h);fl(P.x,P.y-.8,'+'+h,'#6f6')}
  gainXp('magic',8+sp.lv*.1);gainXp('vitality',3);burst(P.x,P.y-.5,sp.c,12);sfx('heal');NET.acK=sp.id==='shield'||sp.id==='aegis'?'shield':sp.id==='haste'?'haste':'heal';NET.acT=clock+2}
-function suppTick(dt){if(!P)return;if(P.shield){P.shield.t-=dt;if(P.shield.t<=0||P.shield.v<=0)P.shield=null}if(P.hasteT>0)P.hasteT-=dt}
+function buffMask(){let m=0;if(!P)return 0;if(P.shield)m|=P.shield.a?2:1;if(P.hasteT>0)m|=4;if(P.hot&&P.hot.left>0)m|=8;if(P.shroomT>0)m|=16;if(P.rested>Date.now())m|=32;return m}
+function buffFx(cx,cy,m,t){if(!m)return;const y=cy-6;g.save();
+ if(m&3){const a=m&2;g.strokeStyle=a?'#ffd86b':'#6ab8ff';g.fillStyle=a?'#ffd86b22':'#6ab8ff22';g.lineWidth=1.5;g.globalAlpha=.65+.25*Math.sin(t*5);g.beginPath();g.arc(cx,y,12+(a?2:0),0,6.3);g.fill();g.stroke()}
+ if(m&4){g.strokeStyle='#fff6';g.lineWidth=1;for(let i=0;i<3;i++){const o=((t*6+i*.33)%1);g.globalAlpha=1-o;g.beginPath();g.moveTo(cx-9-o*6,y+4-i*4);g.lineTo(cx-4-o*6,y+4-i*4);g.stroke()}}
+ if(m&8){g.fillStyle='#7dff9b';g.font='bold 8px sans-serif';g.textAlign='center';for(let i=0;i<3;i++){const o=((t*.9+i*.33)%1);g.globalAlpha=1-o;g.fillText('+',cx-7+i*7,y+2-o*16)}}
+ g.restore()}
+let buffT=0;function buffUi(dt){buffT-=dt;if(buffT>0)return;buffT=.25;const el=document.getElementById('buffs');if(!el||!P)return;const L=[];
+ if(P.shield)L.push([P.shield.a?'🔰':'🛡️',Math.ceil(P.shield.t)]);if(P.hasteT>0)L.push(['💨',Math.ceil(P.hasteT)]);if(P.hot&&P.hot.left>0)L.push(['🌿',Math.ceil(P.hot.left)]);if(P.shroomT>0)L.push(['🍄',Math.ceil(P.shroomT)]);if(P.rested>Date.now())L.push(['😴',Math.ceil((P.rested-Date.now())/60000)+'m']);
+ const h=L.map(b=>`<div class="bf">${b[0]}<b>${b[1]}</b></div>`).join('');if(el._h!==h){el._h=h;el.innerHTML=h}}
+function suppTick(dt){if(!P)return;buffUi(dt);if(P.shield){P.shield.t-=dt;if(P.shield.t<=0||P.shield.v<=0)P.shield=null}if(P.hasteT>0)P.hasteT-=dt}
 function lvOk(req){return lv('magic')>=req}
 function needHtml(need){return Object.entries(need).map(([k,v])=>`<span style="color:${count(k)>=v?'#9fe3a0':'#ff8a8a'}">${ITEMS[k].e}${count(k)}/${v}</span>`).join(' ')}
 function spellRow(kind,key,e,n,req,d,cost,need,known){const ok=!known&&lvOk(req)&&P.gold>=cost&&Object.entries(need).every(([k,v])=>count(k)>=v);

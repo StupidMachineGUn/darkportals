@@ -1,7 +1,7 @@
 /* ---------- rendering ---------- */
 let g=$('#c').getContext('2d');const cv=$('#c'),nc=document.createElement('canvas'),ng=nc.getContext('2d');
 let userS=0,baseS=3,S=3,DPR=1,OX=0,OY=0,marker=null,mmImg,mm;
-function resize(){const w=innerWidth,h=innerHeight;DPR=Math.min(devicePixelRatio||1,2.5,Math.sqrt(3e6/Math.max(1,w*h)));cv.width=Math.round(w*DPR);cv.height=Math.round(h*DPR);nc.width=cv.width;nc.height=cv.height;
+function resize(){const w=innerWidth,h=innerHeight;DPR=lowOn()?1:Math.min(devicePixelRatio||1,2.5,Math.sqrt(3e6/Math.max(1,w*h)));cv.width=Math.round(w*DPR);cv.height=Math.round(h*DPR);nc.width=cv.width;nc.height=cv.height;
  baseS=Math.max(3,Math.round(Math.min(cv.width,cv.height*1.1)/(T*10)));S=userS||baseS}
 addEventListener('resize',resize);
 function healCanvas(){try{buildTiles();buildSprites();WSC.clear();mmImg=mk(MW,MH,c=>{for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){c.fillStyle=mmCol[map[idx(x,y)]];c.fillRect(x,y,1,1)}})}catch(e){}}
@@ -185,7 +185,7 @@ function render(){if(P.inside){drawInside();return}if(insideOn)hideInside();if(s
  for(const m of ills)R.push([m.y*T,()=>{g.globalAlpha=.5+.25*Math.sin(clock*7+m.ph);drawEnemy({t:m.t,x:m.x,y:m.y,ph:m.ph,dir:m.dir,flash:0,st:0,sw:0,mv:true});g.globalAlpha=1}]);
  netDraw(R,vis);for(const p of PTS)if(vis(p.x,p.y))R.push([p.y*T+14,()=>drawPortal(p)]);
  for(const b of bots)if(!b.dead&&vis(b.x,b.y))R.push([b.y*T,()=>{ring(b,Math.round(b.x*T-8),Math.round(b.y*T-14));drawChar(Math.round(b.x*T-8),Math.round(b.y*T-14),b.dir,clock*8+b.ph,b.col,'#432',{moving:b.tx!=null||!!b.target,wid:'sword0',tw:tintFor(lvOf(b.xp.melee)),sp:b.sw>0?1-b.sw/.25:-1,flash:b.flash>0})}]);
- R.push([P.y*T,()=>{if(P.shroomT>0){g.fillStyle=hsl2hex((clock*200)%360,.9,.6)+'66';g.beginPath();g.arc(P.x*T,P.y*T-4,11+Math.sin(clock*6)*2,0,6.3);g.fill()}if(P.dead){g.fillStyle='#0004';g.fillRect(Math.round(P.x*T-6),Math.round(P.y*T),12,3);g.fillStyle='#8cf';g.fillRect(Math.round(P.x*T-5),Math.round(P.y*T-3),10,4);return}
+ R.push([P.y*T,()=>{buffFx(P.x*T,P.y*T,buffMask(),clock);if(P.shroomT>0){g.fillStyle=hsl2hex((clock*200)%360,.9,.6)+'66';g.beginPath();g.arc(P.x*T,P.y*T-4,11+Math.sin(clock*6)*2,0,6.3);g.fill()}if(P.dead){g.fillStyle='#0004';g.fillRect(Math.round(P.x*T-6),Math.round(P.y*T),12,3);g.fillStyle='#8cf';g.fillRect(Math.round(P.x*T-5),Math.round(P.y*T-3),10,4);return}
   const et=eqTint();ring(P,Math.round(P.x*T-8),Math.round(P.y*T-14));drawChar(Math.round(P.x*T-8),Math.round(P.y*T-14),P.dir,P.walk||0,P.hurt>4.7?'#fff':(et.ta?shade(et.ta,.7):ARMC[armLv(eqId('a'))]),'#3a2a1a',{moving:(input.x||input.y||(P.path&&P.path.length)),wid:eqId('w'),tw:et.tw,ta:et.ta,arm:armLv(eqId('a')),helm:eqTier('h'),boots:eqTier('b'),chick:chickenForm(),sp:P.swing>0?1-P.swing/.25:-1})}]);
  R.sort((a,b)=>a[0]-b[0]);for(const r of R)r[1]();
  for(const f of fxs){const a=f.life/f.max;if(f.k==='ring'){const r=f.r*T*(1-a*.6);g.globalAlpha=a*.8;g.strokeStyle=f.c;g.lineWidth=2;g.beginPath();g.arc(f.x*T,f.y*T,r,0,6.283);g.stroke();g.globalAlpha=a*.18;g.fillStyle=f.c;g.fill();g.globalAlpha=1}

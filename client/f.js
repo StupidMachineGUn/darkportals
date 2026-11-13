@@ -128,5 +128,5 @@ function storyLoop(ts){if(!storyOn)return;requestAnimationFrame(storyLoop);const
  const x=$('#stc').getContext('2d');drawStory(x,stI,stT);const f=Math.max(0,1-stT*1.6);if(f>0){x.fillStyle='rgba(0,0,0,'+f+')';x.fillRect(0,0,192,108)}
  $('#stt').textContent=STORY[stI].slice(0,Math.floor(stChars))}
 function storyNext(){if(stChars<STORY[stI].length-1){stChars=STORY[stI].length;return}if(stI>=STORY.length-1)return endStory();stI++;stT=0;stChars=0;if(stI===STORY.length-1)$('#stNext').textContent='Begin ⚔'}
-$('#stNext').addEventListener('pointerdown',storyNext);$('#stSkip').addEventListener('pointerdown',endStory);
+$('#stNext').addEventListener('pointerdown',storyNext);$('#stSkip').addEventListener('pointerdown',()=>endStory());
 const _showStory=showStory;showStory=function(){_showStory();requestAnimationFrame(storyLoop)};

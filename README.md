@@ -33,3 +33,6 @@ Set `ADMINS=yourusername` (comma separated) in `deploy/.env` and rebuild; those 
 ## Security and maintenance
 - `IP_LIMIT=1` allows one account per IP (needs Caddy's X-Forwarded-For, which the default setup provides); list exceptions in `IP_ALLOW`.
 - 🛠 admin panel: broadcast, maintenance mode (survives restarts), kick (10s), jail. Actions are stored in the `admin_log` table.
+
+## Server ledger (SERVER_AUTH)
+`SERVER_AUTH=log` (default) inspects every save: duplicated or forged item ids, huge gold/xp jumps are logged (`SUSPICIOUS save …`) and stored in the `ledger` table. `on` additionally rejects saves with duplicated/forged items. `off` disables the checks. The real auction and mail always work. Full server-owned gold/items is planned for 0.6.x.

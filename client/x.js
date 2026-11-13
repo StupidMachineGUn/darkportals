@@ -129,9 +129,20 @@ const MUS={
  village:{bpm:92,lead:[76,0,79,0,81,0,79,0,77,0,76,0,74,0,0,0,72,0,76,0,79,0,76,0,74,0,71,0,72,0,0,0],roots:[48,53,55,48],arp:[0,4,7,12],lw:'triangle',lv:.05,bv:.05},
  fight:{bpm:158,lead:[81,0,81,84,81,0,79,77,76,0,76,79,76,0,74,72,77,0,77,81,77,0,76,74,76,74,72,71,69,0,0,0],roots:[45,41,43,45],arp:[0,0,7,0],lw:'square',lv:.032,bv:.06,hat:1},
  dun:{bpm:64,lead:[62,0,0,65,0,0,69,0,67,0,0,64,0,0,62,0,60,0,0,63,0,0,67,0,65,0,0,62,0,0,0,0],roots:[38,34,36,38],arp:[0,7,0,12],lw:'sawtooth',lv:.018,bv:.05}};
+/* per-town tunes + extra combat tracks (original, synthesized) */
+{const V=[[72,0,76,0,79,0,76,0,74,0,77,0,81,0,0,0,79,0,76,0,72,0,74,0,76,0,0,0,0,0,0,0],[67,0,71,0,74,0,71,0,69,0,72,0,76,0,0,0,74,0,71,0,67,0,69,0,71,0,0,0,0,0,0,0],[64,0,67,0,71,0,74,0,72,0,71,0,69,0,0,0,67,0,69,0,71,0,69,0,67,0,0,0,0,0,0,0],[69,0,72,0,76,0,74,0,72,0,69,0,71,0,0,0,72,0,74,0,76,0,81,0,79,0,0,0,0,0,0,0],[74,0,77,0,81,0,77,0,76,0,74,0,72,0,0,0,69,0,72,0,74,0,72,0,74,0,0,0,0,0,0,0]];
+ const R=[[48,53,55,48],[43,48,50,43],[40,45,47,40],[45,41,43,45],[50,55,57,50]],B=[84,100,76,112,88],W=['triangle','sine','triangle','square','triangle'];
+ for(let i=0;i<6;i++){const j=i%5;MUS['v'+i]={bpm:B[j],lead:V[j],roots:R[j],arp:[0,4,7,12],lw:W[j],lv:.05,bv:.05}}
+ MUS.f0=MUS.fight;
+ MUS.f1={bpm:172,lead:[69,69,0,72,69,0,76,74,72,0,72,69,67,0,69,0,65,65,0,69,65,0,72,71,69,0,67,65,64,0,0,0],roots:[45,43,41,40],arp:[0,3,7,0],lw:'sawtooth',lv:.03,bv:.07,hat:1};
+ MUS.f2={bpm:148,lead:[76,0,76,0,79,76,0,74,72,0,72,0,74,72,0,71,69,0,72,0,76,0,79,0,77,76,74,0,72,0,0,0],roots:[40,45,43,38],arp:[0,7,12,7],lw:'square',lv:.034,bv:.06,hat:1};
+ MUS.f3={bpm:184,lead:[57,57,69,57,57,67,57,65,57,57,64,57,62,0,60,0,56,56,68,56,56,66,56,64,56,56,62,56,60,0,59,0],roots:[33,33,32,31],arp:[0,0,6,0],lw:'sawtooth',lv:.04,bv:.08,hat:1}}
+let musFi=0,musPrev=null;
 let musMode=null,musStep=0,musNext=0,musFightT=0,noiseBuf=null,musCheck=0;
-function mtone(f,t,d,ty,v){const o=AC.createOscillator(),gn=AC.createGain();o.type=ty;o.frequency.value=f;gn.gain.setValueAtTime(v,t);gn.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(gn);gn.connect(AC.destination);o.start(t);o.stop(t+d+.02)}
-function mhat(t,v){if(!noiseBuf){noiseBuf=AC.createBuffer(1,AC.sampleRate*.05,AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}const s=AC.createBufferSource(),gn=AC.createGain();s.buffer=noiseBuf;gn.gain.setValueAtTime(v,t);gn.gain.exponentialRampToValueAtTime(.0001,t+.04);s.connect(gn);gn.connect(AC.destination);s.start(t)}
+let MG=null;const mout=()=>{if(!MG||MG.context!==AC){MG=AC.createGain();MG.connect(AC.destination)}return MG};
+function mfade(){if(!AC)return;const g=mout().gain,t=AC.currentTime;g.cancelScheduledValues(t);g.setValueAtTime(g.value,t);g.linearRampToValueAtTime(.05,t+.2);g.linearRampToValueAtTime(1,t+.9)}
+function mtone(f,t,d,ty,v){const o=AC.createOscillator(),gn=AC.createGain();o.type=ty;o.frequency.value=f;gn.gain.setValueAtTime(v,t);gn.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(gn);gn.connect(mout());o.start(t);o.stop(t+d+.02)}
+function mhat(t,v){if(!noiseBuf){noiseBuf=AC.createBuffer(1,AC.sampleRate*.05,AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}const s=AC.createBufferSource(),gn=AC.createGain();s.buffer=noiseBuf;gn.gain.setValueAtTime(v,t);gn.gain.exponentialRampToValueAtTime(.0001,t+.04);s.connect(gn);gn.connect(mout());s.start(t)}
 
 /* medieval tracks (original compositions, synthesized) */
 function ptone(f,t,d,ty,v,at,cut){const o=AC.createOscillator(),gn=AC.createGain(),fl=AC.createBiquadFilter();o.type=ty;o.frequency.value=f;fl.type='lowpass';fl.frequency.value=cut||2400;gn.gain.setValueAtTime(.0001,t);gn.gain.linearRampToValueAtTime(v,t+(at||.01));gn.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(fl);fl.connect(gn);gn.connect(AC.destination);o.start(t);o.stop(t+d+.05);return o}
@@ -149,21 +160,24 @@ function medTick(k){const M=MED[k];if(medMode!==k){medMode=k;medStep=0;medNext=A
   if(M.pl&&s%2===0){const a=[0,7,12,7][(s>>1)%4];ptone(NOTE(M.roots[bar]+12+a),t,sd*1.2,'triangle',.05,.004,3200)}
   if(M.drum){if(s%4===0)mdrum(t,'k');if(s%8===4)mdrum(t,'s');if(s%2===1&&s%4!==3)mhat(t,.02)}
   medNext+=sd;medStep++}}
-function musPick(){if(!P||P.dead)return null;const R=DR();if(inWiz)return'fight';
- const any=E.some(e=>!e.dead&&e.st===1&&!ESPEC[e.t].pass&&Math.hypot(e.x-P.x,e.y-P.y)<12);if(any)musFightT=clock+6;if(clock<musFightT)return'fight';
- if(P.x<DUN.x0+DUN.w+6&&P.y<DUN.y0+DUN.h+6&&P.x>DUN.x0-5&&P.y>DUN.y0-5)return'dun';
- if(P.inside||shopSt||safeAt(P.x,P.y))return'village';return null}
-function musTick(){if(!P||muted||P.music===false||!AC||AC.state!=='running')return;if(P.mtrack&&MED[P.mtrack]&&!P.dead){musMode=null;medTick(P.mtrack);return}medMode=null;const m=musPick();if(m!==musMode){musMode=m;musStep=0;musNext=AC.currentTime+.08}if(!m)return;const M=MUS[m],sd=60/M.bpm/2;
+function musArea(){let b=Math.hypot(P.x-CX,P.y-CY),k=0;VIL.forEach((v,i)=>{const d=Math.hypot(P.x-v.x,P.y-v.y);if(d<b){b=d;k=i+1}});return Math.min(k,5)}
+function musPick(){if(!P||P.dead)return null;const R=DR();
+ const any=E.some(e=>!e.dead&&e.st===1&&!ESPEC[e.t].pass&&Math.hypot(e.x-P.x,e.y-P.y)<12);if(any)musFightT=clock+6;
+ const inD=P.x<DUN.x0+DUN.w+6&&P.y<DUN.y0+DUN.h+6&&P.x>DUN.x0-5&&P.y>DUN.y0-5,hard=inWiz||inD||E.some(e=>!e.dead&&e.st===1&&(e.t==='wyrm'||e.t==='wizard'||e.t==='demon'));
+ if(inWiz||clock<musFightT){if(musPrev!=='f'){musFi=hard?(Math.random()<.6?3:ri(0,3)):ri(0,2)}musPrev='f';return'f'+musFi}musPrev=null;
+ if(inD)return'dun';
+ if(P.inside||shopSt||safeAt(P.x,P.y))return'v'+musArea();return null}
+function musTick(){if(!P||muted||P.music===false||!AC||AC.state!=='running')return;if(P.mtrack&&MED[P.mtrack]&&!P.dead){musMode=null;medTick(P.mtrack);return}medMode=null;const m=musPick();if(m!==musMode){if(musMode)mfade();musMode=m;musStep=0;musNext=AC.currentTime+.08}if(!m)return;const M=MUS[m],sd=60/M.bpm/2;
  while(musNext<AC.currentTime+.3){const s=musStep%32,bar=(s>>3)%4,n=M.lead[s],t=musNext;
   if(n)mtone(NOTE(n),t,sd*1.8,M.lw,M.lv);
   if(s%8===0||s%8===4)mtone(NOTE(M.roots[bar]+(s%8===4?7:0)),t,sd*3,'triangle',M.bv);
-  if(m==='fight'&&s%2===0)mtone(NOTE(M.roots[bar]),t,sd*.8,'square',.03);
+  if(m[0]==='f'&&s%2===0)mtone(NOTE(M.roots[bar]),t,sd*.8,'square',.03);
   if(s%2===1){const a=M.arp[(s>>1)%4];mtone(NOTE(M.roots[bar]+24+a),t,sd*.9,'square',.012)}
   if(M.hat&&s%2===1)mhat(t,.03);
   musNext+=sd;musStep++}}
 setInterval(()=>{try{musTick()}catch(e){}},90);
 addEventListener('pointerdown',()=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}});
-function optHtml(){return `<div class="row"><span style="flex:1">🩸 Gore</span>${bt('opt','gore',goreOn()?'ON':'OFF')}</div><div class="row"><span style="flex:1">🎵 Music</span>${bt('opt','music',P.music===false?'OFF':'ON')}</div><div class="row"><span style="flex:1">🎼 Track</span>${bt('opt','track',P.mtrack&&MED[P.mtrack]?MED[P.mtrack].n:'Auto (chiptune)')}</div><div class="row"><span style="flex:1">🏆 Hall of Heroes</span>${bt('board',0,'Open')}</div><div class="tip">Tap 🔊 (top bar) to mute everything. DEV button = test mode.</div>`}
+function optHtml(){return `<div class="row"><span style="flex:1">🩸 Gore</span>${bt('opt','gore',goreOn()?'ON':'OFF')}</div><div class="row"><span style="flex:1">🎵 Music</span>${bt('opt','music',P.music===false?'OFF':'ON')}</div><div class="row"><span style="flex:1">🎼 Track</span>${bt('opt','track',P.mtrack&&MED[P.mtrack]?MED[P.mtrack].n:'Auto (chiptune)')}</div><div class="row"><span style="flex:1">📱 Low-detail (weak phones)</span>${bt('opt','low',lowOn()?'ON':'OFF')}</div><div class="row"><span style="flex:1">❓ Tutorial</span>${bt('opt','tut','Show')}</div><div class="row"><span style="flex:1">🏆 Hall of Heroes</span>${bt('board',0,'Open')}</div><div class="tip">Tap 🔊 (top bar) to mute everything. DEV button = test mode.</div>`}
 function realXp(){return P.dev&&P.devBak?P.devBak:P.xp}
 function calcScore(){const xp=realXp(),tl=SK.reduce((s,x)=>s+lvOf(xp[x[0]]),0),pk=P.pvpK|0,mk=Math.max(0,(P.kills|0)-pk);return{tl,mk,pk,pd:P.pvpD|0,d:P.deaths|0,gold:P.gold+(P.bank?P.bank.gold:0),wiz:P.wiz|0,score:Math.max(0,Math.round(tl*100+mk*3+pk*75-(P.pvpD|0)*30-(P.deaths|0)*5+(P.gold+(P.bank?P.bank.gold:0))/20+(P.wiz|0)*5000))}}
 function dollURL(){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.imageSmoothingEnabled=false;const old=g;g=x;try{x.setTransform(4,0,0,4,0,0);drawChar(0,0,0,0,(eqTint().ta?shade(eqTint().ta,.7):ARMC[armLv(eqId('a'))]),'#3a2a1a',{wid:eqId('w'),tw:eqTint().tw,ta:eqTint().ta,arm:armLv(eqId('a')),helm:eqTier('h'),boots:eqTier('b')})}finally{g=old}return c.toDataURL()}
@@ -173,7 +187,7 @@ function addBoard(){const s=calcScore(),b=loadBoard(),ent={name:P.name,img:dollU
 function boardHtml(){const b=loadBoard(),me=calcScore();let h=hdr('🏆 Hall of Heroes')+`<div class="tip" style="font-size:13px;opacity:1">🌀 Dark Portals: ${PT.open?'<b style="color:#c6f">OPEN</b> – slay the Dark Wizard to close them':'closed for '+Math.ceil((PT.reopen-clock)/60)+' more min'}</div><div class="tip" style="font-size:13px;opacity:1">Slayers of Malachar, the Dark Wizard. Score = levels, kills, PvP, gold. Your score now: <b>${me.score}</b></div>`;
  if(!b.length)h+='<div class="tip">No one has slain the Dark Wizard yet…</div>';
  b.forEach((e,i)=>{h+=`<div class="row"><b style="width:22px">${i+1}</b><img src="${e.img}" width="48" height="48" style="image-rendering:pixelated;background:#0003;border-radius:6px"><div style="flex:1"><b>${e.name}</b> · <span style="color:#ffd34a">${e.score}</span><div class="tip">Lv ${e.tl} · ⚔${e.mk} kills · 🩸${e.pk} PvP (☠${e.pd}) · 💀${e.d} · 💰${e.gold} · 🐉×${e.wiz}<br>${new Date(e.when).toLocaleDateString()}</div></div></div>`});return h}
-const _xAct=xAct;xAct=function(a,v){if(a==='board'){openPanel('board');if(NET.on)netBoard();return true}if(a==='opt'){if(v==='gore')P.gore=!goreOn();else if(v==='track'){const i=MEDK.indexOf(P.mtrack);P.mtrack=i<0?MEDK[0]:(i+1<MEDK.length?MEDK[i+1]:null);medMode=null;P.music=true}else{P.music=P.music===false;musMode=null}return true}return _xAct(a,v)};
+const _xAct=xAct;xAct=function(a,v){if(a==='board'){openPanel('board');if(NET.on)netBoard();return true}if(a==='opt'){if(v==='low'){try{localStorage.setItem('dp.low',lowOn()?'0':'1')}catch(e){}resize();toast(lowOn()?'📱 Low-detail ON':'Low-detail OFF')}else if(v==='tut'){tutShow()}else if(v==='gore')P.gore=!goreOn();else if(v==='track'){const i=MEDK.indexOf(P.mtrack);P.mtrack=i<0?MEDK[0]:(i+1<MEDK.length?MEDK[i+1]:null);medMode=null;P.music=true}else{P.music=P.music===false;musMode=null}return true}return _xAct(a,v)};
 
 /* ---------- dark portals: mob spawners shut down by slaying the Dark Wizard ---------- */
 const PT={open:true,reopen:0},PTS=[];let ptClean=0;

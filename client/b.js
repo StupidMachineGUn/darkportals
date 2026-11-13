@@ -5,6 +5,7 @@
    Net is the seam for the server phase: replace LocalNet with a WebSocket and keep the same messages. */
 const T=16,MW=300,MH=300,CX=150,CY=150;
 const $=s=>document.querySelector(s);
+const lowOn=()=>{try{return localStorage.getItem('dp.low')==='1'}catch(e){return false}};
 const rnd=(a,b)=>a+Math.random()*(b-a),ri=(a,b)=>Math.floor(rnd(a,b+1)),pick=a=>a[ri(0,a.length-1)];
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const SEED=20261107;
@@ -18,7 +19,7 @@ const SK=[
  ['magic','Magic','🔮','Cast Ember Bolt / Mend'],['agility','Agility','👟','Run around (sprint)'],
  ['vitality','Vitality','❤️','Take damage, heal up'],['woodcut','Woodcutting','🪓','Chop trees'],
  ['mining','Mining','⛏️','Mine rocks'],['fishing','Fishing','🎣','Fish at the shore'],
- ['cooking','Cooking','🍳','Cook at a fire'],['crafting','Smithing','🔨','Forge at the anvil']];
+ ['cooking','Cooking','🍳','Cook at a fire'],['crafting','Smithing','🔨','Forge at the anvil'],['thief','Thievery','🗝️','Snoop & pickpocket (✋)']];
 const ITEMS={
  log:{n:'Log',e:'🪵',v:2},copper:{n:'Copper Ore',e:'🟤',v:3},iron:{n:'Iron Ore',e:'🔩',v:9},gem:{n:'Ember Gem',e:'💎',v:150},
  shrimp:{n:'Raw Shrimp',e:'🦐',v:2,raw:'cshrimp',lv:1},trout:{n:'Raw Trout',e:'🐟',v:6,raw:'ctrout',lv:8},salmon:{n:'Raw Salmon',e:'🐠',v:14,raw:'csalmon',lv:20},
