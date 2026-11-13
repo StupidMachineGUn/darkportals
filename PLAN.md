@@ -13,7 +13,7 @@
 - Graphics upgrade study (see chat).
 
 ## Spell tuning (v0.5.3 candidate, not built)
-- Venom bolt: more damage over time (poison), and a faster cast.
-- Frost bolt: +20% direct damage; chance to freeze the target; frozen enemies take damage over time.
-- Fireball: small area of effect (splash) and burning damage over time.
-- Open: exact numbers (poison/burn ticks and duration, freeze chance and length, splash radius, PvP vs mob values) to be decided before building.
+- Venom bolt: fires 3 bolts per cast, faster cast, poison damage over time (about 5s, ticks every second, ~60% of hit damage in total).
+- Frost bolt: +20% direct damage; 20% chance to freeze for 2s (shorter on bosses); frozen enemies then take 3s of damage over time.
+- Fireball: small splash (1.5 tiles); burning damage over time, also applied to nearby enemies.
+- Confirmed by user: venom and frost and fireball defaults above. NOT decided yet: PvP behaviour (same or weaker vs players). Open: per-bolt damage of the 3 venom bolts (suggest each bolt ~40% of the old single bolt, so total is higher), and mana cost.
