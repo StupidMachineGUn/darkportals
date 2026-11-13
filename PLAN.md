@@ -16,4 +16,4 @@
 - Venom bolt: fires 3 bolts per cast, faster cast, poison damage over time (about 5s, ticks every second, ~60% of hit damage in total).
 - Frost bolt: +20% direct damage; 20% chance to freeze for 2s (shorter on bosses); frozen enemies then take 3s of damage over time.
 - Fireball: small splash (1.5 tiles); burning damage over time, also applied to nearby enemies.
-- Confirmed by user: venom and frost and fireball defaults above. NOT decided yet: PvP behaviour (same or weaker vs players). Venom: each of the 3 bolts does the SAME damage as the old single bolt (user decision), so total is 3x plus poison. Open: mana cost (3 bolts) and whether the balance needs a cooldown or the poison share trimmed because of the 3x total.
+- Confirmed by user: venom and frost and fireball defaults above. NOT decided yet: PvP behaviour (same or weaker vs players). Venom (user decision): damage is SPREAD across the 3 bolts, so the three bolts together do about the same direct damage as the old single bolt (each ~1/3), plus the poison over time. Open: mana cost; whether to keep poison at ~60% of hit damage.
