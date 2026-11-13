@@ -17,3 +17,6 @@
 - Frost bolt: +20% direct damage; 20% chance to freeze for 2s (shorter on bosses); frozen enemies then take 3s of damage over time.
 - Fireball: small splash (1.5 tiles); burning damage over time, also applied to nearby enemies.
 - Confirmed by user: venom and frost and fireball defaults above. NOT decided yet: PvP behaviour (same or weaker vs players). Venom (user decision): damage is SPREAD across the 3 bolts, so the three bolts together do about the same direct damage as the old single bolt (each ~1/3), plus the poison over time. Open: mana cost; whether to keep poison at ~60% of hit damage.
+
+## Dev button (v0.5.3 candidate, not built)
+- The 🛠 dev button (all skills 99, all spells) must not show for non-admin players online. Only admins (ADMINS list) see it online. Also have the server ignore/reject saves flagged dev for non-admins. Open: keep it in offline single-player mode?
