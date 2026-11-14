@@ -108,3 +108,4 @@
 - Art Pack: redrawn farm animals/wildlife (sheep, chicken, rooster, cow, pig, rabbit, fox, deer, wolves, bears, boar, camel) with real front/back/side views; richer trees, bushes and flowers; detailed terrain (tufts, flowers, pebbles, sand ripples, embers); weapon on back view no longer a white slab.
 - Shop titles on buildings (Shop, Blacksmith, Inn, Bank, Trade House, Elder Hall, Mage Tower) as gold-framed signs over the roof.
 - DEV button hidden for everyone except admins online (server `ADMINS` list). Offline testing: add `#dev` to the URL or set localStorage `dp.dev=1`.
+- Sheep now say "meh" with a bleat sound instead of clucking like chickens.

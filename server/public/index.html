@@ -447,7 +447,7 @@ function setVol(k,v){v=Math.max(0,Math.min(1,v/100));VOL[k]=v;try{localStorage.s
 function tone(f,d,ty='square',v=.06,delay=0,f2){if(muted||VOL.sfx<=0)return;v*=VOL.sfx;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime+delay,o=AC.createOscillator(),g=AC.createGain();o.type=ty;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d)}catch(e){}}
 const SFX={hit:()=>tone(180,.1,'square',.08,0,60),miss:()=>tone(500,.07,'triangle',.04,0,300),crit:()=>{tone(300,.12,'sawtooth',.08,0,80);tone(900,.1,'square',.04,.03)},
  lvl:()=>[523,659,784,1047].forEach((f,i)=>tone(f,.25,'triangle',.08,i*.1)),pick:()=>tone(880,.08,'triangle',.05,0,1320),chop:()=>tone(120,.06,'square',.06,0,80),
- splash:()=>tone(700,.15,'sine',.04,0,200),bolt:()=>tone(900,.18,'sawtooth',.04,0,200),hurt:()=>tone(150,.2,'sawtooth',.08,0,50),heal:()=>{tone(660,.15,'sine',.05);tone(880,.2,'sine',.05,.1)},bawk:()=>{tone(520,.07,'square',.04,0,780);tone(430,.1,'square',.04,.08,300)},boss:()=>[110,98,82].forEach((f,i)=>tone(f,.5,'sawtooth',.09,i*.35))};
+ splash:()=>tone(700,.15,'sine',.04,0,200),bolt:()=>tone(900,.18,'sawtooth',.04,0,200),hurt:()=>tone(150,.2,'sawtooth',.08,0,50),heal:()=>{tone(660,.15,'sine',.05);tone(880,.2,'sine',.05,.1)},bawk:()=>{tone(520,.07,'square',.04,0,780);tone(430,.1,'square',.04,.08,300)},baa:()=>{tone(330,.32,'sawtooth',.035,0,290);tone(335,.32,'square',.015,0,285);tone(300,.16,'sawtooth',.03,.3,250)},boss:()=>[110,98,82].forEach((f,i)=>tone(f,.5,'sawtooth',.09,i*.35))};
 const sfx=k=>SFX[k]&&SFX[k]();
 /* ---------- player ---------- */
 let UID=1000;const uid=()=>++UID;
@@ -626,7 +626,7 @@ function killEnemy(e){if(meleeT===clock)goreKill(e);if(e.dun)dunKill(e);e.dead=c
  if(e.t!=='wyrm')dropGear(e.t,TOUGH.has(e.t));
  if(e.t==='troll'){dr('tusk',.8,3);dr('iron',.7,3);dr('gem',.08);dr('hpotion',.3)}if(e.t==='demon'){dr('essence',.8,3);dr('gem',.12);dr('scale',.1);dr('hpotion',.4);dr('potion',.3)}
  dr('hpotion',e.t==='slime'?0:.04);
- if(e.t==='sheep'){dr('wool',.9,2);dr('mutton',.7);sfx('bawk')}if(e.t==='chicken'){dr('drum',.5);dr('egg',.6);dr('feather',.7,2);sfx('bawk')}if(e.t==='rooster'){dr('rfeather',1,3);dr('gegg',.6);dr('drum',1,3);dr('egg',1,3);sys('🐓 The Rooster Lord falls! The flock is free.','#ffb347')}
+ if(e.t==='sheep'){dr('wool',.9,2);dr('mutton',.7);sfx('baa')}if(e.t==='chicken'){dr('drum',.5);dr('egg',.6);dr('feather',.7,2);sfx('bawk')}if(e.t==='rooster'){dr('rfeather',1,3);dr('gegg',.6);dr('drum',1,3);dr('egg',1,3);sys('🐓 The Rooster Lord falls! The flock is free.','#ffb347')}
  if(e.t==='goblin'){dr('bread',.2);dr('copper',.15)}if(e.t==='bat')dr('pelt',.3);if(e.t==='spider'){dr('pelt',.5);dr('gem',.02);dr('essence',.05)}if(e.t==='bandit'){dr('iron',.4);dr('bread',.3);dr('hpotion',.15);dr('gem',.03)}if(e.t==='golem'){dr('iron',.9,3);dr('gem',.2);dr('copper',.6,3)}
  if(e.t==='orc'){dr('tusk',.6);dr('iron',.25)}if(e.t==='ogre'){dr('tusk',.8,2);dr('iron',.6,2);dr('gem',.05)}if(e.t==='wraith'){dr('essence',.6);dr('gem',.04);dr('potion',.1)}
  if(e.t==='slime'){dr('gel',.6);dr('potion',.03)}if(e.t==='wolf'){dr('pelt',.55);dr('bread',.1)}if(e.t==='skeleton'){dr('bone',.7);dr('gem',.012)}
@@ -687,7 +687,7 @@ function updPassive(e,s,dt){e.flash-=dt;let tx=null,ty=null,sp=s.spd;e.mv=false;
  if(e.flee>0){e.flee-=dt;const dx=e.x-P.x,dy=e.y-P.y,m=Math.hypot(dx,dy)||1;tx=e.x+dx/m*3;ty=e.y+dy/m*3;sp*=2.3}
  else{if(Math.random()<dt*.5){e.wx=e.hx+rnd(-s.rad,s.rad);e.wy=e.hy+rnd(-s.rad,s.rad)}if(e.wx!=null){tx=e.wx;ty=e.wy;sp*=.6;if(Math.hypot(tx-e.x,ty-e.y)<.2)e.wx=null}}
  if(tx!=null){const dx=tx-e.x,dy=ty-e.y,m=Math.hypot(dx,dy)||1,vx=dx/m*sp*dt,vy=dy/m*sp*dt,ox=e.x,oy=e.y;moveEnt(e,vx,vy);if(e.x===ox&&e.y===oy&&m>.3){moveEnt(e,vx*1.5,0);moveEnt(e,0,vy*1.5)}e.mv=e.x!==ox||e.y!==oy;if(Math.abs(dx)>.05)e.dir=dx>0?2:1}
- if(Math.random()<dt*.02&&Math.hypot(e.x-P.x,e.y-P.y)<9){fl(e.x,e.y-.6,'bawk','#fff');if(Math.random()<.3)sfx('bawk')}}
+ if(Math.random()<dt*.02&&Math.hypot(e.x-P.x,e.y-P.y)<9){const sh=e.t==='sheep';fl(e.x,e.y-.6,sh?'meh':'bawk','#fff');if(Math.random()<.3)sfx(sh?'baa':'bawk')}}
 function updEnemies(dt){if(NET.sim)return netMobs(dt);for(const e of E){if(e.dead){if(clock>e.dead&&e.t!=='wyrm'&&e.t!=='rooster'&&Math.hypot(e.hx-P.x,e.hy-P.y)>6){e.dead=0;e.hp=e.mhp;e.x=e.hx;e.y=e.hy;e.st=0}continue}
   if(Math.abs(e.x-P.x)>40||Math.abs(e.y-P.y)>40)continue;
   if(e.dots&&e.dots.length){let col='#ccc';for(let i=e.dots.length-1;i>=0;i--){const d=e.dots[i];d.left-=dt;e.dotA=(e.dotA||0)+d.dps*dt;col=DOTC[d.k];if(d.left<=0)e.dots.splice(i,1)}
