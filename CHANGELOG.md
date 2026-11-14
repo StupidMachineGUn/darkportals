@@ -95,6 +95,7 @@
 - Removed the yellow level/gold bar.
 
 ## 0.5.3 – Art Pack (offline preview)
+- Fix: item registry no longer logs a harmless duplicate-key DB error (now an upsert).
 - New original pixel-art pack ("Art Bundle Pack": 24 biomes, 79 mobs, 129 item icons, 71 props/buildings, 4-direction characters with 7 armor tiers and 11 weapon looks), baked into the client (`client/artdata.js`, generator in `tools/art`).
 - Offline / single-player uses it: ground tiles, animated water/lava/ice, buildings, trees/rocks/bushes, players, NPCs, guards and all monsters, inventory/equipment item icons, paper-doll.
 - Cosmetic biomes around the starting area: snow & tundra (north), lava/ash (north-east), canyon (east), desert (south-east), jungle (south), swamp (south-west). Trees, rocks and monster looks follow the biome (e.g. ice slime / frost spider in snow, scorpion in desert, lava golem in ash).

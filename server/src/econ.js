@@ -13,7 +13,7 @@ export function createEcon(db, { mode = 'log', log = console.log } = {}) {
     if (mode !== 'off') { const r = await db.query('SELECT u,uid,ts FROM item_reg'); for (const x of r.rows) reg.set(x.u, { uid: x.uid, ts: +x.ts }) }
     const a = await db.query('SELECT * FROM auctions WHERE done=0'); auc = a.rows.map(x => ({ id: x.id, seller: x.seller, sn: x.seller_n, it: JSON.parse(x.item), cur: x.cur, bidder: x.bidder, bn: x.bidder_n, buy: x.buy, exp: +x.exp }));
   }
-  const own = (u, uid, iid) => { if (!u) return; const r = reg.get(u); if (r && r.uid === uid) return; reg.set(u, { uid, ts: Date.now() }); db.query('INSERT INTO item_reg(u,uid,iid,ts) VALUES($1,$2,$3,$4)', [u, uid, iid || '', Date.now()]).catch(() => db.query('UPDATE item_reg SET uid=$2,ts=$3 WHERE u=$1', [u, uid, Date.now()]).catch(() => {})) };
+  const own = (u, uid, iid) => { if (!u) return; const r = reg.get(u); if (r && r.uid === uid) return; reg.set(u, { uid, ts: Date.now() }); db.query('INSERT INTO item_reg(u,uid,iid,ts) VALUES($1,$2,$3,$4) ON CONFLICT (u) DO UPDATE SET uid=EXCLUDED.uid, ts=EXCLUDED.ts', [u, uid, iid || '', Date.now()]).catch(() => {}) };
   // ---- save inspection ----
   function inspect(uid, name, prev, ch) {
     if (mode === 'off') return { ok: true, flags: [] };
