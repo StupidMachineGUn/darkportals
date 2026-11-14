@@ -102,3 +102,4 @@
 - Online play is unchanged (`ART_ONLINE=false` in `client/art.js`); flip it to enable the pack online.
 - Gameplay unchanged: biomes/variants are visual only for now.
 - Art Pack: animated weapon swing – the blade/staff now sweeps through the arc with a fading slash smear (was a static sprite + arc), per weapon look.
+- Art Pack: monster attack animations (wind-up, lunge, slime squash, flyer dive, claw/slash arc); player sword swing made smaller.
