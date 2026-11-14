@@ -93,11 +93,15 @@ function artObj(o,px,py){const B=BIO[biomeAt(o.x,o.y)];let n;
  if(o.t==='rock'&&!o.dead){const ore=o.ore==='iron'?'#a8d8ff':'#e8a060';g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(px+8,py+14,9,3,0,0,6.283);g.fill();g.drawImage(f,px+8-34,py+16-56+1);g.fillStyle=ore;for(const [a,b] of [[2,-8],[6,-5],[-3,-4],[-6,-9]])g.fillRect(px+8+a,py+b+8,2,2);return true}
  if(o.t==='shroom'){g.drawImage(f,px+8-34,py+16-56+2);return true}
  g.fillStyle='rgba(0,0,0,.22)';g.beginPath();g.ellipse(px+8,py+14,8,2.6,0,0,6.283);g.fill();g.drawImage(f,px+8-34,py+16-56+1);return true}
+const BLBL={Shop:'Shop',Forge:'Blacksmith',Inn:'Inn','Elder Hall':'Elder Hall',Bank:'Bank','Trade House':'Trade House','Mage Tower':'Mage Tower',"Witch's Hut":"Witch's Hut"},BH={shop:28,smithy:28,inn:40,house_big:40,bank:28,wizard_tower:50,stilt_hut:38};
 const ABLD={Shop:['shop',2],Forge:['smithy',2],Inn:['inn',2],'Elder Hall':['house_big',2],Bank:['bank',2],'Trade House':['shop',2],'Mage Tower':['wizard_tower',1],Smithy:['smithy',1],"Witch's Hut":['stilt_hut',1]};
 function artBuilding(b){let [n,k]=ABLD[b.n]||['cottage_'+['red','blue','green','thatch'][(b.id|0)%4],1];const f=artProp(n);if(!f)return false;
  const B=BIO[biomeAt(b.x,b.y)];let ff=f;if(b.n==='Cottage'&&B==='snow')ff=artProp('igloo')||f;if(b.n==='Cottage'&&B==='desert')ff=artProp('adobe')||f;
  const bw=b.w*T,bot=(b.y+b.h)*T+2;g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(b.x*T+bw/2,bot-3,bw*.42,5,0,0,6.283);g.fill();
- const w=68*k,h=56*k;g.drawImage(ff,Math.round(b.x*T+bw/2-w/2),Math.round(bot-h),w,h);return true}
+ const w=68*k,h=56*k;g.drawImage(ff,Math.round(b.x*T+bw/2-w/2),Math.round(bot-h),w,h);
+ const lb=BLBL[b.n];if(lb){const top=bot-(BH[n]||44)*k-1;g.save();g.font='bold 7px sans-serif';g.textAlign='center';g.textBaseline='middle';const tw=Math.ceil(g.measureText(lb).width)+8,cx=Math.round(b.x*T+bw/2),ly=Math.round(top-5);
+  g.fillStyle='rgba(24,14,34,.9)';g.fillRect(cx-tw/2,ly-5,tw,10);g.strokeStyle='#ffd36b';g.lineWidth=1;g.strokeRect(cx-tw/2+.5,ly-4.5,tw-1,9);g.fillStyle='#ffd36b';g.fillText(lb,cx,ly+.5);g.restore()}
+ return true}
 /* ---- item icons ---- */
 const AICON={log:'oak_log',copper:'copper_ore',iron:'iron_ore',gem:'ruby',shrimp:'raw_fish',trout:'raw_fish',salmon:'raw_fish',cshrimp:'cooked_fish',ctrout:'cooked_fish',csalmon:'cooked_fish',berry:'berries',bread:'bread',potion:'mana_potion',tusk:'fang',essence:'gem_shard',hpotion:'hp_potion',pelt:'leather',bone:'bone',scale:'scale',
  sword0:'dagger',sword1:'sword',sword2:'steel_sword',sword3:'mithril_sword',sword4:'dragon_sword',staff:'staff',staff2:'fire_staff',staff3:'lightning_staff',arm0:'cloth_chest',arm1:'bronze_chest',arm2:'iron_chest',arm3:'steel_chest',arm4:'mithril_chest',scalearm:'dragon_chest',

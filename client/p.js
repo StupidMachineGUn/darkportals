@@ -1,7 +1,7 @@
 /* ---------- v0.5: parties, admin tools, jail ---------- */
 NET.party=null;NET.pinv=null;NET.adm=0;NET.jail=null;NET.ph=new Map();NET.adl=[];NET.kicked=0;
 function pNet(m){const t=m.t;
- if(t==='hello'){NET.adm=m.adm|0;return false}
+ if(t==='hello'){NET.adm=m.adm|0;setTimeout(()=>{try{devUi()}catch(e){}},0);return false}
  if(t==='warp'){tele(m.x,m.y);cam.x=m.x;cam.y=m.y;if(shopSt)shopSt=null;return true}
  if(t==='jl'){const first=!NET.jail;NET.jail={left:m.left,total:m.total,reason:m.reason};if(first)sys('🔒 You are in jail ('+m.reason+'). Dig '+m.left+' potatoes 🥔 to get out!','#fc6');return true}
  if(t==='jr'){NET.jail=null;sys('🔓 You are free! '+(m.why==='admin'?'(released by an admin)':'Sentence served.'),'#9fe3ff');return true}
