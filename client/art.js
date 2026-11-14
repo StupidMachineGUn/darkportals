@@ -1,6 +1,6 @@
 /* ---------- v0.5.3: Art Pack (original pixel art; offline/single-player preview) ---------- */
 const ART={ready:false,pref:true,sh:{},tiles:{},fc:new Map(),wc:new Map(),icons:{},nm:{}};
-const ART_ONLINE=false; /* set true to also use the Art Pack in online play */
+const ART_ONLINE=true; /* set true to also use the Art Pack in online play */
 try{ART.pref=localStorage.getItem('dp.art')!=='0'}catch(e){}
 const artOn=()=>ART.ready&&ART.pref&&(typeof NET==='undefined'||!NET.on||ART_ONLINE);
 function artLoad(){if(typeof ARTD==='undefined')return;let n=0;const keys=Object.keys(ARTD);
