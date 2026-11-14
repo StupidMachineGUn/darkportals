@@ -103,3 +103,5 @@
 - Gameplay unchanged: biomes/variants are visual only for now.
 - Art Pack: animated weapon swing – the blade/staff now sweeps through the arc with a fading slash smear (was a static sprite + arc), per weapon look.
 - Art Pack: monster attack animations (wind-up, lunge, slime squash, flyer dive, claw/slash arc); player sword swing made smaller.
+- Names, titles and bars now sit above the head of the taller Art Pack characters.
+- Settings: separate SFX and Music volume sliders (saved per device).

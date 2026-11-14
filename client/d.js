@@ -207,17 +207,18 @@ function render(){if(P.inside){drawInside();return}if(insideOn)hideInside();if(s
  for(let i=0;i<6;i++){const fx=((clock*.012+i*.19)%1.3-.15)*cw,fy=ch*(.1+.15*i),fr=cw*.35,fg=g.createRadialGradient(fx,fy,0,fx,fy,fr);fg.addColorStop(0,'rgba(150,175,160,.07)');fg.addColorStop(1,'rgba(150,175,160,0)');g.fillStyle=fg;g.fillRect(fx-fr,fy-fr,fr*2,fr*2)}
  const vg=g.createRadialGradient(cw/2,ch/2,Math.min(cw,ch)*.22,cw/2,ch/2,Math.max(cw,ch)*.72);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.6)');g.fillStyle=vg;g.fillRect(0,0,cw,ch);
  const FS=Math.round(10*DPR);g.font=`bold ${FS}px system-ui,sans-serif`;g.textAlign='center';g.lineWidth=3*DPR;g.strokeStyle='#000';
+ const AL=artOn()?.6:0;
  const label=(t,x,y,c)=>{const [sx,sy]=w2s(x,y);g.strokeText(t,sx,sy);g.fillStyle=c;g.fillText(t,sx,sy)};
- for(const n of npcs)if(!n.dead&&vis(n.x,n.y))label(n.n+(n.role==='elder'&&Object.values(P.q).some(q=>q.ok)?' ❗':''),n.x+.5,n.y-.15,FCOL[flagOf(n)]||'#ffd36b');
- for(const gd of guards)if(!gd.dead&&vis(gd.x,gd.y))label(gd.name||'Guard',gd.x,gd.y-1,gd.gob?'#9be36b':'#e8c060');
+ for(const n of npcs)if(!n.dead&&vis(n.x,n.y))label(n.n+(n.role==='elder'&&Object.values(P.q).some(q=>q.ok)?' ❗':''),n.x+.5,n.y-.15-AL,FCOL[flagOf(n)]||'#ffd36b');
+ for(const gd of guards)if(!gd.dead&&vis(gd.x,gd.y))label(gd.name||'Guard',gd.x,gd.y-1-AL,gd.gob?'#9be36b':'#e8c060');
  const sub=(t,x,y)=>{const [sx,sy]=w2s(x,y);g.font=`italic ${Math.round(8.5*DPR)}px Georgia,serif`;g.lineWidth=2.5*DPR;g.strokeText(t,sx,sy);g.fillStyle='#d8c27a';g.fillText(t,sx,sy);g.font=`bold ${FS}px system-ui,sans-serif`;g.lineWidth=3*DPR};
  netLabels(vis,label,sub);
- for(const b of bots)if(!b.dead&&vis(b.x,b.y)){label(b.name,b.x,b.y-1,FCOL[flagOf(b)]||'#9fe3ff');const tt=titleOf(b.xp);if(tt)sub('the '+tt,b.x,b.y-1.32)}
- label(P.name,P.x,P.y-1.05,FCOL[flagOf(P)]||'#fff');{const tt=titleOf(P.xp);if(tt)sub('the '+tt,P.x,P.y-1.37)}
- for(const e of E)if(!e.dead&&e.el&&vis(e.x,e.y))label(ELL(e),e.x,e.y-1.2*e.sc,e.el==='shaman'?'#8cf':e.el==='lord'?'#f6f':e.el==='elite'?'#f96':'#fb4');
- for(const e of E)if(!e.dead&&vis(e.x,e.y)&&(e.hp<e.mhp||e.st===1)){const [sx,sy]=w2s(e.x,e.y-(e.t==='wyrm'?2.2:.95)),w=(e.t==='wyrm'||e.t==='wizard'?40:14)*S;g.fillStyle='#000a';g.fillRect(sx-w/2-1,sy-3*DPR,w+2,5*DPR);g.fillStyle=e.t==='wyrm'?'#f63':'#e33';g.fillRect(sx-w/2,sy-2*DPR,w*e.hp/e.mhp,3*DPR)}
- for(const a of actorsList())if(!a.dead&&a.hp<a.mhp&&vis(AX(a),AY(a))){const [sx,sy]=w2s(AX(a),AY(a)-.95),w=14*S;g.fillStyle='#000a';g.fillRect(sx-w/2-1,sy-3*DPR,w+2,5*DPR);g.fillStyle='#e8a030';g.fillRect(sx-w/2,sy-2*DPR,w*a.hp/a.mhp,3*DPR)}
- if(act){const [sx,sy]=w2s(P.x,P.y-1.4),w=22*S/2;g.fillStyle='#000a';g.fillRect(sx-w/2-1,sy-1,w+2,6*DPR);g.fillStyle='#ffd36b';g.fillRect(sx-w/2,sy,w*act.t/act.dur,4*DPR)}
+ for(const b of bots)if(!b.dead&&vis(b.x,b.y)){label(b.name,b.x,b.y-1-AL,FCOL[flagOf(b)]||'#9fe3ff');const tt=titleOf(b.xp);if(tt)sub('the '+tt,b.x,b.y-1.32-AL)}
+ label(P.name,P.x,P.y-1.05-AL,FCOL[flagOf(P)]||'#fff');{const tt=titleOf(P.xp);if(tt)sub('the '+tt,P.x,P.y-1.37-AL)}
+ for(const e of E)if(!e.dead&&e.el&&vis(e.x,e.y))label(ELL(e),e.x,e.y-1.2*e.sc-AL*.6,e.el==='shaman'?'#8cf':e.el==='lord'?'#f6f':e.el==='elite'?'#f96':'#fb4');
+ for(const e of E)if(!e.dead&&vis(e.x,e.y)&&(e.hp<e.mhp||e.st===1)){const [sx,sy]=w2s(e.x,e.y-(e.t==='wyrm'?2.2:.95)-AL*.5),w=(e.t==='wyrm'||e.t==='wizard'?40:14)*S;g.fillStyle='#000a';g.fillRect(sx-w/2-1,sy-3*DPR,w+2,5*DPR);g.fillStyle=e.t==='wyrm'?'#f63':'#e33';g.fillRect(sx-w/2,sy-2*DPR,w*e.hp/e.mhp,3*DPR)}
+ for(const a of actorsList())if(!a.dead&&a.hp<a.mhp&&vis(AX(a),AY(a))){const [sx,sy]=w2s(AX(a),AY(a)-.95-AL*.5),w=14*S;g.fillStyle='#000a';g.fillRect(sx-w/2-1,sy-3*DPR,w+2,5*DPR);g.fillStyle='#e8a030';g.fillRect(sx-w/2,sy-2*DPR,w*a.hp/a.mhp,3*DPR)}
+ if(act){const [sx,sy]=w2s(P.x,P.y-1.4-AL),w=22*S/2;g.fillStyle='#000a';g.fillRect(sx-w/2-1,sy-1,w+2,6*DPR);g.fillStyle='#ffd36b';g.fillRect(sx-w/2,sy,w*act.t/act.dur,4*DPR)}
  g.font=`bold ${Math.round(12*DPR)}px system-ui,sans-serif`;for(const f of floats){g.globalAlpha=clamp(f.life*2,0,1);label(String(f.s),f.x,f.y-.5,f.c)}g.globalAlpha=1;
  if(P.dead){g.fillStyle='#300a';g.fillRect(0,0,cw,ch);g.fillStyle='#fff';g.font=`bold ${28*DPR}px system-ui`;g.fillText('💀 Knocked out…',cw/2,ch/2)}
  else if(P.hurt>4.4){g.fillStyle='#f003';g.fillRect(0,0,cw,ch)}
