@@ -4,10 +4,13 @@ P={}
 def mk(name,w,h,fn,cat,out=True):
     im=new(w,h);g=ImageDraw.Draw(im);fn(g,im);P[name]=(outline(im) if out else im,cat)
 def blob_canopy(g,cx,cy,rx,ry,c,n=40):
-    ell(g,[cx-rx,cy-ry,cx+rx,cy+ry],dk(C(c),.15))
-    ell(g,[cx-rx+1,cy-ry,cx+rx-2,cy+ry-3],c)
+    c=C(c);ell(g,[cx-rx,cy-ry,cx+rx,cy+ry],dk(c,.28))
+    lumps=[(-rx*.45,ry*.15,rx*.62,ry*.7),(rx*.45,ry*.15,rx*.62,ry*.7),(0,-ry*.25,rx*.75,ry*.75),(-rx*.2,ry*.45,rx*.55,ry*.5),(rx*.25,ry*.45,rx*.55,ry*.5)]
+    for dx,dy,w,h in lumps:ell(g,[int(cx+dx-w),int(cy+dy-h),int(cx+dx+w-1),int(cy+dy+h-2)],dk(c,.1))
+    for dx,dy,w,h in lumps:ell(g,[int(cx+dx-w+1),int(cy+dy-h),int(cx+dx+w-3),int(cy+dy+h-4)],c)
+    for dx,dy,w,h in lumps[:3]:ell(g,[int(cx+dx-w*.6),int(cy+dy-h*.9),int(cx+dx+w*.1),int(cy+dy-h*.2)],lt(c,.22))
     for _ in range(n):
-        x=R.randint(cx-rx+2,cx+rx-3);y=R.randint(cy-ry+1,cy+ry-4);pt(g,(x,y),lt(C(c),.3) if R.random()<.5 else dk(C(c),.12))
+        x=R.randint(cx-rx+2,cx+rx-3);y=R.randint(cy-ry+1,cy+ry-3);pt(g,(x,y),lt(c,.38) if R.random()<.45 else dk(c,.2))
 def trunk(g,cx,y0,y1,c='#6a4a2a',w=2):
     rect(g,[cx-w,y0,cx+w-1,y1],c);rect(g,[cx-w,y0,cx-w,y1],lt(C(c),.2));rect(g,[cx+w-1,y0,cx+w-1,y1],dk(C(c),.25))
 def tree(name,c,tc='#6a4a2a',rx=9,ry=8):
@@ -58,10 +61,12 @@ def rock(c,lava=False):
 mk('rock','24 28'.split()[0] and 24,28,rock('#8a8a94'),'rock');mk('rock_snow',24,28,rock('#c8d0dc'),'rock');mk('rock_sand',24,28,rock('#c8a878'),'rock');mk('lava_rock',24,28,rock('#3a2a2a',True),'rock');mk('obsidian',24,28,rock('#2a2438'),'rock')
 def bush(c,berry=None):
     def f(g,im):
-        ell(g,[3,12,21,26],dk(C(c),.15));ell(g,[4,11,19,23],c)
-        for _ in range(10):pt(g,(R.randint(5,18),R.randint(13,22)),lt(C(c),.3))
+        c2=C(c);ell(g,[2,13,22,26],dk(c2,.3))
+        for x0,y0,x1,y1 in[(2,14,12,25),(11,14,21,25),(6,10,17,22)]:ell(g,[x0,y0,x1,y1],dk(c2,.08));ell(g,[x0+1,y0,x1-2,y1-3],c2)
+        ell(g,[6,11,12,16],lt(c2,.22))
+        for _ in range(14):pt(g,(R.randint(4,19),R.randint(13,23)),lt(c2,.35) if R.random()<.5 else dk(c2,.2))
         if berry:
-            for p in [(7,16),(12,14),(15,19),(9,21)]:pt(g,p,berry);pt(g,(p[0]+1,p[1]),berry)
+            for p_ in [(6,17),(11,13),(16,18),(9,21),(14,22)]:rect(g,[p_[0],p_[1],p_[0]+1,p_[1]+1],berry);pt(g,p_,lt(C(berry),.5))
     return f
 mk('bush',24,28,bush('#3f9a3f'),'plant');mk('berry_bush',24,28,bush('#3f9a3f','#e83a4a'),'plant');mk('snow_bush',24,28,bush('#d8e4f0'),'plant');mk('thorn_bush',24,28,bush('#5a3a5a','#c03a8a'),'plant')
 def bones(g,im):
@@ -77,7 +82,7 @@ mk('stump',24,28,stump,'decor')
 def flowerpatch(cols):
     def f(g,im):
         for _ in range(9):
-            x=R.randint(3,20);y=R.randint(14,25);pt(g,(x,y+1),'#3a9a3a');pt(g,(x,y),R.choice(cols))
+            x=R.randint(3,20);y=R.randint(14,25);line(g,[x,y+3,x,y+1],'#3a9a3a',1);pt(g,(x-1,y+2),'#4aaa4a');col=R.choice(cols);rect(g,[x-1,y,x+1,y],col);pt(g,(x,y-1),col);pt(g,(x,y),'#ffd23f')
     return f
 mk('flowers',24,28,flowerpatch(['#ff6a8a','#ffd23f','#ffffff','#a06aff']),'plant',False)
 mk('reeds',24,28,lambda g,im:[(line(g,[x,26,x+R.randint(-1,1),R.randint(10,18)],'#6a8a3a',1),pt(g,(x,12),'#8a5a2b')) for x in range(5,20,3)],'plant',False)

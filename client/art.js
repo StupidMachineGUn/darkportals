@@ -1,5 +1,5 @@
 /* ---------- v0.5.3: Art Pack (original pixel art; offline/single-player preview) ---------- */
-const ART={ready:false,pref:true,sh:{},tiles:{},fc:new Map(),wc:new Map(),icons:{},nm:{}};
+const ART={ec:new Map(),ready:false,pref:true,sh:{},tiles:{},fc:new Map(),wc:new Map(),icons:{},nm:{}};
 const ART_ONLINE=true; /* set true to also use the Art Pack in online play */
 try{ART.pref=localStorage.getItem('dp.art')!=='0'}catch(e){}
 const artOn=()=>ART.ready&&ART.pref&&(typeof NET==='undefined'||!NET.on||ART_ONLINE);
@@ -8,7 +8,8 @@ function artLoad(){if(typeof ARTD==='undefined')return;let n=0;const keys=Object
 function artInit(){
  try{const T0=ARTD.tiles,im=ART.sh.tiles;for(let i=0;i<T0.names.length;i++){const [b,v]=T0.names[i].split(':');(ART.tiles[b]=ART.tiles[b]||[])[+v]=mk(16,16,c=>c.drawImage(im,(i%T0.cols)*16,((i/T0.cols)|0)*16,16,16,0,0,16,16))}
   const I0=ARTD.items,ii=ART.sh.items;for(let i=0;i<I0.names.length;i++)ART.icons[I0.names[i]]=mk(18,18,c=>c.drawImage(ii,(i%I0.cols)*18,((i/I0.cols)|0)*18,18,18,0,0,18,18));
-  ART.ready=true;artItems();artBiomeInit();try{resize()}catch(e){}}catch(e){console.warn('art init',e)}}
+  const E0=ARTD.edges,ei=ART.sh.edges;ART.ed={};for(let i=0;i<E0.names.length;i++)ART.ed[E0.names[i]]=mk(16,16,c=>c.drawImage(ei,(i%E0.cols)*16,((i/E0.cols)|0)*16,16,16,0,0,16,16));
+  ART.ready=true;artSkin();artItems();artBiomeInit();try{resize()}catch(e){}}catch(e){console.warn('art init',e)}}
 /* ---- biomes (cosmetic ground / props / mob variants by region) ---- */
 let ARTB=null;
 function artBiomeInit(){ARTB=new Int8Array(MW*MH).fill(-1)}
@@ -19,6 +20,25 @@ function biomeAt(x,y){const k=y*MW+x;if(!ARTB)return 0;let b=ARTB[k];if(b>=0)ret
   b=[2,1,1,3,5,4,6,7][Math.floor(s)%8];if(d<68&&vn(x*.2,y*.2)<.5)b=0}
  return ARTB[k]=b}
 const TLN={0:'deep_water',1:'shallow_water'};
+function artMatName(t,x,y){const B=BIO[biomeAt(x,y)];
+ if(t===TL.GRASS)return{core:'meadow',snow:'snow',tundra:'tundra',ash:'ashland',desert:'desert',canyon:'canyon',jungle:'jungle',swamp:'swamp'}[B];
+ if(t===TL.FOREST)return{core:'forest',snow:'snow',tundra:'tundra',ash:'obsidian',desert:'desert',canyon:'canyon',jungle:'jungle',swamp:'swamp'}[B];
+ if(t===TL.SAND)return{snow:'snow',tundra:'tundra',ash:'ashland',desert:'desert',canyon:'canyon'}[B]||'beach';
+ if(t===TL.STONE)return{snow:'icecave',tundra:'icecave',ash:'obsidian',desert:'canyon',canyon:'canyon'}[B]||'mountain';
+ if(t===TL.PATH)return'dirt';return null}
+const A_RANK={0:0,1:1,2:2,5:3,7:4,3:5,4:6},A_PRI=['mountain','icecave','obsidian','canyon','mud','dirt','beach','desert','ashland','snow','tundra','corrupt','swamp','jungle','forest','meadow'];
+function artInfo(x,y){if(!inb(x,y))return null;const t=map[idx(x,y)],r=A_RANK[t];if(r===undefined)return null;
+ if(t<=1){const B=BIO[biomeAt(x,y)];return{r,t,m:t===1?(B==='snow'||B==='tundra'?'ice_water':B==='swamp'?'swamp_water':B==='ash'?null:'shallow_water'):null,rim:B==='ash'?'g':'w'}}
+ return{r,t,m:artMatName(t,x,y),rim:'g'}}
+const A_D=[['N',0,-1],['E',1,0],['S',0,1],['W',-1,0]],A_C=[['NE',1,-1,'N','E'],['SE',1,1,'S','E'],['SW',-1,1,'S','W'],['NW',-1,-1,'N','W']];
+function artEdges(x,y){const k=y*MW+x;let L=ART.ec.get(k);if(L)return L;L=[];ART.ec.set(k,L);const me=artInfo(x,y);if(!me)return L;
+ const win=(o)=>o&&o.m&&(o.r>me.r||(o.r===me.r&&me.t>1&&o.m!==me.m&&A_PRI.indexOf(o.m)>A_PRI.indexOf(me.m)&&A_PRI.indexOf(o.m)>=0));
+ const hit={};for(const [n,dx,dy] of A_D){const o=artInfo(x+dx,y+dy);if(win(o)){hit[n]=1;const m=o.t<=1?'w':me.t<=1?me.rim:'g';L.push(ART.ed[o.m+':'+(o.t<=1?'w':me.t<=1?me.rim:'g')+':'+n+((hash(x,y,n.charCodeAt(0))>.5)?1:0)])}}
+ for(const [n,dx,dy,a,b] of A_C){if(hit[a]||hit[b])continue;const o=artInfo(x+dx,y+dy);if(win(o))L.push(ART.ed[o.m+':'+(o.t<=1?'w':me.t<=1?me.rim:'g')+':'+n])}
+ return L=L.filter(Boolean),ART.ec.set(k,L),L}
+function artDeco(x,y,t){const B=BIO[biomeAt(x,y)];
+ if(t===TL.GRASS&&(B==='core'||B==='jungle')){const h=hash(x,y,41);if(h>.955){const f=artProp(['flowers','flowers_red','flowers_blue','flowers_purple','flowers_orange'][((h*977)|0)%5]);if(f)g.drawImage(f,x*T+8-34,y*T+16-56+1)}}
+ else if(t===TL.SHAL&&(B==='core'||B==='jungle'||B==='swamp')){const h=hash(x,y,43);if(h>.93){const f=artProp(h>.97?'lily_flower':'lily');if(f)g.drawImage(f,x*T+8-34+((h*53|0)%5)-2,y*T+16-56+1-3)}}}
 function artTile(t,x,y,fr){const b=biomeAt(x,y),B=BIO[b];let n;
  if(t<=1){n=B==='snow'||B==='tundra'?'ice_water':B==='swamp'?'swamp_water':B==='ash'?(t===0?'lava':'tar'):TLN[t];return ART.tiles[n][(fr+((x+y)>>1))&3]}
  const h=hash(x,y,3),v=h<.72?0:1+((h*37)|0)%3;
@@ -110,5 +130,6 @@ const _ic={};
 function icoURL(id){const n=AICON[id],c=n&&ART.icons[n];if(!c)return null;return _ic[id]||(_ic[id]=c.toDataURL())}
 function artItems(){for(const k in ITEMS){const it=ITEMS[k];if('e0' in it)continue;it.e0=it.e;Object.defineProperty(it,'e',{get(){if(!artOn())return this.e0;const u=icoURL(k);return u?`<img class="ico" src="${u}">`:this.e0},configurable:true})}
  const st=document.createElement('style');st.textContent='.ico{width:22px;height:22px;image-rendering:pixelated;vertical-align:middle}.slot .ico,.slo .ico{width:26px;height:26px}';document.head.appendChild(st)}
-function artToggle(v){ART.pref=v;try{localStorage.setItem('dp.art',v?'1':'0')}catch(e){}}
+function artSkin(){try{document.body.classList.toggle('art',ART.ready&&ART.pref)}catch(e){}}
+function artToggle(v){ART.pref=v;artSkin();try{localStorage.setItem('dp.art',v?'1':'0')}catch(e){}}
 if(typeof ARTD!=='undefined')artLoad();

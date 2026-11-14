@@ -23,7 +23,7 @@
 - Final boss and his minions are 2x stronger.
 - Magic/spell tuning: ON HOLD, no change for now.
 
-## Security upgrade (planned, v0.5.4 candidate)
+## Security upgrade (planned, v0.5.5 candidate)
 1. Fix spoofable IP: stop trusting X-Forwarded-For blindly; use only the proxy's real header (last hop), set CF=1 behind Cloudflare and block direct origin access.
 2. Signup protection: CAPTCHA (Cloudflare Turnstile), global cap on new accounts per hour, optional email verification, block lookalike/odd usernames.
 3. Login brute force: per-username lockout with backoff (not only per IP).

@@ -4,7 +4,10 @@ from terrain import BIOMES,LIQ
 from chars import sprites,ARMOR
 from catalog import M
 from items import I
-from props import P
+import props2
+from props2 import P
+import polish;polish.polish()
+import edges
 def b64(im):
     b=io.BytesIO();im.save(b,'PNG',optimize=True);return 'data:image/png;base64,'+base64.b64encode(b.getvalue()).decode(),len(b.getvalue())
 def place(S,im,cx,cy,cw,ch):S.alpha_composite(im,(cx*cw+(cw-im.width)//2,cy*ch+ch-im.height))
@@ -41,6 +44,9 @@ iN=list(I);S=sheet([I[n][0] for n in iN],16,pad=0,cell=(18,18),bg=(0,0,0,0));out
 pN=list(P);S=Image.new('RGBA',(68*8,56*((len(pN)+7)//8)),(0,0,0,0))
 for i,n in enumerate(pN):place(S,P[n][0],i%8,i//8,68,56)
 out['props']={'img':S,'names':pN,'cell':[68,56],'cols':8}
+eo=edges.build();en=list(eo);ES=Image.new('RGBA',(16*12,16*(len(en)//12)),(0,0,0,0))
+for i,n in enumerate(en):ES.alpha_composite(eo[n],((i%12)*16,(i//12)*16))
+out['edges']={'img':ES,'names':en,'cols':12}
 js={};tot=0
 for k,v in out.items():
     u,sz=b64(v['img']);tot+=sz;sizes[k]=sz;d={kk:vv for kk,vv in v.items() if kk!='img'};d['src']=u;js[k]=d

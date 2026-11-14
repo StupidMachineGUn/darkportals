@@ -94,6 +94,15 @@
 - Tutorial on first start (and in Options); 📱 low-detail mode for weak phones.
 - Removed the yellow level/gold bar.
 
+## 0.5.4 – Art Pack polish
+- Terrain edges: grass fringes over sand, dirt and stone, sand shores with foam on water, shallow-to-deep water edges, and softer blending between biomes.
+- New ground details: flower patches in several colours; lily pads (some with flowers) on shallow water.
+- Trees, bushes, rocks and crystals redrawn with leafy clumps, highlights and mossy rocks; richer flower and reed props.
+- Item icons: top-to-bottom shading and shine on potions, gems, crystals and metals.
+- Buildings: shingled roofs, timber frames, window frames, flower boxes, doors with steps, brick chimneys; the Witch's Hut is now a mossy flowered log cabin; towers redrawn.
+- New menu skin (with Art Pack on): wood panels, green title bars, tan item slots, green buttons, wood HUD buttons.
+- Server: item registry upsert fix (no more duplicate-key log).
+
 ## 0.5.3 – Art Pack (offline preview)
 - Fix: item registry no longer logs a harmless duplicate-key DB error (now an upsert).
 - New original pixel-art pack ("Art Bundle Pack": 24 biomes, 79 mobs, 129 item icons, 71 props/buildings, 4-direction characters with 7 armor tiers and 11 weapon looks), baked into the client (`client/artdata.js`, generator in `tools/art`).

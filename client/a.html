@@ -86,6 +86,33 @@ body.trip #c{animation:trip 4s linear infinite,wob 3s ease-in-out infinite}
 #story canvas{position:static;inset:auto;height:auto;width:min(100%,640px);aspect-ratio:192/108;image-rendering:pixelated;border:3px solid var(--bd);border-radius:6px}
 #stt{min-height:84px;max-width:560px;text-align:center;font-size:17px;line-height:1.5}
 #stb{display:flex;gap:12px}#stb .btn{padding:0 22px;height:44px;font-size:16px}
+
+/* ---- Art Pack UI skin (body.art): wood panels, green title bars, parchment slots ---- */
+body.art{--pn:#6b4527f2;--bd:#2c1a0c;--gd:#f2d27a}
+body.art .btn{background:linear-gradient(#7a5230,#5e3c20);border:2px solid #2c1a0c;border-radius:6px;box-shadow:inset 0 2px 0 #a47a4c,inset 0 -3px 0 #4a2e16,0 2px 0 #0006}
+body.art .btn:active,body.art .btn.on{background:linear-gradient(#5e3c20,#4a2e16);box-shadow:inset 0 3px 0 #3a2210}
+body.art #acts .btn,body.art #bPvp{border-radius:50%}
+body.art #acts .big{background:linear-gradient(#a83a30,#7a2420);box-shadow:inset 0 2px 0 #e07a68,inset 0 -3px 0 #5a1612,0 2px 0 #0006}
+body.art .bar{border:2px solid #2c1a0c;border-radius:3px;background:#2a1a0e;box-shadow:inset 0 2px 0 #0006,0 1px 0 #a47a4c88}
+body.art #panel{background:linear-gradient(#7a5230,#64421f);border:4px solid #2c1a0c;border-radius:8px;box-shadow:inset 0 0 0 2px #a47a4c,inset 0 0 40px #0004,0 4px 0 #0007;padding-top:0}
+body.art #panel h3{margin:0 -10px 10px;padding:7px 12px;background:linear-gradient(#58b078,#3f8a5a);color:#0e2a18;text-shadow:0 1px 0 #9ae2b4;border-bottom:3px solid #1f5a34;border-top:2px solid #8ae0a8;font-size:15px;letter-spacing:1.2px;text-transform:uppercase}
+body.art .slot{background:#d9bb82;border:2px solid #8a6038;border-radius:3px;box-shadow:inset 2px 2px 0 #efd9a4,inset -2px -2px 0 #b8904f;color:#2c1a0c}
+body.art .slot.eq{border-color:#2f8a4a;box-shadow:inset 2px 2px 0 #efd9a4,inset -2px -2px 0 #b8904f,0 0 0 2px #58b078}
+body.art .slot b{color:#2c1a0c;text-shadow:0 1px 0 #f4e4b8}
+body.art .slot img{width:100%;height:100%;object-fit:contain}
+body.art .row .b{background:#2a1a0e;border:1px solid #2c1a0c;border-radius:3px}
+body.art #panel .btn{background:linear-gradient(#58b078,#3f9a5a);border-color:#1f5a34;color:#0e2a18;text-shadow:0 1px 0 #9ae2b4;box-shadow:inset 0 2px 0 #9ae2b4,inset 0 -3px 0 #2a7a42,0 2px 0 #0006}
+body.art #panel .btn:active{background:#3f8a5a;box-shadow:inset 0 3px 0 #1f5a34}
+body.art #panel.bag{background:none;border:0;box-shadow:none;padding:30px 0 0}
+body.art .bagw{background:linear-gradient(#7a5230,#64421f);border:4px solid #2c1a0c;border-radius:8px;box-shadow:inset 0 0 0 2px #a47a4c,inset 0 -18px 28px #0004,0 4px 0 #0007}
+body.art .hdl,body.art .flap:after{display:none}
+body.art .flap{background:linear-gradient(#5a3a1e,#48301a);border:2px solid #2c1a0c;border-radius:6px;box-shadow:inset 0 0 0 2px #7a5230;padding:8px;margin-bottom:10px}
+body.art .flap h3{margin:-8px -8px 8px;border-radius:3px 3px 0 0}
+body.art .ibar{background:#e3cc98;color:#2c1a0c;border:3px solid #5c3b1d;border-radius:5px;box-shadow:inset 0 0 0 2px #f0dba8}
+body.art .bagw .slot{background:#d9bb82;border:2px solid #8a6038}body.art .bagw .slot.eq{border:2px solid #2f8a4a}
+body.art .doll canvas{background:radial-gradient(#e3cc9855,transparent 70%)}
+body.art #where{background:linear-gradient(#58b078,#3f8a5a);color:#0e2a18;border:2px solid #1f5a34;border-radius:4px;text-shadow:0 1px 0 #9ae2b4;font-weight:700}
+body.art .bf{border:2px solid #2c1a0c;border-radius:4px;background:#e3cc98cc}
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="shopin"><canvas id="shc" width="240" height="144"></canvas><div id="shb"><div class="btn" id="shTalk">💬 Talk</div><div class="btn" id="shLeave">🚪 Leave</div></div><div style="font-size:12px;opacity:.65">Walk with the stick or tap the floor · tap the shopkeeper to talk · step on the mat to leave</div></div>

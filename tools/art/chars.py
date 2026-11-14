@@ -81,6 +81,8 @@ def human(d,f,raw=False,skin='#f0c9a0',hair='#8a4a22',tunic='#3a5fb0',pants='#4a
             if d=='r':
                 rect(g,[hx_,hy_-ln+2,hx_+1,hy_+3],bl) if False else None
                 line(g,[hx_,hy_,hx_+ln//2+1,hy-ln//2],bl,1);line(g,[hx_,hy_-1,hx_+ln//2+1,hy-ln//2-1],lt(C(bl),.4));rect(g,[hx_-1,hy_,hx_+1,hy_+1],gd)
+            elif d=='u':
+                rect(g,[hx_,hy_-ln//2,hx_+1,hy_],dk(C(bl),.35));rect(g,[hx_-1,hy_,hx_+2,hy_+1],dk(C(gd),.3))
             else:
                 rect(g,[hx_,hy_-ln,hx_+1,hy_],bl);line(g,[hx_,hy_-ln,hx_,hy_],lt(C(bl),.45));rect(g,[hx_-1,hy_,hx_+2,hy_+1],gd);rect(g,[hx_,hy_+2,hx_+1,hy_+3],'#5a3a1e')
         elif wp=='axe':
