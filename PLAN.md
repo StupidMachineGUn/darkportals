@@ -23,6 +23,16 @@
 - Final boss and his minions are 2x stronger.
 - Magic/spell tuning: ON HOLD, no change for now.
 
+## Security upgrade (planned, v0.5.4 candidate)
+1. Fix spoofable IP: stop trusting X-Forwarded-For blindly; use only the proxy's real header (last hop), set CF=1 behind Cloudflare and block direct origin access.
+2. Signup protection: CAPTCHA (Cloudflare Turnstile), global cap on new accounts per hour, optional email verification, block lookalike/odd usernames.
+3. Login brute force: per-username lockout with backoff (not only per IP).
+4. WebSocket flooding: per-connection message rate limit, connections per IP limit, drop sockets that do not log in within ~10s.
+5. DB spam: per-account save rate limit and max save size, row caps per account (auction, mail), cleanup of never-played accounts, parameterised queries only.
+6. Anti-cheat: server rejects impossible values (XP jumps, huge stacks, speed). Full fix comes with v0.6.0 / v0.6.1 server-owned economy and XP.
+7. Basics: rate-limit public endpoints (leaderboard), body size caps, private DB network, strong ADMINS and secrets, nightly backups with tested restore, fail2ban / Cloudflare rules on repeated 429s.
+Order: 1+2, then 3+4, then 5+6 with the economy work.
+
 ## Later
 - v0.6.0 server-owned gold/items; v0.6.1 server-validated XP/gathering/crafting.
 - Graphics upgrade study (see chat).
