@@ -104,7 +104,7 @@ function thiefDo(k,t){
 function thiefVictim(m){const lvT=Math.max(1,Math.min(99,m.lv|0)),k=m.k;
  const ok=Math.random()<(k==='snoop'?Math.min(.9,.5+lvT*.005):Math.min(.8,.3+lvT*.006));
  const r={t:'stlr',to:m.from,k,ok:ok?1:0,fn:P.name};
- if(ok){if(k==='snoop'){r.g=P.gold;r.inv=P.inv.filter(i=>!isEq(i)).slice(0,3).map(i=>ITEMS[i.id].e+ITEMS[i.id].n)}
+ if(ok){if(k==='snoop'){r.g=P.gold;r.inv=P.inv.filter(i=>!isEq(i)).slice(0,3).map(i=>ITEMS[i.id].e0+ITEMS[i.id].n)}
   else{const g=Math.min(P.gold,Math.max(1,Math.floor(P.gold*.08)),30+lvT*8);P.gold-=g;r.g=g;
    if(Math.random()<.08){const c=P.inv.filter(i=>!isEq(i)&&(ITEMS[i.id].v||0)<=40&&!ITEMS[i.id].slot);if(c.length){const it=c[ri(0,c.length-1)];const j=P.inv.indexOf(it);if(it.n>1)it.n--;else P.inv.splice(j,1);r.it={...it,n:1}}}
    sys(`🗝️ You feel lighter… ${g}🪙 gone${r.it?' and an item':''}!`,'#f99');netSaveSoon()}}

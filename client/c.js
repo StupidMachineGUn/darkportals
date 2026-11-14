@@ -75,14 +75,14 @@ function updAct(dt){if(!act)return;act.t+=dt;if(act.kind!=='cook'&&Math.random()
  if(act.t<act.dur)return;act.t=0;const a=act;
  if(a.kind==='fish'||a.kind==='mine'){if(P.st<5){toast('😮‍💨 Too tired – rest to recover stamina','#f99');return stopAct()}P.st-=5}
  if(a.kind==='chop'){sfx('chop');const l=lv('woodcut');if(Math.random()<clamp(.35+l*.02,.35,.92)){if(!addItem('log'))return stopAct();gainXp('woodcut',12);fl(a.ref.x+.5,a.ref.y,'+🪵','#ffd9a0');onEvent('log');sfx('pick');if(--a.ref.hp<=0){a.ref.dead=clock+28;solid[idx(a.ref.x,a.ref.y)]=0;stopAct()}}}
- else if(a.kind==='mine'){sfx('chop');const l=lv('mining'),iron=a.ref.ore==='iron';if(Math.random()<clamp(.3+l*.02-(iron?.1:0),.2,.9)){if(!addItem(a.ref.ore))return stopAct();gainXp('mining',iron?42:15);fl(a.ref.x+.5,a.ref.y,'+'+ITEMS[a.ref.ore].e,'#fff');onEvent('ore');sfx('pick');
+ else if(a.kind==='mine'){sfx('chop');const l=lv('mining'),iron=a.ref.ore==='iron';if(Math.random()<clamp(.3+l*.02-(iron?.1:0),.2,.9)){if(!addItem(a.ref.ore))return stopAct();gainXp('mining',iron?42:15);fl(a.ref.x+.5,a.ref.y,'+'+ITEMS[a.ref.ore].e0,'#fff');onEvent('ore');sfx('pick');
    if(Math.random()<.004+l*.0003){addItem('gem');sys('💎 You found an Ember Gem!','#ff9bff');sfx('lvl')}
    if(--a.ref.hp<=0){a.ref.dead=clock+32;solid[idx(a.ref.x,a.ref.y)]=0;stopAct()}}}
  else if(a.kind==='fish'){sfx('splash');const l=lv('fishing');if(Math.random()<clamp(.4+l*.02,.4,.9)){let f='shrimp';if(l>=20&&Math.random()<.3)f='salmon';else if(l>=8&&Math.random()<.45)f='trout';
-   if(!addItem(f))return stopAct();gainXp('fishing',{shrimp:12,trout:35,salmon:80}[f]);fl(a.ref.x+.5,a.ref.y,'+'+ITEMS[f].e,'#bfe6ff');onEvent('fish');sfx('pick')}}
+   if(!addItem(f))return stopAct();gainXp('fishing',{shrimp:12,trout:35,salmon:80}[f]);fl(a.ref.x+.5,a.ref.y,'+'+ITEMS[f].e0,'#bfe6ff');onEvent('fish');sfx('pick')}}
  else if(a.kind==='bush'){gainXp('vitality',3);addItem('berry',ri(1,2));fl(a.ref.x+.5,a.ref.y,'+🍇','#f9a');sfx('pick');a.ref.dead=clock+20;stopAct()}
  else if(a.kind==='cook'){const raw=P.inv.find(i=>ITEMS[i.id].raw);if(!raw)return stopAct();const it=ITEMS[raw.id];take(raw.id);
-   if(Math.random()<Math.max(.06,.55-lv('cooking')*.025-(P.inv.length?0:0))){fl(P.x,P.y-.5,'Burnt!','#999')}else{addItem(it.raw);gainXp('cooking',8+it.v*3);fl(P.x,P.y-.7,'+'+ITEMS[it.raw].e,'#ffd36b');sfx('pick')}
+   if(Math.random()<Math.max(.06,.55-lv('cooking')*.025-(P.inv.length?0:0))){fl(P.x,P.y-.5,'Burnt!','#999')}else{addItem(it.raw);gainXp('cooking',8+it.v*3);fl(P.x,P.y-.7,'+'+ITEMS[it.raw].e0,'#ffd36b');sfx('pick')}
    if(!P.inv.some(i=>ITEMS[i.id].raw))stopAct()}}
 function startInteract(t){const d=Math.atan2(t.y+.5-P.y,t.x+.5-P.x);P.dir=Math.abs(Math.cos(d))>Math.abs(Math.sin(d))?(Math.cos(d)>0?2:1):(Math.sin(d)>0?0:3);
  if(t.kind==='npc')return openNpc(t.ref);
@@ -188,7 +188,7 @@ function spawnEnemies(){let c=0,tries=0;while(c<2200&&tries++<300000){const x=ri
 function hurtEnemy(e,d,src='p'){if(e.dead)return;if(meleeT===clock)bloodHit(e);if(src==='p'&&P.shroomT>0)d*=3;if(NET.sim){if(src==='p')netHit(e,d);e.flash=.18;e.hp=Math.max(1,e.hp-d);if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;return}if(e.t==='chicken'||e.t==='sheep'){e.flee=5;if(Math.random()<.4)sfx('bawk')}e.hp-=d;e.flash=.18;e.st=1;if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.hp<=0)killEnemy(e)}
 const ELN=e=>(e.el==='shaman'?'Shaman ':e.el==='elite'?'Elite ':'Chief ')+e.t[0].toUpperCase()+e.t.slice(1);
 function killEnemy(e){if(meleeT===clock)goreKill(e);if(e.dun)dunKill(e);e.dead=clock+(e.temp?1e9:e.t==='wizard'?1e9:e.dun?ri(240,360):e.t==='wyrm'||e.t==='rooster'?1e9:ri(45,70)*(e.el?4:1));P.kills++;const s=ESPEC[e.t],xm=e.xm||1;gainXp('melee',s.xp*.4*xm);if(e.el&&e.el!=='lord'&&!e.dun){const g2=ri(...s.gold)*4;P.gold+=g2;fl(e.x,e.y-1.2,'+'+g2+'g','#ffd36b');toast('☠️ '+ELN(e)+' slain!','#ffd36b');dropGear(e.t,true);dropGear(e.t,true)}onEvent(e.t);burst(e.x,e.y-.4,'#fff',14);
- const g=ri(...s.gold);P.gold+=g;fl(e.x,e.y-.6,'+'+g+'g','#ffd36b');const dr=(id,p,n=1)=>{if(Math.random()<p&&addItem(id,n)){fl(e.x+.3,e.y-1,'+'+ITEMS[id].e,'#fff')}};
+ const g=ri(...s.gold);P.gold+=g;fl(e.x,e.y-.6,'+'+g+'g','#ffd36b');const dr=(id,p,n=1)=>{if(Math.random()<p&&addItem(id,n)){fl(e.x+.3,e.y-1,'+'+ITEMS[id].e0,'#fff')}};
  if(e.t!=='wyrm')dropGear(e.t,TOUGH.has(e.t));
  if(e.t==='troll'){dr('tusk',.8,3);dr('iron',.7,3);dr('gem',.08);dr('hpotion',.3)}if(e.t==='demon'){dr('essence',.8,3);dr('gem',.12);dr('scale',.1);dr('hpotion',.4);dr('potion',.3)}
  dr('hpotion',e.t==='slime'?0:.04);

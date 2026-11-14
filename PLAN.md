@@ -20,3 +20,11 @@
 
 ## Dev button (v0.5.3 candidate, not built)
 - The 🛠 dev button (all skills 99, all spells) must not show for non-admin players online. Only admins (ADMINS list) see it online. Also have the server ignore/reject saves flagged dev for non-admins. Open: keep it in offline single-player mode?
+
+## Art Pack (v0.5.3 offline preview) – follow-ups
+- Enable online (`ART_ONLINE=true`) after offline review; same variants must show for all players (biome is derived from position, so it already matches).
+- Autotile edge blending between biomes (edge overlays already in the bundle).
+- Make biomes real: lava hazard, ice slow, desert heat, swamp poison; biome-specific mob spawns on the server; new mobs' drops/stats.
+- Bigger world (10x) + new items/weapons/armor tiers (mithril, dragon) as real gameplay content.
+- Real walk/attack animation frames for mobs (currently 2 frames) and per-direction attack poses; skin/hair choices from the pack.
+- Texture-pack selector (Classic / Art Pack) and optional lighting layer at dusk.
