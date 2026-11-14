@@ -15,6 +15,14 @@
 - Mob loot works the same: stays on the floor until picked up, no direct transfer.
 - Dropped items (PvP, mob, death) stay 10 minutes on the ground, then disappear. Server-owned timer.
 
+## World & audio expansion (planned, user request)
+- Music changes per village/area (own theme or mood per place). Combat music is always more jumpy and alert, and takes over while fighting.
+- Area titles show ONCE when entering a place, then disappear (already listed as "Entering (area)").
+- Use ALL 79 mobs from the Art Pack as real gameplay mobs (biome-based spawns).
+- Bigger map (size to decide, 3x or 10x) and more dungeons.
+- Final boss and his minions are 2x stronger.
+- Magic/spell tuning: ON HOLD, no change for now.
+
 ## Later
 - v0.6.0 server-owned gold/items; v0.6.1 server-validated XP/gathering/crafting.
 - Graphics upgrade study (see chat).
