@@ -39,16 +39,27 @@ function artWeap(w){if(!w)return'none';w=String(w);if(w.startsWith('dagger'))ret
  return['dagger','sword','sword','steel','mithril'][Math.min(n,4)]||'sword'}
 const NPCC=['#c0392b','#3a5fb0','#3f8a3f','#7a3ab0','#d9822b','#d8c040','#7a5a3a','#7a7a86','#2a9a9a','#d870a8','#e8e4dc','#2a2a32','#6a1a2a','#1a2a5a','#6a6a2a','#c8a878'],NPCRGB=NPCC.map(h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16))),_nc={};
 function artNpcCol(col){if(_nc[col])return _nc[col];let c=col||'#888888';if(c.length===4)c='#'+c[1]+c[1]+c[2]+c[2]+c[3]+c[3];if(!/^#[0-9a-f]{6}$/i.test(c))c='#888888';const r=[1,3,5].map(i=>parseInt(c.substr(i,2),16));let b=0,bd=1e9;NPCRGB.forEach((p,i)=>{const d=(p[0]-r[0])**2+(p[1]-r[1])**2+(p[2]-r[2])**2;if(d<bd){bd=d;b=i}});return _nc[col]=NPCC[b]}
+const WICON={dagger:'dagger',sword:'sword',steel:'steel_sword',mithril:'mithril_sword',axe:'axe',staff:'staff',fire:'fire_staff',frost:'frost_staff',venom:'venom_staff',bow:'bow'};
 function artChar(px,py,dir,ph,shirt,o){
  const sp=o.sp==null?-1:o.sp;let ox=0,oy=0;if(sp>=0){const l=Math.sin(sp*Math.PI)*2.5;ox=DIR[dir][0]*l;oy=DIR[dir][1]*l*.7}
- let name;if(o.arm!==undefined)name='A:'+A_TIER[Math.min(8,o.arm|0)]+':'+artWeap(o.wid);
- else{const w=o.wid?(String(o.wid).startsWith('axe')?'axe':'dagger'):'none';name='N:'+artNpcCol(shirt)+':'+w}
+ let name,wn='none';if(o.arm!==undefined){wn=artWeap(o.wid);name='A:'+A_TIER[Math.min(8,o.arm|0)]+':'+(sp>=0?'none':wn)}
+ else{const w=o.wid?(String(o.wid).startsWith('axe')?'axe':'dagger'):'none';wn=w;name='N:'+artNpcCol(shirt)+':'+(sp>=0?'none':w)}
  const row=ART.nm['chars|'+name];if(row===undefined)return false;
  const moving=o.moving,fi=moving?[1,0,2,0][((ph*.9)|0)&3]:0,col=ADIR[dir]*4+fi,[cw,ch]=ARTD.chars.cell;
  let f=artFrame('chars',col,row,cw,ch);if(o.flash||shirt==='#fff')f=artWhite(f);
  g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(px+8+ox,py+15,6,2.2,0,0,6.283);g.fill();
+ const swing=sp>=0&&wn!=='none'&&ART.icons[WICON[wn]];
+ const fa=[Math.PI/2,Math.PI,0,-Math.PI/2][dir],sg=dir===1?-1:1,a=fa-sg*1.3+sg*sp*2.6;
+ const blade=()=>{const ic=ART.icons[WICON[wn]],hx=[px+12,px+3,px+10,px+4][dir]+ox,hy=py+9+oy,k=wn==='bow'?1.3:1.7;
+  g.save();g.translate(hx,hy);
+  /* slash smear: fading arcs trailing behind the blade */
+  const tr=sp<.08?0:Math.min(1,sp*1.4);g.lineCap='round';
+  for(let i=0;i<4;i++){const r=9+i*3.2,back=a-sg*(.9+i*.12)*tr;g.strokeStyle=`rgba(255,255,255,${(.5-i*.1)*(1-sp*.5)*tr})`;g.lineWidth=3-i*.5;g.beginPath();g.arc(0,0,r,sg>0?back:a,sg>0?a:back);g.stroke()}
+  g.rotate(a+Math.PI/4);g.scale(k,k);g.drawImage(ic,-4,-12);g.restore()};
+ if(swing&&dir===3)blade();
  g.drawImage(f,Math.round(px+8-cw/2+ox),Math.round(py+16-ch+oy));
- if(sp>=0){const fa=[Math.PI/2,Math.PI,0,-Math.PI/2][dir],sg=dir===1?-1:1,a=fa-sg*1.3+sg*sp*2.6;g.strokeStyle=`rgba(255,255,255,${.75*(1-sp)+.15})`;g.lineWidth=2;g.beginPath();g.arc(px+8,py+8,12,fa-sg*1.3,a,sg<0);g.stroke()}
+ if(swing&&dir!==3)blade();
+ else if(sp>=0&&!swing){g.strokeStyle=`rgba(255,255,255,${.75*(1-sp)+.15})`;g.lineWidth=2;g.beginPath();g.arc(px+8,py+8,12,fa-sg*1.3,a,sg<0);g.stroke()}
  return true}
 /* ---- enemies ---- */
 const MOBV={slime:{snow:'ice_slime',ash:'fire_slime',swamp:'toxic_slime',desert:'gold_slime'},wolf:{snow:'snow_wolf',tundra:'snow_wolf',ash:'lava_hound',canyon:'hyena',desert:'hyena'},skeleton:{ash:'skeleton_knight',swamp:'zombie'},
