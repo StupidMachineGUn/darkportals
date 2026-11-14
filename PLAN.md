@@ -8,6 +8,13 @@
 - Area name: remove the permanent caption; show a one-time fading "Entering (name of area)" when crossing into a different area (towns, villages, dungeon, wizard chamber).
 - Sleeping-player size bug: could not reproduce, needs a screenshot.
 
+## Death & loot rework (planned)
+- Items dropped on death must be much more visible (glow/beam/bounce, bigger icon, marker).
+- Player death shows an animation, e.g. birds/stars circling the head while dead.
+- PvP: killed player's items drop on the ground like any other drop; they do NOT transfer directly to the killer. Killer must pick them up.
+- Mob loot works the same: stays on the floor until picked up, no direct transfer.
+- Dropped items (PvP, mob, death) stay 10 minutes on the ground, then disappear. Server-owned timer.
+
 ## Later
 - v0.6.0 server-owned gold/items; v0.6.1 server-validated XP/gathering/crafting.
 - Graphics upgrade study (see chat).
