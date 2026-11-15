@@ -60,6 +60,7 @@ function artWeap(w){if(!w)return'none';w=String(w);if(w.startsWith('dagger'))ret
 const NPCC=['#c0392b','#3a5fb0','#3f8a3f','#7a3ab0','#d9822b','#d8c040','#7a5a3a','#7a7a86','#2a9a9a','#d870a8','#e8e4dc','#2a2a32','#6a1a2a','#1a2a5a','#6a6a2a','#c8a878'],NPCRGB=NPCC.map(h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16))),_nc={};
 function artNpcCol(col){if(_nc[col])return _nc[col];let c=col||'#888888';if(c.length===4)c='#'+c[1]+c[1]+c[2]+c[2]+c[3]+c[3];if(!/^#[0-9a-f]{6}$/i.test(c))c='#888888';const r=[1,3,5].map(i=>parseInt(c.substr(i,2),16));let b=0,bd=1e9;NPCRGB.forEach((p,i)=>{const d=(p[0]-r[0])**2+(p[1]-r[1])**2+(p[2]-r[2])**2;if(d<bd){bd=d;b=i}});return _nc[col]=NPCC[b]}
 const WICON={dagger:'dagger',sword:'sword',steel:'steel_sword',mithril:'mithril_sword',axe:'axe',staff:'staff',fire:'fire_staff',frost:'frost_staff',venom:'venom_staff',bow:'bow'};
+const SMEAR=[a=>`rgba(255,255,255,${a})`,a=>`rgba(120,240,210,${a})`,a=>`rgba(110,180,255,${a})`,a=>`rgba(200,130,255,${a})`,a=>`rgba(255,190,70,${a})`];
 function artChar(px,py,dir,ph,shirt,o){
  const sp=o.sp==null?-1:o.sp;let ox=0,oy=0;if(sp>=0){const l=Math.sin(sp*Math.PI)*2.5;ox=DIR[dir][0]*l;oy=DIR[dir][1]*l*.7}
  let name,wn='none';if(o.arm!==undefined){wn=artWeap(o.wid);name='A:'+A_TIER[Math.min(8,o.arm|0)]+':'+(sp>=0?'none':wn)}
@@ -74,10 +75,14 @@ function artChar(px,py,dir,ph,shirt,o){
   g.save();g.translate(hx,hy);
   /* slash smear: fading arcs trailing behind the blade */
   const tr=sp<.08?0:Math.min(1,sp*1.4);g.lineCap='round';
-  for(let i=0;i<4;i++){const r=7+i*2.4,back=a-sg*(.9+i*.12)*tr;g.strokeStyle=`rgba(255,255,255,${(.5-i*.1)*(1-sp*.5)*tr})`;g.lineWidth=2.4-i*.45;g.beginPath();g.arc(0,0,r,sg>0?back:a,sg>0?a:back);g.stroke()}
+  for(let i=0;i<4;i++){const r=7+i*2.4,back=a-sg*(.9+i*.12)*tr;g.strokeStyle=SMEAR[o.wt|0]((.5-i*.1)*(1-sp*.5)*tr);g.lineWidth=2.4-i*.45;g.beginPath();g.arc(0,0,r,sg>0?back:a,sg>0?a:back);g.stroke()}
   g.rotate(a+Math.PI/4);g.scale(k,k);g.drawImage(ic,-4,-12);g.restore()};
+ const wt=o.wt|0,HK={dagger:'dagger',axe:'axe',bow:'bow',staff:'staff',fire:'staff',frost:'staff',venom:'staff'}[wn]||'sword',HR=wt>0&&wn!=='none'&&sp<0?ART.nm['held|H:'+HK+':'+wt]:undefined;
+ let fx=Math.round(px+8-cw/2+ox),fy=Math.round(py+16-ch+oy);
  if(swing&&dir===3)blade();
- g.drawImage(f,Math.round(px+8-cw/2+ox),Math.round(py+16-ch+oy));
+ if(HR!==undefined){const nm=wn;const base=ART.nm['chars|'+(o.arm!==undefined?'A:'+A_TIER[Math.min(8,o.arm|0)]+':none':'')];if(base!==undefined)f=artFrame('chars',col,base,cw,ch)}
+ g.drawImage(f,fx,fy);
+ if(HR!==undefined){const [hw,hh]=ARTD.held.cell,hf=artFrame('held',ADIR[dir]*2+(((clock*5)|0)&1),HR,hw,hh);g.drawImage(hf,fx-5,fy-6+(moving&&fi!==0?-1:0))}
  if(swing&&dir!==3)blade();
  else if(sp>=0&&!swing){g.strokeStyle=`rgba(255,255,255,${.75*(1-sp)+.15})`;g.lineWidth=2;g.beginPath();g.arc(px+8,py+8,12,fa-sg*1.3,a,sg<0);g.stroke()}
  return true}
@@ -129,7 +134,7 @@ const AICON={log:'oak_log',copper:'copper_ore',iron:'iron_ore',gem:'ruby',shrimp
 const _ic={};
 function icoURL(id){const n=AICON[id],c=n&&ART.icons[n];if(!c)return null;return _ic[id]||(_ic[id]=c.toDataURL())}
 function artItems(){for(const k in ITEMS){const it=ITEMS[k];if('e0' in it)continue;it.e0=it.e;Object.defineProperty(it,'e',{get(){if(!artOn())return this.e0;const u=icoURL(k);return u?`<img class="ico" src="${u}">`:this.e0},configurable:true})}
- const st=document.createElement('style');st.textContent='.ico{width:22px;height:22px;image-rendering:pixelated;vertical-align:middle}.slot .ico,.slo .ico{width:26px;height:26px}';document.head.appendChild(st)}
+ const st=document.createElement('style');st.textContent='.ico{width:22px;height:22px;image-rendering:pixelated;vertical-align:middle}.slot .ico,.slo .ico{width:26px;height:26px}@keyframes gp{50%{opacity:.86}}.ico.g1{filter:drop-shadow(0 0 2px #5ae8c8)}.ico.g2{filter:drop-shadow(0 0 3px #4aa8ff) drop-shadow(0 0 1px #9ad0ff);animation:gp 1.6s infinite}.ico.g3{filter:drop-shadow(0 0 4px #b86aff) drop-shadow(0 0 1px #e0b8ff);animation:gp 1.3s infinite}.ico.g4{filter:drop-shadow(0 0 5px #ffb02e) drop-shadow(0 0 2px #fff0b0);animation:gp 1s infinite}';document.head.appendChild(st)}
 function artSkin(){try{document.body.classList.toggle('art',ART.ready&&ART.pref)}catch(e){}}
 function artToggle(v){ART.pref=v;artSkin();try{localStorage.setItem('dp.art',v?'1':'0')}catch(e){}}
 if(typeof ARTD!=='undefined')artLoad();

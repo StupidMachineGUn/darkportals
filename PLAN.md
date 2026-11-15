@@ -23,7 +23,7 @@
 - Final boss and his minions are 2x stronger.
 - Magic/spell tuning: ON HOLD, no change for now.
 
-## Security upgrade (planned, v0.5.6 candidate)
+## Security upgrade (planned, v0.5.7 candidate)
 1. Fix spoofable IP: stop trusting X-Forwarded-For blindly; use only the proxy's real header (last hop), set CF=1 behind Cloudflare and block direct origin access.
 2. Signup protection: CAPTCHA (Cloudflare Turnstile), global cap on new accounts per hour, optional email verification, block lookalike/odd usernames.
 3. Login brute force: per-username lockout with backoff (not only per IP).
@@ -34,10 +34,10 @@
 8. Linux box (SSH): keys only, password login disabled, no root login, ufw firewall, fail2ban, DB/app ports not public, unattended upgrades, backups. Step-by-step guide: docs/SERVER_HARDENING.md. (User reported 1164 failed SSH logins.)
 Order: 1+2, then 3+4, then 5+6 with the economy work.
 
-## Magic weapons (pending approval of examples)
+## Magic weapons (DONE in v0.5.6; follow-ups)
 - Glow/aura tiers by magic level: Plain, Enchanted (teal), Rare (blue), Epic (violet), Legendary (gold/fire). Higher tier = bigger glow, more sparkles.
 - Applies to icons and in-hand weapon: sword, dagger, axe, staff, scepter, spear, bow, mace, wand.
-- Needs tie-in with item rarity / enchant level in game data.
+- Follow-up: add scepter, spear, mace and wand as real items (art ready); dedicated enchant-level tiers; glow on dropped items on the ground.
 
 ## Later
 - v0.6.0 server-owned gold/items; v0.6.1 server-validated XP/gathering/crafting.

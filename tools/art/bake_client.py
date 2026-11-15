@@ -51,6 +51,17 @@ out['props']={'img':S,'names':pN,'cell':[68,56],'cols':8}
 eo=edges.build();en=list(eo);ES=Image.new('RGBA',(16*12,16*(len(en)//12)),(0,0,0,0))
 for i,n in enumerate(en):ES.alpha_composite(eo[n],((i%12)*16,(i//12)*16))
 out['edges']={'img':ES,'names':en,'cols':12}
+import held as HD
+HK=['sword','dagger','axe','staff','bow'];hn=[];HS=Image.new('RGBA',(HD.CW*8,HD.CH*len(HK)*4),(0,0,0,0))
+for ki,k in enumerate(HK):
+    for t in range(1,5):
+        r=ki*4+t-1;hn.append(f'H:{k}:{t}');c=0
+        for v in('d','u','r','l'):
+            for fr in range(2):
+                im=HD.render(k,t,'r' if v=='l' else v,fr,body=False)
+                if v=='l':im=flipx(im)
+                HS.alpha_composite(im,(c*HD.CW,r*HD.CH));c+=1
+out['held']={'img':HS,'names':hn,'cell':[HD.CW,HD.CH]}
 js={};tot=0
 for k,v in out.items():
     u,sz=b64(v['img']);tot+=sz;sizes[k]=sz;d={kk:vv for kk,vv in v.items() if kk!='img'};d['src']=u;js[k]=d

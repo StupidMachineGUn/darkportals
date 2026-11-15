@@ -1,10 +1,10 @@
 /* ---------- interiors (shops + cottages) ---------- */
 let insideOn=false,infT=0,shopSt=null,shopOn=false;
 const KINDR={shop:'shop',smith:'smith',inn:'inn',elder:'elder',bank:'bank',trade:'trade',mage:'mage',witch:'witch'},NPCX={shop:80,smith:74,inn:132,elder:86,bank:80,trade:80,mage:80,witch:68};
-function playerSpr(px,py,dir,ph,moving){const et=eqTint();drawChar(px,py,dir,ph,et.ta?shade(et.ta,.7):ARMC[armLv(eqId('a'))],'#3a2a1a',{moving,wid:eqId('w'),tw:et.tw,ta:et.ta,arm:armLv(eqId('a')),helm:eqTier('h'),boots:eqTier('b'),sp:-1})}
+function playerSpr(px,py,dir,ph,moving){const et=eqTint();drawChar(px,py,dir,ph,et.ta?shade(et.ta,.7):ARMC[armLv(eqId('a'))],'#3a2a1a',{moving,wid:eqId('w'),wt:wTier(eqE('w')),tw:et.tw,ta:et.ta,arm:armLv(eqId('a')),helm:eqTier('h'),boots:eqTier('b'),sp:-1})}
 const RW=240,RH=144,RK=1.5,WY0=112,WY1=140;
 const npcX=role=>(NPCX[role]||80)*RK;
-function otherSpr(o,px,py,moving){const l=o.lk||{};drawChar(px,py,o.rdir|0,o.rph||0,l.ta?shade(l.ta,.7):(ARMC[l.a|0]||'#8fd'),'#3a2a1a',{moving,wid:l.w,tw:l.tw,ta:l.ta,arm:l.a|0,helm:l.h,boots:l.b,sp:-1})}
+function otherSpr(o,px,py,moving){const l=o.lk||{};drawChar(px,py,o.rdir|0,o.rph||0,l.ta?shade(l.ta,.7):(ARMC[l.a|0]||'#8fd'),'#3a2a1a',{moving,wid:l.w,wt:l.wt|0,tw:l.tw,ta:l.ta,arm:l.a|0,helm:l.h,boots:l.b,sp:-1})}
 function roomOthers(bid){return bid?[...NET.others.values()].filter(o=>o.bd===bid&&o.drx!=null):[]}
 function roomPeople(x,bid,me){const L=roomOthers(bid).filter(o=>!(o.rs&&o.bd===bid&&me.house)).map(o=>({y:o.dry,o}));L.push({y:me.y,me:1});L.sort((a,b)=>a.y-b.y);const old=g;g=x;x.textAlign='center';x.font='bold 7px monospace';x.lineWidth=2;x.strokeStyle='#000';
  for(const e of L){if(e.me){playerSpr(Math.round(me.x-8),Math.round(me.y-14),me.dir,me.ph,me.mv);x.fillStyle='#ffe9a0';x.strokeText(P.name,me.x,me.y-17);x.fillText(P.name,me.x,me.y-17);if(NET.mySayT>0&&NET.mySay)roomBubble(x,me.x,me.y-24,NET.mySay);continue}

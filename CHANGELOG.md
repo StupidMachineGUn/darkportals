@@ -94,6 +94,13 @@
 - Tutorial on first start (and in Options); 📱 low-detail mode for weak phones.
 - Removed the yellow level/gold bar.
 
+## 0.5.6 – Magic weapons
+- Weapons glow by tier: Enchanted (teal), Rare (blue), Epic (violet), Legendary (gold). Higher tier = bigger glow and more sparkles, shimmering in-hand.
+- Tier rule: Rare = tier 2, Unique = tier 3, Legendary = tier 4; an enchant adds one tier (an enchanted common weapon is tier 1). Capped at 4.
+- Works for sword, dagger, axe, staff and bow, on the player and on other players online (server relays the tier in the look data, clamped 0-4).
+- Sword-swing smear takes the tier colour. Inventory and equipment icons get a matching glow.
+- Scepter, spear, mace and wand glow art is drawn (tools/art/magicwep.py) but those weapons do not exist as items yet.
+
 ## 0.5.5 – Sprite polish
 - Polish pass on every player, mob and animal sprite: tinted (not flat black) outlines, light on upper-left edges, darker lower/right sides, softer colour banding.
 - Players: nose, rosy cheeks, brows, hair strands, gold belt buckle, boot cuffs.

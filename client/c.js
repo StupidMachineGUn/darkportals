@@ -29,6 +29,7 @@ const TINTS=[null,'#5ac85a','#5a9aff','#b46aff','#ff9a1a','#ff4a4a','#4af0ff','#
 function hsl2hex(h,s,l){const f=n=>{const k=(n+h/30)%12,a=s*Math.min(l,1-l);return Math.round(255*(l-a*Math.max(-1,Math.min(k-3,9-k,1))))};return '#'+((1<<24)+(f(0)<<16)+(f(8)<<8)+f(4)).toString(16).slice(1)}
 function shade(hex,f){const n=parseInt(hex.slice(1),16),r=Math.min(255,Math.round((n>>16&255)*f)),g2=Math.min(255,Math.round((n>>8&255)*f)),b2=Math.min(255,Math.round((n&255)*f));return '#'+((1<<24)+(r<<16)+(g2<<8)+b2).toString(16).slice(1)}
 function tintFor(l){const t=Math.min(9,Math.floor(l/10));return !t?null:t===9?hsl2hex((clock*60)%360,.8,.6):TINTS[t]}
+const wTier=s=>s?Math.min(4,(s.rar?(s.rar|0)+1:0)+(s.ench?1:0)):0,icoG=s=>{const e=ITEMS[s.id].e,t=ITEMS[s.id].slot?wTier(s):0;return t&&typeof e==='string'&&e.startsWith('<img')?e.replace('class="ico"','class="ico g'+t+'"'):e};
 const eqTint=()=>{const w=eqE('w'),a=eqE('a');return{tw:w?tintFor(ITEMS[w.id].mag?lv('magic'):lv('melee')):null,ta:a?tintFor(lv('defense')):null}};
 
 const maxHp=()=>20+lv('vitality')*5+lv('defense')*2+G().hp,maxSt=()=>20+lv('agility')*4,maxMp=()=>10+lv('magic')*4+G().mp;
