@@ -61,22 +61,44 @@ const NPCC=['#c0392b','#3a5fb0','#3f8a3f','#7a3ab0','#d9822b','#d8c040','#7a5a3a
 function artNpcCol(col){if(_nc[col])return _nc[col];let c=col||'#888888';if(c.length===4)c='#'+c[1]+c[1]+c[2]+c[2]+c[3]+c[3];if(!/^#[0-9a-f]{6}$/i.test(c))c='#888888';const r=[1,3,5].map(i=>parseInt(c.substr(i,2),16));let b=0,bd=1e9;NPCRGB.forEach((p,i)=>{const d=(p[0]-r[0])**2+(p[1]-r[1])**2+(p[2]-r[2])**2;if(d<bd){bd=d;b=i}});return _nc[col]=NPCC[b]}
 const WICON={dagger:'dagger',sword:'sword',steel:'steel_sword',mithril:'mithril_sword',axe:'axe',staff:'staff',fire:'fire_staff',frost:'frost_staff',venom:'venom_staff',bow:'bow'};
 const SMEAR=[a=>`rgba(255,255,255,${a})`,a=>`rgba(120,240,210,${a})`,a=>`rgba(110,180,255,${a})`,a=>`rgba(200,130,255,${a})`,a=>`rgba(255,190,70,${a})`];
+function artBladeFx(px,py,dir,wn,sp,o,ox,oy){
+ const fa=[Math.PI/2,Math.PI,0,-Math.PI/2][dir],sg=dir===1?-1:1,a=fa-sg*1.3+sg*sp*2.6;
+  {const ic=ART.icons[WICON[wn]],hx=[px+12,px+3,px+10,px+4][dir]+ox,hy=py+9+oy,k=wn==='bow'?1:1.2;
+  g.save();g.translate(hx,hy);
+  /* slash smear: fading arcs trailing behind the blade */
+  const tr=sp<.08?0:Math.min(1,sp*1.4);g.lineCap='round';
+  for(let i=0;i<4;i++){const r=7+i*2.4,back=a-sg*(.9+i*.12)*tr;g.strokeStyle=SMEAR[o.wt|0]((.5-i*.1)*(1-sp*.5)*tr);g.lineWidth=2.4-i*.45;g.beginPath();g.arc(0,0,r,sg>0?back:a,sg>0?a:back);g.stroke()}
+  g.rotate(a+Math.PI/4);g.scale(k,k);g.drawImage(ic,-4,-12);g.restore()}
+}
+const D8F=[0,6,2,4];
+function artD8(dir,o){const k=o.d8;if(k!==undefined&&k!==null&&k>=0&&k<8){if(k%2===0){if(k===D8F[dir])return k}else{const hh=(k===1||k===3)?2:1,vv=k===1||k===7?0:3;if(dir===hh||dir===vv)return k}}return D8F[dir]}
+function artChar8(px,py,dir,ph,shirt,o,r8,wn,sp,ox,oy){
+ const k=artD8(dir,o),moving=o.moving,fi=moving?[1,0,2,0][((ph*.9)|0)&3]:0,[cw,ch]=ARTD.chars8.cell;
+ let f=artFrame('chars8',k*3+fi,r8,cw,ch);if(o.flash||shirt==='#fff')f=artWhite(f);
+ g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(px+8+ox,py+15,6,2.2,0,0,6.283);g.fill();
+ const swing=sp>=0&&wn!=='none'&&ART.icons[WICON[wn]];
+ const fx=Math.round(px+8-cw/2+ox),fy=Math.round(py+16-39+oy)+(moving&&fi!==0?-1:0);
+ let wf=null;if(sp<0&&wn!=='none'){const wr=ART.nm['w8|W:'+wn+':'+Math.min(4,o.wt|0)];if(wr!==undefined){wf=artFrame('w8',k*3+fi,wr,cw,ch);if(o.flash)wf=artWhite(wf)}}
+ const behind=k>=4&&k<=6;
+ if(swing&&dir===3)artBladeFx(px,py,dir,wn,sp,o,ox,oy);
+ if(wf&&behind)g.drawImage(wf,fx,fy);
+ g.drawImage(f,fx,fy);
+ if(wf&&!behind)g.drawImage(wf,fx,fy);
+ if(swing&&dir!==3)artBladeFx(px,py,dir,wn,sp,o,ox,oy);
+ else if(sp>=0&&!swing){const fa=[Math.PI/2,Math.PI,0,-Math.PI/2][dir],sg=dir===1?-1:1,a=fa-sg*1.3+sg*sp*2.6;g.strokeStyle=`rgba(255,255,255,${.75*(1-sp)+.15})`;g.lineWidth=2;g.beginPath();g.arc(px+8,py+8,12,fa-sg*1.3,a,sg<0);g.stroke()}
+ return true}
 function artChar(px,py,dir,ph,shirt,o){
  const sp=o.sp==null?-1:o.sp;let ox=0,oy=0;if(sp>=0){const l=Math.sin(sp*Math.PI)*2.5;ox=DIR[dir][0]*l;oy=DIR[dir][1]*l*.7}
  let name,wn='none';if(o.arm!==undefined){wn=artWeap(o.wid);name='A:'+A_TIER[Math.min(8,o.arm|0)]+':'+(sp>=0?'none':wn)}
  else{const w=o.wid?(String(o.wid).startsWith('axe')?'axe':'dagger'):'none';wn=w;name='N:'+artNpcCol(shirt)+':'+(sp>=0?'none':w)}
+ if(ART.nm['chars8|A:cloth']!==undefined){const r8=ART.nm['chars8|'+(o.arm!==undefined?'A:'+A_TIER[Math.min(8,o.arm|0)]:'N:'+artNpcCol(shirt))];if(r8!==undefined)return artChar8(px,py,dir,ph,shirt,o,r8,wn,sp,ox,oy)}
  const row=ART.nm['chars|'+name];if(row===undefined)return false;
  const moving=o.moving,fi=moving?[1,0,2,0][((ph*.9)|0)&3]:0,col=ADIR[dir]*4+fi,[cw,ch]=ARTD.chars.cell;
  let f=artFrame('chars',col,row,cw,ch);if(o.flash||shirt==='#fff')f=artWhite(f);
  g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(px+8+ox,py+15,6,2.2,0,0,6.283);g.fill();
  const swing=sp>=0&&wn!=='none'&&ART.icons[WICON[wn]];
  const fa=[Math.PI/2,Math.PI,0,-Math.PI/2][dir],sg=dir===1?-1:1,a=fa-sg*1.3+sg*sp*2.6;
- const blade=()=>{const ic=ART.icons[WICON[wn]],hx=[px+12,px+3,px+10,px+4][dir]+ox,hy=py+9+oy,k=wn==='bow'?1:1.2;
-  g.save();g.translate(hx,hy);
-  /* slash smear: fading arcs trailing behind the blade */
-  const tr=sp<.08?0:Math.min(1,sp*1.4);g.lineCap='round';
-  for(let i=0;i<4;i++){const r=7+i*2.4,back=a-sg*(.9+i*.12)*tr;g.strokeStyle=SMEAR[o.wt|0]((.5-i*.1)*(1-sp*.5)*tr);g.lineWidth=2.4-i*.45;g.beginPath();g.arc(0,0,r,sg>0?back:a,sg>0?a:back);g.stroke()}
-  g.rotate(a+Math.PI/4);g.scale(k,k);g.drawImage(ic,-4,-12);g.restore()};
+ const blade=()=>artBladeFx(px,py,dir,wn,sp,o,ox,oy);
  const wt=o.wt|0,HK={dagger:'dagger',axe:'axe',bow:'bow',staff:'staff',fire:'staff',frost:'staff',venom:'staff'}[wn]||'sword',HR=wt>0&&wn!=='none'&&sp<0?ART.nm['held|H:'+HK+':'+wt]:undefined;
  let fx=Math.round(px+8-cw/2+ox),fy=Math.round(py+16-ch+oy);
  if(swing&&dir===3)blade();

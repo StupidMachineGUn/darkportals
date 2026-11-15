@@ -23,7 +23,7 @@
 - Final boss and his minions are 2x stronger.
 - Magic/spell tuning: ON HOLD, no change for now.
 
-## Character graphics v2 (planned, v0.5.7 candidate, awaiting approval)
+## Character graphics v2 (DONE in v0.5.7; follow-up: hand-tune faces)
 - More humanlike bodies: shoulders, arms, hands outlined; less "planked tree" look. Mockup: tools/art human3.py.
 - Decision pending: hand-drawn 8-direction pixel sprites (recommended) vs pre-rendered 3D voxel look (demo map published; faces hard to read at game size).
 - Applies to all players/NPCs, all armour tiers, held weapons and glow aligned; cells grow to about 22x30.

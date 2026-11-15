@@ -1,4 +1,10 @@
 # Changelog
+## 0.5.7 - Character graphics v2 (8 directions)
+- Players, NPCs and guards are now pre-rendered 3D-style sprites with 8 facing directions and 3 walk frames (diagonal movement shows real diagonal views).
+- Armour tiers (cloth..mithril/dragon) and 16 NPC colours baked; weapons (sword, steel, mithril, dagger, axe, bow, staffs) are separate layers drawn in front of or behind the body per direction, with the five magic glow tiers.
+- Facing (8-dir) is relayed to other players inside the look data (`lk.d8`, server clamps 0..7).
+- Classic / Art Pack toggle still works; mobs unchanged.
+
 ## 0.1.1 – Dark Portals 1
 - Game renamed to Dark Portals 1 (town: Hearthmoor)
 - 12 Dark Portals around the world spawn monsters (stronger farther from towns)

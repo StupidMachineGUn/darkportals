@@ -321,7 +321,7 @@ function updPlayer(dt){
  const sprint=input.run&&moving&&P.st>0&&!P.tired;
  if(P.tired&&P.st>maxSt()*.25)P.tired=false;if(P.st<=0)P.tired=true;
  let sp=(P.shroomT>0?1.6:(chickenForm()?1.15:1))*(P.hasteT>0?1.4:1)*3.3*(1+Math.min(.25,lv('agility')*.004+G().spd/100))*(sprint?1.7:1)*(act?0:1);
- if(moving){moveEnt(P,vx*sp*dt,vy*sp*dt);P.dir=Math.abs(vx)>Math.abs(vy)?(vx>0?2:1):(vy>0?0:3);P.walk=(P.walk||0)+dt*(sprint?12:8);P.play+=0}
+ if(moving){moveEnt(P,vx*sp*dt,vy*sp*dt);P.dir=Math.abs(vx)>Math.abs(vy)?(vx>0?2:1):(vy>0?0:3);P.d8=((Math.round(Math.atan2(vx,vy)/.7854)%8)+8)%8;P.walk=(P.walk||0)+dt*(sprint?12:8);P.play+=0}
  if(sprint){P.st-=7*dt;P.agT=(P.agT||0)+dt;if(P.agT>1.4){P.agT=0;gainXp('agility',3)}}else{P.st=Math.min(maxSt(),P.st+(act&&(act.kind==='fish'||act.kind==='mine')?.6:moving?2.5:5.5)*dt)}
  if(moving&&!sprint){P.wT=(P.wT||0)+dt;if(P.wT>6){P.wT=0;gainXp('agility',1)}}
  if(P.hurt<=0){const r=(.35+lv('vitality')*.04)*dt;if(P.hp<maxHp()){P.hp=Math.min(maxHp(),P.hp+r);P.rg=(P.rg||0)+r;if(P.rg>8){P.rg=0;gainXp('vitality',2)}}}
