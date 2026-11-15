@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { makeDb } from './db.js';
 import { hashPw, checkPw, makeToken, readToken } from './auth.js';
+import { createAuthority } from './authority.js';
 import { clientIp, slidingLimiter, createLockout, createSignupCap, verifyTurnstile, nameLooksBad, bucket } from './guard.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -23,6 +24,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   const body = req => new Promise((res, rej) => { let s = '', n = 0; req.on('data', c => { n += c.length; if (n > MAX_BODY) { rej(new Error('big')); req.destroy() } else s += c }); req.on('end', () => { try { res(s ? JSON.parse(s) : {}) } catch (e) { rej(e) } }); });
   const authed = req => readToken((req.headers.authorization || '').replace(/^Bearer /, ''));
   const ip = clientIp;
+  const authority = createAuthority({ isAdmin: n => ADM.has(String(n).toLowerCase()) });
   const lock = createLockout(), signupCap = createSignupCap(process.env.SIGNUPS_PER_HOUR === undefined ? 20 : +process.env.SIGNUPS_PER_HOUR);
   const apiLim = slidingLimiter(+process.env.API_PER_MIN || 240, 60000), saveLim = slidingLimiter(+process.env.SAVES_PER_MIN || 20, 60000), wsConnLim = slidingLimiter(+process.env.WS_CONN_PER_MIN || 30, 60000);
   const WS_PER_IP = +process.env.WS_PER_IP || 6, wsByIp = new Map();
@@ -41,7 +43,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   const server = http.createServer(async (req, res) => {
     try {
       const u = new URL(req.url, 'http://x');
-      res.setHeader('x-content-type-options', 'nosniff'); res.setHeader('referrer-policy', 'same-origin'); res.setHeader('x-frame-options', 'DENY');
+      res.setHeader('strict-transport-security', 'max-age=31536000'); res.setHeader('x-content-type-options', 'nosniff'); res.setHeader('referrer-policy', 'same-origin'); res.setHeader('x-frame-options', 'DENY');
       if (u.pathname.startsWith('/api/') && apiLim(ip(req))) { flag(ip(req), 'api-rate'); return send(res, 429, { err: 'Too many requests' }) }
       if (u.pathname === '/api/ping') return send(res, 200, { ok: 1, version: VERSION, online: players.size, maint: maint.on, mmsg: maint.on ? maint.msg : '', ts: process.env.TURNSTILE_SITEKEY || '' });
       if (u.pathname === '/api/register' && req.method === 'POST') {
@@ -76,14 +78,16 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
       if (u.pathname === '/api/save' && req.method === 'PUT') {
         const a = authed(req); if (!a) return send(res, 401, { err: 'Not logged in' });
         if (saveLim(String(a.uid))) { flag(ip(req), 'save-rate uid=' + a.uid); return send(res, 429, { err: 'Saving too fast' }) }
-        const ch = await body(req);
+        let ch = await body(req), fix = null;
         if (!ch || typeof ch !== 'object' || !ch.xp || typeof ch.name !== 'string' || !Array.isArray(ch.inv)) return send(res, 400, { err: 'Bad character' });
         if (ch.inv.length > 80) return send(res, 400, { err: 'Bad inventory' });
-        const data = JSON.stringify(ch), baseH = req.headers['x-base'], base = baseH === undefined ? null : parseInt(baseH, 10);
+        let data = JSON.stringify(ch), baseH = req.headers['x-base'], base = baseH === undefined ? null : parseInt(baseH, 10);
         let out = null;
         saveQ.set(a.uid, (saveQ.get(a.uid) || Promise.resolve()).catch(() => {}).then(async () => {
           let u;
-          if (econ.mode !== 'off') { let prev = null; try { const pr = await db.query('SELECT data FROM characters WHERE user_id=$1', [a.uid]); if (pr.rows[0]) prev = JSON.parse(pr.rows[0].data) } catch {} const ins = econ.inspect(a.uid, a.name, prev, ch); if (!ins.ok) { out = -2; return } }
+          if (econ.mode !== 'off') { let prev = null; try { const pr = await db.query('SELECT data FROM characters WHERE user_id=$1', [a.uid]); if (pr.rows[0]) prev = JSON.parse(pr.rows[0].data) } catch {} const ins = econ.inspect(a.uid, a.name, prev, ch); if (!ins.ok) { out = -2; return }
+            const au = authority.sanitize(a.uid, a.name, prev, ch, econ.reg); if (au.ch) { ch = au.ch; fix = au.fix } }
+          data = JSON.stringify(ch);
           if (base === null) u = await db.query('UPDATE characters SET name=$2,data=$3,schema_v=$4,ver=ver+1 WHERE user_id=$1 RETURNING ver', [a.uid, ch.name.slice(0, 12), data, SCHEMA_V]); // legacy client: no version check
           else u = await db.query('UPDATE characters SET name=$2,data=$3,schema_v=$4,ver=ver+1 WHERE user_id=$1 AND ver=$5 RETURNING ver', [a.uid, ch.name.slice(0, 12), data, SCHEMA_V, base]);
           if (u.rows.length) { out = u.rows[0].ver | 0; return }
@@ -95,7 +99,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
         console.log(`save user=${a.name} bytes=${data.length} ${out === -1 ? 'CONFLICT base=' + base : 'ver=' + out}`);
         if (out === -2) return send(res, 422, { err: 'Save rejected (duplicate or forged items)' });
         if (out === -1) return send(res, 409, { err: 'Character was saved from another session' });
-        return send(res, 200, { ok: 1, ver: out });
+        return send(res, 200, fix ? { ok: 1, ver: out, fix } : { ok: 1, ver: out });
       }
       if (u.pathname === '/api/board' && req.method === 'GET') {
         const r = await db.query('SELECT name,score,data FROM heroes ORDER BY score DESC LIMIT 50');
@@ -254,7 +258,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
           for (const q of nt || []) { const p = players.get(q); if (p && p.ws.readyState === 1) p.ws.send(JSON.stringify({ t: 'mn', n: await econ.unclaimed(q) })) }
           if (r.ok) me.ws.send(JSON.stringify({ t: 'mn', n: await econ.unclaimed(a.uid) }));
         } catch (e) { console.log('auction err', e.message); me.ws.send(JSON.stringify({ t: 'ao', ok: 0, op: m.t, why: 'Server error' })) } })();
-      } else if (m.t === 'mc') { (async () => { try { me.ws.send(JSON.stringify({ t: 'mb', l: await econ.claim(a.uid) })) } catch (e) { console.log('mail err', e.message) } })();
+      } else if (m.t === 'mc') { (async () => { try { const l = await econ.claim(a.uid); authority.credit(a.uid, l.reduce((s, x) => s + (x.gold | 0), 0)); me.ws.send(JSON.stringify({ t: 'mb', l })) } catch (e) { console.log('mail err', e.message) } })();
       } else if (m.t === 'steal') { // thievery: relay to victim, who decides the outcome
         const q = players.get(m.to); if (!q || q === me || !q.init || q.ws.readyState !== 1 || q.bd || me.bd || me.jail || q.jail || sameParty(me, q)) return;
         if (now - (me.lastSteal || 0) < 1800) return; me.lastSteal = now;
@@ -270,7 +274,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
         if (r.ok && r.k === 'pick') r.it = cleanItem(m.it);
         th.ws.send(JSON.stringify(r));
       } else if (m.t === 'pkill') { // victim reports death by player
-        const k = players.get(m.by); if (k && k.ws.readyState === 1) { const sx = {}; if (m.sx && typeof m.sx === 'object') for (const kk in m.sx) if (Number.isFinite(+m.sx[kk])) sx[kk.slice(0, 16)] = Math.min(+m.sx[kk], 1e6); k.ws.send(JSON.stringify({ t: 'pk', who: a.uid, n: a.name, g: Math.max(0, Math.min(+m.g || 0, 1e7)), sx, b: Math.max(0, Math.min(+m.b || 0, 5000)), fl: m.fl ? 1 : 0, it: null })) } /* v0.5.9: items never transfer directly; the victim drops them on the floor ('gd') */
+        const k = players.get(m.by); if (k && k.ws.readyState === 1) { const sx = {}; if (m.sx && typeof m.sx === 'object') for (const kk in m.sx) if (Number.isFinite(+m.sx[kk])) sx[kk.slice(0, 16)] = Math.min(+m.sx[kk], 1e6); authority.credit(k.uid, Math.max(0, Math.min(+m.g || 0, 1e7))); k.ws.send(JSON.stringify({ t: 'pk', who: a.uid, n: a.name, g: Math.max(0, Math.min(+m.g || 0, 1e7)), sx, b: Math.max(0, Math.min(+m.b || 0, 5000)), fl: m.fl ? 1 : 0, it: null })) } /* v0.5.9: items never transfer directly; the victim drops them on the floor ('gd') */
         broadcast({ t: 'sys', m: `${a.name} was slain by ${k ? k.name : 'a player'}` });
       } else if (m.t === 'gd') { // drop item(s) on the ground (death drops, mob loot); stays GROUND_TTL then vanishes
         const list = (Array.isArray(m.its) ? m.its : [m.it]).slice(0, 8), dth = m.dth ? 1 : 0;

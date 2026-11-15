@@ -10,3 +10,8 @@ What the server now does by itself:
 - **Logs**: every blocked action prints `SECURITY <reason> ip=<ip>` (reasons: login-fail, lockout, api-rate, save-rate, ws-conn, ws-flood, signup-cap, captcha-fail). Feed these to fail2ban (see SERVER_HARDENING.md).
 
 Still on the plan: full anti-cheat with the server-owned economy (v0.6.0 / v0.6.1).
+
+## Server authority (v0.6.0)
+- Login/register travel over HTTPS (Caddy). The password is only readable inside the player's own browser devtools, never on the network; it is stored as a salted scrypt hash. HSTS is sent so browsers refuse plain http.
+- Saves are validated and corrected by the server (see CHANGELOG 0.6.0). The client is a display of server-approved numbers: tampering with xp/gold/items in the browser is clamped or stripped at the next save.
+- Not yet server-computed (next steps, v0.6.2+): kills/gathering/crafting grant xp, gold and loot on the server itself, so the client only sends actions.

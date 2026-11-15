@@ -1,4 +1,10 @@
 # Changelog
+## 0.6.0 - Server authority I
+- The server now decides what a save may contain (`server/src/authority.js`, `AUTHORITY=on|log|off`, default on): items must exist in the catalog (`items.json`, regenerate with `tools/gen_items.py`), rarity/enchant are clamped, forged items are stripped.
+- XP and gold can only grow at human rates (token buckets: XP 3000 burst + 25/s per skill, gold 2000 burst + 30/s, plus the value of items you sold and anything the server paid you). Inflated values are clamped, logged (`AUTHORITY ...`) and sent back; the client adopts the corrected numbers ("Server corrected your save").
+- Brand-new items from nowhere, huge stack jumps and dev mode are removed for non-admins; admins (`ADMINS`) are exempt.
+- HSTS header so browsers only ever use HTTPS.
+
 ## 0.5.9 - Death & loot rework
 - Items dropped on death are far more visible: coloured light beam (red for death drops, rarity colours otherwise), pulsing ring, bigger bobbing icon, skull marker; blinks in its last 30 s.
 - PvP kills no longer hand the item to the killer; it drops on the floor like any other drop (gold and skill % still transfer).

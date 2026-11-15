@@ -130,7 +130,7 @@ body.art .bf{border:2px solid #2c1a0c;border-radius:4px;background:#e3cc98cc}
 <div id="story"><canvas id="stc" width="192" height="108"></canvas><div id="stt"></div><div id="stb"><div class="btn" id="stSkip">Skip</div><div class="btn" id="stNext">Next ▶</div></div></div>
 <div id="toast"></div>
 <div id="title"><canvas id="wcv"></canvas>
-<div id="wtop"><h1>🌀 DARK PORTALS</h1><div id="walpha">ALPHA v0.5.9</div><div style="opacity:.8;max-width:320px;margin-top:8px;font-size:14px">A tiny MMO that grows with you</div></div>
+<div id="wtop"><h1>🌀 DARK PORTALS</h1><div id="walpha">ALPHA v0.6.0</div><div style="opacity:.8;max-width:320px;margin-top:8px;font-size:14px">A tiny MMO that grows with you</div></div>
 <div id="wst">Checking server…</div>
 <div id="wbot">
 <div id="wmain" class="wv"><div class="btn" id="wbOn">Play online</div><div class="btn" id="wbOff" style="background:#1b1536">Play offline (single player)</div></div>
@@ -1446,7 +1446,7 @@ function drawPortal(p){const px=p.x*T,py=p.y*T,o=PT.open,tt=clock;g.fillStyle='#
   g.fillStyle='#d9a8ff';g.fillRect(px+7,py-30,2,2);if(Math.random()<.15)parts.push({x:p.x+.5,y:p.y-1.4,vx:rnd(-.4,.4),vy:rnd(-1.2,-.4),life:rnd(.5,1),c:'#c9f',sz:1})}
  else{g.fillStyle='#55525c';g.fillRect(px+3,py-20,2,6);g.fillRect(px+9,py-12,3,2)}}
 /* ---------- online layer (accounts, cloud save, other players, chat) ---------- */
-const NET={gnd:new Map(),gpend:new Map(),on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'0.5.9',board:[],lastSave:0,reg:false,tpT:0};
+const NET={gnd:new Map(),gpend:new Map(),on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'0.6.0',board:[],lastSave:0,reg:false,tpT:0};
 function authUi(){$('#pw').style.display='block';$('#regt').style.display='block';$('#nm').placeholder='Username';$('#nm').maxLength=16;$('#nm').value=localStorage.getItem('emberfall.user')||'';$('#go').textContent='Log in';}
 function authMsg(t){$('#authmsg').textContent=t||''}
 async function netAuth(){const username=$('#nm').value.trim(),password=$('#pw').value;if(!username||!password){authMsg('Enter username and password');return false}
@@ -1460,7 +1460,8 @@ function netSave(force){if(!NET.on||!NET.tok||!P||NET.stale||NET.leaving)return;
  return fetch('/api/save',{method:'PUT',keepalive:body.length<60000,headers:{'content-type':'application/json',authorization:'Bearer '+NET.tok,'x-base':String(NET.ver|0)},body}).then(async r=>{NET.sinf=0;
   if(r.status===401){NET.tok=null;NET.stale=1;sys('⚠ Session expired – reload to log in again','#f66');return false}
   if(r.status===409){NET.stale=1;sys('⚠ This character was saved from another device or tab. Reload to continue – saving is paused so nothing gets overwritten.','#f66');toast('⚠ Saved elsewhere – reload','#f66');return false}
-  if(!r.ok)throw new Error('http '+r.status);const j=await r.json();NET.ver=j.ver|0;NET.sok=Date.now();NET.sbad=0;if(NET.sdirty)setTimeout(()=>netSave(true),50);return true}).catch(()=>{NET.sinf=0;NET.sbad=(NET.sbad||0)+1;if(!NET.leaving)setTimeout(()=>netSave(true),Math.min(15000,1500*NET.sbad));return false})}
+  if(!r.ok)throw new Error('http '+r.status);const j=await r.json();NET.ver=j.ver|0;if(j.fix)netAdopt(j.fix);NET.sok=Date.now();NET.sbad=0;if(NET.sdirty)setTimeout(()=>netSave(true),50);return true}).catch(()=>{NET.sinf=0;NET.sbad=(NET.sbad||0)+1;if(!NET.leaving)setTimeout(()=>netSave(true),Math.min(15000,1500*NET.sbad));return false})}
+function netAdopt(f){/* server corrected the save (v0.6.0): take its numbers so we never drift */if(!P)return;if(f.xp)for(const k in f.xp)P.xp[k]=f.xp[k];if(typeof f.gold==='number')P.gold=f.gold;if(f.bank)P.bank=f.bank;if(f.inv){P.inv=f.inv;if(f.eq)P.eq=f.eq}if(!f.dev&&P.dev){P.dev=false;P.devBak=null}toast('⚠ Server corrected your save','#f96')}
 function netSaveSoon(){if(!NET.on||NET.soonT)return;NET.soonT=setTimeout(()=>{NET.soonT=0;netSave(true)},900)}
 function netFlush(){try{if(NET.on&&NET.tok&&P){netSave(true)}}catch(e){}}
 addEventListener('pagehide',netFlush);addEventListener('beforeunload',netFlush);document.addEventListener('visibilitychange',()=>{if(document.hidden)netFlush()});
