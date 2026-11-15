@@ -1,0 +1,23 @@
+process.env.IP_LIMIT = '0'; process.env.USE_PGMEM = '1'; process.env.JWT_SECRET = 'test'; process.env.SIGNUPS_PER_HOUR = '4'; process.env.SAVES_PER_MIN = '3';
+import assert from 'node:assert/strict';
+import WebSocket from 'ws';
+import { clientIp, createLockout, nameLooksBad, bucket } from '../src/guard.js';
+const ok = (n) => console.log('ok  ', n);
+// client IP: spoofed leading XFF entries are ignored (proxy appends the real one last)
+assert.equal(clientIp({ headers: { 'x-forwarded-for': '6.6.6.6, 9.9.9.9' }, socket: { remoteAddress: '10.0.0.1' } }), '9.9.9.9'); ok('xff last hop');
+assert.equal(clientIp({ headers: {}, socket: { remoteAddress: '10.0.0.1' } }), '10.0.0.1'); ok('socket ip');
+const L = createLockout(); for (let i = 0; i < 5; i++) L.fail('Bob'); assert.equal(L.wait('bob'), 0); L.fail('Bob'); assert.ok(L.wait('BOB') > 0); L.ok('bob'); assert.equal(L.wait('bob'), 0); ok('lockout backoff');
+assert.ok(nameLooksBad('admin') && nameLooksBad('Admin_1') && nameLooksBad('12345') && nameLooksBad('aaaaaaa') && !nameLooksBad('Alice')); ok('bad names');
+const bk = bucket(10, 5); let n = 0; for (let i = 0; i < 20; i++) if (bk()) n++; assert.ok(n <= 6); ok('bucket');
+const { createServer } = await import('../src/index.js');
+const s = await createServer({ port: 0 }); const base = `http://127.0.0.1:${s.port}`;
+const j = async (m, p, b, tok) => { const r = await fetch(base + p, { method: m, headers: { 'content-type': 'application/json', ...(tok ? { authorization: 'Bearer ' + tok } : {}) }, body: b ? JSON.stringify(b) : undefined }); return { s: r.status, b: await r.json() } };
+assert.equal((await j('POST', '/api/register', { username: 'admin', password: 'secret1' })).s, 400); ok('reserved name refused');
+const u = await j('POST', '/api/register', { username: 'Carol', password: 'secret1' }); assert.equal(u.s, 200);
+for (let i = 0; i < 5; i++) assert.equal((await j('POST', '/api/login', { username: 'Carol', password: 'bad' + i })).s, 401);
+assert.equal((await j('POST', '/api/login', { username: 'Carol', password: 'bad6' })).s, 401);
+assert.equal((await j('POST', '/api/login', { username: 'Carol', password: 'secret1' })).s, 429); ok('username lockout (even with right password)');
+const ch = { name: 'Carol', xp: { melee: 1 }, inv: [], gold: 1 };
+let codes = []; for (let i = 0; i < 5; i++) codes.push((await j('PUT', '/api/save', ch, u.b.token)).s); assert.ok(codes.includes(429), 'save rate ' + codes); ok('save rate limit');
+let capped = 0; for (let i = 0; i < 6; i++) { const r = await j('POST', '/api/register', { username: 'User' + i + 'x', password: 'secret1' }); if (r.s === 429) capped++ } assert.ok(capped >= 1); ok('signup cap');
+console.log('v058 done'); process.exit(0);

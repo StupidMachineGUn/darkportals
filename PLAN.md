@@ -28,7 +28,7 @@
 - Decision pending: hand-drawn 8-direction pixel sprites (recommended) vs pre-rendered 3D voxel look (demo map published; faces hard to read at game size).
 - Applies to all players/NPCs, all armour tiers, held weapons and glow aligned; cells grow to about 22x30.
 
-## Security upgrade (planned, now v0.5.8)
+## Security upgrade (DONE in v0.5.8 items 1-5,7; 6 anti-cheat continues with v0.6.0/6.1; 8 is a manual step on the Linux box: docs/SERVER_HARDENING.md)
 1. Fix spoofable IP: stop trusting X-Forwarded-For blindly; use only the proxy's real header (last hop), set CF=1 behind Cloudflare and block direct origin access.
 2. Signup protection: CAPTCHA (Cloudflare Turnstile), global cap on new accounts per hour, optional email verification, block lookalike/odd usernames.
 3. Login brute force: per-username lockout with backoff (not only per IP).

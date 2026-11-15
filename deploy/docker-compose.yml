@@ -26,6 +26,10 @@ services:
       IP_LIMIT: ${IP_LIMIT:-1}
       SERVER_AUTH: ${SERVER_AUTH:-log}
       IP_ALLOW: ${IP_ALLOW:-}
+      PROXY_HOPS: ${PROXY_HOPS:-1}
+      SIGNUPS_PER_HOUR: ${SIGNUPS_PER_HOUR:-20}
+      TURNSTILE_SITEKEY: ${TURNSTILE_SITEKEY:-}
+      TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
   caddy:
     image: caddy:2
     restart: unless-stopped

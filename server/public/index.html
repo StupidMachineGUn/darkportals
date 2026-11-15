@@ -130,11 +130,11 @@ body.art .bf{border:2px solid #2c1a0c;border-radius:4px;background:#e3cc98cc}
 <div id="story"><canvas id="stc" width="192" height="108"></canvas><div id="stt"></div><div id="stb"><div class="btn" id="stSkip">Skip</div><div class="btn" id="stNext">Next ▶</div></div></div>
 <div id="toast"></div>
 <div id="title"><canvas id="wcv"></canvas>
-<div id="wtop"><h1>🌀 DARK PORTALS</h1><div id="walpha">ALPHA v0.5.7</div><div style="opacity:.8;max-width:320px;margin-top:8px;font-size:14px">A tiny MMO that grows with you</div></div>
+<div id="wtop"><h1>🌀 DARK PORTALS</h1><div id="walpha">ALPHA v0.5.8</div><div style="opacity:.8;max-width:320px;margin-top:8px;font-size:14px">A tiny MMO that grows with you</div></div>
 <div id="wst">Checking server…</div>
 <div id="wbot">
 <div id="wmain" class="wv"><div class="btn" id="wbOn">Play online</div><div class="btn" id="wbOff" style="background:#1b1536">Play offline (single player)</div></div>
-<div id="wlogin" class="wv" style="display:none"><input id="nm" maxlength="16" placeholder="Username"><input id="pw" type="password" placeholder="Password"><div id="authmsg" style="font-size:12px;color:#f88;min-height:15px"></div><div class="btn" id="go">Log in</div><div id="regt" class="wlink">New here? Create account</div><div class="wlink wback" data-v="main">← Back</div></div>
+<div id="wlogin" class="wv" style="display:none"><input id="nm" maxlength="16" placeholder="Username"><input id="pw" type="password" placeholder="Password"><div id="tsw" style="display:none;min-height:65px"></div><div id="authmsg" style="font-size:12px;color:#f88;min-height:15px"></div><div class="btn" id="go">Log in</div><div id="regt" class="wlink">New here? Create account</div><div class="wlink wback" data-v="main">← Back</div></div>
 <div id="woff" class="wv" style="display:none"><input id="nm2" maxlength="12" placeholder="Hero name" value="Nexemis"><div style="font-size:12px;opacity:.7;max-width:300px">Offline progress is saved only on this device and is separate from your online character.</div><div class="btn" id="woffgo">Play offline</div><div class="wlink wback" data-v="main">← Back</div></div>
 <div style="font-size:11px;opacity:.55;max-width:320px;margin-top:6px">Drag stick / WASD to move · tap the world to walk or interact · Space attack · E use · 1-6 spells, food &amp; potions</div>
 </div></div>
@@ -1440,14 +1440,15 @@ function drawPortal(p){const px=p.x*T,py=p.y*T,o=PT.open,tt=clock;g.fillStyle='#
   g.fillStyle='#d9a8ff';g.fillRect(px+7,py-30,2,2);if(Math.random()<.15)parts.push({x:p.x+.5,y:p.y-1.4,vx:rnd(-.4,.4),vy:rnd(-1.2,-.4),life:rnd(.5,1),c:'#c9f',sz:1})}
  else{g.fillStyle='#55525c';g.fillRect(px+3,py-20,2,6);g.fillRect(px+9,py-12,3,2)}}
 /* ---------- online layer (accounts, cloud save, other players, chat) ---------- */
-const NET={gnd:new Map(),gpend:new Map(),on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'0.5.7',board:[],lastSave:0,reg:false,tpT:0};
+const NET={gnd:new Map(),gpend:new Map(),on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'0.5.8',board:[],lastSave:0,reg:false,tpT:0};
 function authUi(){$('#pw').style.display='block';$('#regt').style.display='block';$('#nm').placeholder='Username';$('#nm').maxLength=16;$('#nm').value=localStorage.getItem('emberfall.user')||'';$('#go').textContent='Log in';}
 function authMsg(t){$('#authmsg').textContent=t||''}
 async function netAuth(){const username=$('#nm').value.trim(),password=$('#pw').value;if(!username||!password){authMsg('Enter username and password');return false}
- try{const r=await fetch('/api/'+(NET.reg?'register':'login'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username,password})});const j=await r.json();if(!r.ok){authMsg(j.err||'Error');return false}
+ try{const r=await fetch('/api/'+(NET.reg?'register':'login'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username,password,cf:NET.reg&&window.turnstile&&NET.tsId!=null?turnstile.getResponse(NET.tsId):undefined})});const j=await r.json();if(!r.ok){authMsg(j.err||'Error');if(NET.reg&&window.turnstile&&NET.tsId!=null)try{turnstile.reset(NET.tsId)}catch(e){}return false}
   NET.tok=j.token;NET.user=j.username;NET.save=j.character?j.character.data:null;NET.ver=j.character?j.character.ver|0:0;NET.stale=0;NET.leaving=0;localStorage.setItem('emberfall.user',j.username);$('#nm').value=j.username.slice(0,12);return true}catch(e){authMsg('Cannot reach server');return false}}
 function goBtn(){if(!NET.on)return start();netAuth().then(ok=>{if(ok)start()})}
-function toggleReg(){NET.reg=!NET.reg;$('#go').textContent=NET.reg?'Create account':'Log in';$('#regt').textContent=NET.reg?'Have an account? Log in':'New here? Create account';authMsg('')}
+function tsShow(){const d=$('#tsw');if(!d||!NET.ts)return;d.style.display=NET.reg?'block':'none';if(!NET.reg||NET.tsId!=null)return;const go=()=>{try{NET.tsId=turnstile.render('#tsw',{sitekey:NET.ts,theme:'dark'})}catch(e){}};if(window.turnstile)return go();const s=document.createElement('script');s.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';s.onload=go;document.head.appendChild(s)}
+function toggleReg(){NET.reg=!NET.reg;tsShow();$('#go').textContent=NET.reg?'Create account':'Log in';$('#regt').textContent=NET.reg?'Have an account? Log in':'New here? Create account';authMsg('')}
 function netSave(force){if(!NET.on||!NET.tok||!P||NET.stale||NET.leaving)return;const n=Date.now();if(!force&&n-NET.lastSave<5000){if(!NET.svT)NET.svT=setTimeout(()=>{NET.svT=0;netSave(true)},Math.max(300,5000-(n-NET.lastSave)));return}
  if(NET.sinf){NET.sdirty=1;return}NET.lastSave=n;NET.sinf=1;NET.sdirty=0;let body;try{body=NET.body=JSON.stringify(P,(k,v)=>k==='path'||k==='chase'?undefined:v)}catch(e){NET.sinf=0;return}
  return fetch('/api/save',{method:'PUT',keepalive:body.length<60000,headers:{'content-type':'application/json',authorization:'Bearer '+NET.tok,'x-base':String(NET.ver|0)},body}).then(async r=>{NET.sinf=0;
@@ -1741,7 +1742,7 @@ function wRefresh(){const s=WEL.state,e=$('#wst'),b=$('#wbOn'),k=kickLeft();
  e.textContent=k?'You got kicked · reconnect in '+k+'s':T[0];e.style.color=k?'#ff9a92':T[1];
  b.textContent=k?'Reconnect in '+k+'s':s==='off'?'Server unreachable · tap to retry':s==='check'?'Checking…':s==='maint'?'Admin login':'Play online';
  b.style.background=k||s==='off'?'#4a1c1c':s==='maint'?'#5a4410':'#2f7d3b';b.style.borderColor=k||s==='off'?'#b04a45':s==='maint'?'#f0b040':'#5bd06a'}
-async function wProbe(){try{const r=await fetch('/api/ping',{cache:'no-store'});const j=await r.json();if(j&&j.ok){NET.up=true;NET.ver=j.version;WEL.state=j.maint?'maint':'on';WEL.msg=j.mmsg||''}else WEL.state='off'}catch(e){NET.up=false;WEL.state='off'}wRefresh()}
+async function wProbe(){try{const r=await fetch('/api/ping',{cache:'no-store'});const j=await r.json();if(j&&j.ok){NET.up=true;NET.ver=j.version;NET.ts=j.ts||'';WEL.state=j.maint?'maint':'on';WEL.msg=j.mmsg||''}else WEL.state='off'}catch(e){NET.up=false;WEL.state='off'}wRefresh()}
 function welcomeInit(){
  wProbe();setInterval(()=>{if($('#title').style.display!=='none'){wRefresh();if(!(WEL.tick=(WEL.tick||0)+1)%5)wProbe()}},1000);
  const un=localStorage.getItem('emberfall.user');if(un)$('#nm').value=un;const on=localStorage.getItem('dp.offname');if(on)$('#nm2').value=on;

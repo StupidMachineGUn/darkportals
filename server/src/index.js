@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { makeDb } from './db.js';
 import { hashPw, checkPw, makeToken, readToken } from './auth.js';
+import { clientIp, slidingLimiter, createLockout, createSignupCap, verifyTurnstile, nameLooksBad, bucket } from './guard.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PUB = path.join(here, '..', 'public');
@@ -17,12 +18,15 @@ const SCHEMA_V = 1;
 
 export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   const db = await makeDb();
-  const hits = new Map(); // ip -> [timestamps] for auth rate-limit
-  const limited = ip => { const n = Date.now(), a = (hits.get(ip) || []).filter(t => n - t < 60000); a.push(n); hits.set(ip, a); return a.length > 12; };
+  const limited = slidingLimiter(12, 60000); // auth attempts per IP per minute
   const send = (res, code, obj) => { const b = JSON.stringify(obj); res.writeHead(code, { 'content-type': 'application/json', 'cache-control': 'no-store' }); res.end(b); };
   const body = req => new Promise((res, rej) => { let s = '', n = 0; req.on('data', c => { n += c.length; if (n > MAX_BODY) { rej(new Error('big')); req.destroy() } else s += c }); req.on('end', () => { try { res(s ? JSON.parse(s) : {}) } catch (e) { rej(e) } }); });
   const authed = req => readToken((req.headers.authorization || '').replace(/^Bearer /, ''));
-  const ip = req => (process.env.CF === '1' && req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const ip = clientIp;
+  const lock = createLockout(), signupCap = createSignupCap(process.env.SIGNUPS_PER_HOUR === undefined ? 20 : +process.env.SIGNUPS_PER_HOUR);
+  const apiLim = slidingLimiter(+process.env.API_PER_MIN || 240, 60000), saveLim = slidingLimiter(+process.env.SAVES_PER_MIN || 20, 60000), wsConnLim = slidingLimiter(+process.env.WS_CONN_PER_MIN || 30, 60000);
+  const WS_PER_IP = +process.env.WS_PER_IP || 6, wsByIp = new Map();
+  const flag = (ip, why) => console.log(`SECURITY ${why} ip=${ip}`); /* greppable by fail2ban */
   const nameOk = s => typeof s === 'string' && /^[A-Za-z0-9_]{3,16}$/.test(s);
 
   const maint = { on: false, msg: '', allow: new Map() }; // maintenance: new logins refused except admins and recently-online players
@@ -37,12 +41,17 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   const server = http.createServer(async (req, res) => {
     try {
       const u = new URL(req.url, 'http://x');
-      if (u.pathname === '/api/ping') return send(res, 200, { ok: 1, version: VERSION, online: players.size, maint: maint.on, mmsg: maint.on ? maint.msg : '' });
+      res.setHeader('x-content-type-options', 'nosniff'); res.setHeader('referrer-policy', 'same-origin'); res.setHeader('x-frame-options', 'DENY');
+      if (u.pathname.startsWith('/api/') && apiLim(ip(req))) { flag(ip(req), 'api-rate'); return send(res, 429, { err: 'Too many requests' }) }
+      if (u.pathname === '/api/ping') return send(res, 200, { ok: 1, version: VERSION, online: players.size, maint: maint.on, mmsg: maint.on ? maint.msg : '', ts: process.env.TURNSTILE_SITEKEY || '' });
       if (u.pathname === '/api/register' && req.method === 'POST') {
         if (limited(ip(req))) return send(res, 429, { err: 'Too many attempts, wait a minute' });
-        const { username, password } = await body(req);
+        const { username, password, cf } = await body(req);
         if (maint.on) return send(res, 503, { err: 'Server under maintenance' + (maint.msg ? ': ' + maint.msg : ''), maint: 1 });
         if (!nameOk(username)) return send(res, 400, { err: 'Username: 3-16 letters, numbers or _' });
+        if (nameLooksBad(username)) return send(res, 400, { err: 'That username is not allowed' });
+        if (!(await verifyTurnstile(cf, ip(req)))) { flag(ip(req), 'captcha-fail'); return send(res, 400, { err: 'Captcha failed, try again' }) }
+        if (!signupCap.hit()) { flag(ip(req), 'signup-cap'); return send(res, 429, { err: 'Too many new accounts right now, try later' }) }
         if (typeof password !== 'string' || password.length < 6 || password.length > 100) return send(res, 400, { err: 'Password must be 6+ characters' });
         const ex = await db.query('SELECT id FROM users WHERE lower(username)=lower($1)', [username]);
         if (ex.rows.length) return send(res, 409, { err: 'Username taken' });
@@ -55,15 +64,18 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
       if (u.pathname === '/api/login' && req.method === 'POST') {
         if (limited(ip(req))) return send(res, 429, { err: 'Too many attempts, wait a minute' });
         const { username, password } = await body(req);
-        const r = await db.query('SELECT * FROM users WHERE lower(username)=lower($1)', [String(username || '')]);
+        const lw = lock.wait(username); if (lw) { flag(ip(req), 'lockout user=' + String(username).slice(0, 16)); return send(res, 429, { err: `Too many wrong passwords, wait ${lw}s` }) }
+        const r = await db.query('SELECT * FROM users WHERE lower(username)=lower($1)', [String(username || '').slice(0, 32)]);
         const row = r.rows[0];
-        if (!row || !(await checkPw(String(password || ''), row.salt, row.hash))) return send(res, 401, { err: 'Wrong username or password' });
+        if (!row || !(await checkPw(String(password || '').slice(0, 100), row.salt || '00'.repeat(16), row.hash || '00'.repeat(64)))) { lock.fail(username); flag(ip(req), 'login-fail'); return send(res, 401, { err: 'Wrong username or password' }) }
+        lock.ok(username);
         if (maintBlocks(row.id, row.username)) return send(res, 503, { err: 'Server under maintenance' + (maint.msg ? ': ' + maint.msg : ''), maint: 1 });
         const c = await db.query('SELECT name,data,ver FROM characters WHERE user_id=$1', [row.id]);
         return send(res, 200, { token: makeToken(row.id, row.username), username: row.username, character: c.rows[0] ? { name: c.rows[0].name, data: JSON.parse(c.rows[0].data), ver: c.rows[0].ver | 0 } : null });
       }
       if (u.pathname === '/api/save' && req.method === 'PUT') {
         const a = authed(req); if (!a) return send(res, 401, { err: 'Not logged in' });
+        if (saveLim(String(a.uid))) { flag(ip(req), 'save-rate uid=' + a.uid); return send(res, 429, { err: 'Saving too fast' }) }
         const ch = await body(req);
         if (!ch || typeof ch !== 'object' || !ch.xp || typeof ch.name !== 'string' || !Array.isArray(ch.inv)) return send(res, 400, { err: 'Bad character' });
         if (ch.inv.length > 80) return send(res, 400, { err: 'Bad inventory' });
@@ -117,6 +129,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   server.on('upgrade', (req, sock, head) => {
     const u = new URL(req.url, 'http://x');
     sock.setNoDelay?.(true);
+    const rip = ip(req); if (wsConnLim(rip) || (wsByIp.get(rip) || 0) >= WS_PER_IP) { flag(rip, 'ws-conn'); sock.write('HTTP/1.1 429 Too Many Requests\r\n\r\n'); return sock.destroy() }
     const a = u.pathname === '/ws' ? readToken(u.searchParams.get('token')) : null;
     if (!a) { sock.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); return sock.destroy(); }
     if (maintBlocks(a.uid, a.name)) { sock.write('HTTP/1.1 503 Service Unavailable\r\n\r\n'); return sock.destroy(); }
@@ -182,6 +195,8 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     const old = players.get(a.uid); if (old) { try { old.ws.close(4000, 'Logged in elsewhere') } catch {} }
     const me = { ws, lastMsg: Date.now(), ip: req ? ip(req) : '', uid: a.uid, name: a.name, x: 0, y: 0, dir: 0, eq: 0, t: Date.now(), lastChat: 0, init: false };
     players.set(a.uid, me);
+    const rip = me.ip; wsByIp.set(rip, (wsByIp.get(rip) || 0) + 1); ws.on('close', () => { const n = (wsByIp.get(rip) || 1) - 1; if (n <= 0) wsByIp.delete(rip); else wsByIp.set(rip, n) });
+    const allow = bucket(40, 80); let strikes = 0;
     me.sp = sim ? sim.add(a.uid, a.name) : null;
     ws.send(JSON.stringify({ t: 'hello', id: a.uid, adm: isAdm(me) ? 1 : 0, online: players.size, world: sim ? sim.world() : null, gnd: [...ground.values()].map(g => ({ id: g.id, x: g.x, y: g.y, it: g.it })) }));
     ws.send(JSON.stringify({ t: 'hs', l: rentList() }));
@@ -189,6 +204,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     broadcast({ t: 'sys', m: `${a.name} entered the world` }, me);
     db.query('SELECT left_n,total,reason,by FROM jails WHERE user_id=$1', [a.uid]).then(r => { const j = r.rows[0]; if (j && players.get(a.uid) === me) { me.jail = { left: j.left_n, total: j.total, reason: j.reason, by: j.by }; place(me, jStart.x, jStart.y); jailMsg(me) } }).catch(() => {});
     ws.on('message', raw => {
+      if (!allow()) { if (++strikes > 50) { flag(me.ip, 'ws-flood uid=' + a.uid); try { ws.close(4008, 'Too many messages') } catch {} } return }
       let m; try { m = JSON.parse(raw) } catch { return }
       const now = Date.now(); me.lastMsg = now;
       if (social(me, m, now)) return;
@@ -286,6 +302,8 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   });
   function broadcast(obj, except) { const s = JSON.stringify(obj); for (const p of players.values()) if (p !== except && p.ws.readyState === 1) p.ws.send(s) }
   const asweep = setInterval(async () => { try { for (const q of await econ.sweep()) { const p = players.get(q); if (p && p.ws.readyState === 1) p.ws.send(JSON.stringify({ t: 'mn', n: await econ.unclaimed(q) })) } } catch (e) { console.log('sweep err', e.message) } }, 10000);
+  const cleanup = async () => { try { const cut = new Date(Date.now() - 7 * 864e5).toISOString(); const r = await db.query('DELETE FROM users WHERE created_at < $1 AND id NOT IN (SELECT user_id FROM characters)', [cut]); if (r.rowCount) console.log('cleanup: removed ' + r.rowCount + ' never-played accounts'); await db.query('DELETE FROM mail WHERE claimed=1 AND ts < $1', [Date.now() - 30 * 864e5]) } catch (e) { console.log('cleanup err ' + e.message) } };
+  setTimeout(cleanup, 60000).unref?.(); const cleanT = setInterval(cleanup, 6 * 3600e3); cleanT.unref?.();
   const gsweep = setInterval(() => { const now = Date.now(); for (const g of ground.values()) if (now > g.exp) { ground.delete(g.id); broadcast({ t: 'gx', id: g.id }) } }, 5000);
   let ptk = 0;
   const tick = setInterval(() => {

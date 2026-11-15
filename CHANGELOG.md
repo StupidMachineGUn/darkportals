@@ -1,4 +1,12 @@
 # Changelog
+## 0.5.8 - Security upgrade
+- Spoof-proof client IP (last proxy hop / CF header), new `PROXY_HOPS` setting.
+- Signup: reserved/lookalike names refused, global hourly cap, optional Cloudflare Turnstile captcha.
+- Login: per-username lockout with backoff; constant-time check for unknown users; /api rate limit; save rate limit.
+- WebSocket: connections per IP, connect rate, per-connection message rate, flood disconnect.
+- Cleanup of never-played accounts and old claimed mail; security headers; greppable `SECURITY ...` log lines.
+- Docs: docs/SECURITY.md.
+
 ## 0.5.7 - Character graphics v2 (8 directions)
 - Players, NPCs and guards are now pre-rendered 3D-style sprites with 8 facing directions and 3 walk frames (diagonal movement shows real diagonal views).
 - Armour tiers (cloth..mithril/dragon) and 16 NPC colours baked; weapons (sword, steel, mithril, dagger, axe, bow, staffs) are separate layers drawn in front of or behind the body per direction, with the five magic glow tiers.

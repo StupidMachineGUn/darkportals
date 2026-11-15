@@ -7,7 +7,7 @@ function wRefresh(){const s=WEL.state,e=$('#wst'),b=$('#wbOn'),k=kickLeft();
  e.textContent=k?'You got kicked · reconnect in '+k+'s':T[0];e.style.color=k?'#ff9a92':T[1];
  b.textContent=k?'Reconnect in '+k+'s':s==='off'?'Server unreachable · tap to retry':s==='check'?'Checking…':s==='maint'?'Admin login':'Play online';
  b.style.background=k||s==='off'?'#4a1c1c':s==='maint'?'#5a4410':'#2f7d3b';b.style.borderColor=k||s==='off'?'#b04a45':s==='maint'?'#f0b040':'#5bd06a'}
-async function wProbe(){try{const r=await fetch('/api/ping',{cache:'no-store'});const j=await r.json();if(j&&j.ok){NET.up=true;NET.ver=j.version;WEL.state=j.maint?'maint':'on';WEL.msg=j.mmsg||''}else WEL.state='off'}catch(e){NET.up=false;WEL.state='off'}wRefresh()}
+async function wProbe(){try{const r=await fetch('/api/ping',{cache:'no-store'});const j=await r.json();if(j&&j.ok){NET.up=true;NET.ver=j.version;NET.ts=j.ts||'';WEL.state=j.maint?'maint':'on';WEL.msg=j.mmsg||''}else WEL.state='off'}catch(e){NET.up=false;WEL.state='off'}wRefresh()}
 function welcomeInit(){
  wProbe();setInterval(()=>{if($('#title').style.display!=='none'){wRefresh();if(!(WEL.tick=(WEL.tick||0)+1)%5)wProbe()}},1000);
  const un=localStorage.getItem('emberfall.user');if(un)$('#nm').value=un;const on=localStorage.getItem('dp.offname');if(on)$('#nm2').value=on;
