@@ -31,6 +31,7 @@
 5. DB spam: per-account save rate limit and max save size, row caps per account (auction, mail), cleanup of never-played accounts, parameterised queries only.
 6. Anti-cheat: server rejects impossible values (XP jumps, huge stacks, speed). Full fix comes with v0.6.0 / v0.6.1 server-owned economy and XP.
 7. Basics: rate-limit public endpoints (leaderboard), body size caps, private DB network, strong ADMINS and secrets, nightly backups with tested restore, fail2ban / Cloudflare rules on repeated 429s.
+8. Linux box (SSH): keys only, password login disabled, no root login, ufw firewall, fail2ban, DB/app ports not public, unattended upgrades, backups. Step-by-step guide: docs/SERVER_HARDENING.md. (User reported 1164 failed SSH logins.)
 Order: 1+2, then 3+4, then 5+6 with the economy work.
 
 ## Later
