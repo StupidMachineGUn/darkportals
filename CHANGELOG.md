@@ -94,6 +94,13 @@
 - Tutorial on first start (and in Options); 📱 low-detail mode for weak phones.
 - Removed the yellow level/gold bar.
 
+## 0.5.5 – Sprite polish
+- Polish pass on every player, mob and animal sprite: tinted (not flat black) outlines, light on upper-left edges, darker lower/right sides, softer colour banding.
+- Players: nose, rosy cheeks, brows, hair strands, gold belt buckle, boot cuffs.
+- Dragons redrawn bigger (dragon/wyrm drawn at 2x, drakes 1.7x): wings with bones, jaw and eyes, belly scales, spine spikes, clawed legs, spiked tail, real front/back/side views.
+- Bats (also ice/fire bats): separate front, back and flapping side views.
+- Plan: magic weapon glow tiers (Enchanted, Rare, Epic, Legendary) pending approval.
+
 ## 0.5.4 – Art Pack polish
 - Terrain edges: grass fringes over sand, dirt and stone, sand shores with foam on water, shallow-to-deep water edges, and softer blending between biomes.
 - New ground details: flower patches in several colours; lily pads (some with flowers) on shallow water.

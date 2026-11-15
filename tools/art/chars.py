@@ -28,6 +28,8 @@ def human(d,f,raw=False,skin='#f0c9a0',hair='#8a4a22',tunic='#3a5fb0',pants='#4a
         # torso
         rect(g,[4+ox,10+oy+bob,11+ox,17+oy+bob],body);rect(g,[4+ox,10+oy+bob,5+ox,17+oy+bob],lt(body,.15));rect(g,[10+ox,10+oy+bob,11+ox,17+oy+bob],dk(body,.2))
         rect(g,[4+ox,16+oy+bob,11+ox,16+oy+bob],trim)
+        if d=='d':rect(g,[7+ox,16+oy+bob,8+ox,16+oy+bob],'#e8c14a')
+        rect(g,[4+ox,22+oy+[0,-1,1,0][f],6+ox,22+oy+[0,-1,1,0][f]],'#6a4a2a');rect(g,[9+ox,22+oy+[0,1,-1,0][f],11+ox,22+oy+[0,1,-1,0][f]],'#6a4a2a')
         if A and A['metal']:
             rect(g,[5+ox,10+oy+bob,10+ox,13+oy+bob],A['metal']);line(g,[5+ox,10+oy+bob,10+ox,10+oy+bob],lt(C(A['metal']),.4))
             rect(g,[3+ox,10+oy+bob,4+ox,11+oy+bob],A['metal']);rect(g,[11+ox,10+oy+bob,12+ox,11+oy+bob],A['metal'])
@@ -42,7 +44,9 @@ def human(d,f,raw=False,skin='#f0c9a0',hair='#8a4a22',tunic='#3a5fb0',pants='#4a
             line(g,[5+ox,2+oy+bob,9+ox,2+oy+bob],lt(hr,.25))
             if style==2:rect(g,[5+ox,3+oy+bob,10+ox,4+oy+bob],hr)
             for ex in(6,9):pt(g,(ex+ox,6+oy+bob),'#241624');pt(g,(ex+ox,5+oy+bob),'#ffffff')
-            pt(g,(7+ox,8+oy+bob),dk(sk,.35));pt(g,(8+ox,8+oy+bob),dk(sk,.35))
+            pt(g,(7+ox,8+oy+bob),dk(sk,.35));pt(g,(8+ox,8+oy+bob),dk(sk,.35));pt(g,(7+ox,7+oy+bob),dk(sk,.16));pt(g,(5+ox,7+oy+bob),lt(mix(sk,C('#ff8a8a'),.35),.05));pt(g,(10+ox,7+oy+bob),lt(mix(sk,C('#ff8a8a'),.35),.05))
+            for ex in(6,9):pt(g,(ex+ox,4+oy+bob),dk(hr,.2))
+            for hx,hy in((5,2),(8,3),(10,2)):pt(g,(hx+ox,hy+oy+bob),dk(hr,.22))
         else:
             rect(g,[3+ox,1+oy+bob,12+ox,8+oy+bob+(3 if style==1 else 0)],hr);rect(g,[4+ox,8+oy+bob,11+ox,8+oy+bob],dk(hr,.15));line(g,[5+ox,2+oy+bob,10+ox,2+oy+bob],lt(hr,.25))
     else: # right-facing

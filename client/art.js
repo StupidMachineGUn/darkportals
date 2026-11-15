@@ -91,13 +91,13 @@ function artEnemy(e,px,py,f,t){
  let n=e.t==='wyrm'?'dragon':e.t;const row0=ART.nm['mobs|'+n];if(row0===undefined&&n!=='dragon')return false;
  const bx=Math.floor(e.x),by=Math.floor(e.y);if(MOBV[n]){const v=MOBV[n][BIO[biomeAt(bx,by)]];if(v)n=v}
  const row=ART.nm['mobs|'+n];if(row===undefined)return false;
- const big=e.t==='wyrm'||e.big,k=e.t==='wyrm'?1.5:1,moving=e.mv||e.st===1||MOBFLY[n]||e.t==='wizard',fi=moving?((t*.7)|0)&1:0,[cw,ch]=ARTD.mobs.cell;
+ const big=e.t==='wyrm'||e.big,k=(e.t==='dragon'||e.t==='wyrm')?2:/wyrm|drake/.test(e.t)?1.7:1,DR=/dragon|wyrm|drake/.test(e.t),moving=e.mv||e.st===1||MOBFLY[n]||e.t==='wizard',fi=moving?((t*.7)|0)&1:0,[cw,ch]=ARTD.mobs.cell;
  let fr=artFrame('mobs',ADIR[e.dir|0]*2+fi,row,cw,ch);if(f)fr=artWhite(fr);
  let cx=Math.round(e.x*T),cy=Math.round(e.y*T+2),fl=MOBFLY[n]?-Math.round(2+Math.sin(t)*2):0;
  const sw=e.sw>0?1-e.sw/.25:-1,dv=DIR[e.dir|0]||[0,1],sz=Math.max(1,ch/28);let sx=1,sy=1;
  if(sw>=0){const lg=sw<.3?-(sw/.3)*1.5:Math.sin(((sw-.3)/.7)*Math.PI)*5*Math.min(2,sz);cx+=Math.round(dv[0]*lg);cy+=Math.round(dv[1]*lg*.7);
   if(/slime|jelly/.test(n)){sy=sw<.3?1.12:.82;sx=sw<.3?.9:1.14}else if(MOBFLY[n])fl-=Math.round(Math.sin(sw*Math.PI)*3)}
- g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(cx,cy,6*k+(n==='golem'?4:0),2.4*k,0,0,6.283);g.fill();
+ g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(cx,cy,(DR?10:6)*k+(n==='golem'?4:0),(DR?3.2:2.4)*k,0,0,6.283);g.fill();
  const dw=Math.round(cw*k*sx),dh=Math.round(ch*k*sy);g.drawImage(fr,Math.round(cx-dw/2),cy-dh+fl,dw,dh);
  if(sw>=0&&sw>.25&&sw<.95){const fa=[Math.PI/2,Math.PI,0,-Math.PI/2][e.dir|0],sg=(e.dir|0)===1?-1:1,r=5+sz*4,a=fa-sg*1.1+sg*((sw-.25)/.7)*2.2,hx=cx+dv[0]*3*sz,hy=cy-ch*.4*k+dv[1]*4;
   g.save();g.lineCap='round';for(let i=0;i<3;i++){g.strokeStyle=`rgba(255,255,255,${(.95-i*.25)*(1-sw*.5)})`;g.lineWidth=2.2-i*.5;g.beginPath();g.arc(hx,hy,r-i*2,a-sg*.8,a);g.stroke()}g.restore()}

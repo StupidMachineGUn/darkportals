@@ -216,7 +216,7 @@ function render(){if(P.inside){drawInside();return}if(insideOn)hideInside();if(s
  for(const b of bots)if(!b.dead&&vis(b.x,b.y)){label(b.name,b.x,b.y-1-AL,FCOL[flagOf(b)]||'#9fe3ff');const tt=titleOf(b.xp);if(tt)sub('the '+tt,b.x,b.y-1.32-AL)}
  label(P.name,P.x,P.y-1.05-AL,FCOL[flagOf(P)]||'#fff');{const tt=titleOf(P.xp);if(tt)sub('the '+tt,P.x,P.y-1.37-AL)}
  for(const e of E)if(!e.dead&&e.el&&vis(e.x,e.y))label(ELL(e),e.x,e.y-1.2*e.sc-AL*.6,e.el==='shaman'?'#8cf':e.el==='lord'?'#f6f':e.el==='elite'?'#f96':'#fb4');
- for(const e of E)if(!e.dead&&vis(e.x,e.y)&&(e.hp<e.mhp||e.st===1)){const [sx,sy]=w2s(e.x,e.y-(e.t==='wyrm'?2.2:.95)-AL*.5),w=(e.t==='wyrm'||e.t==='wizard'?40:14)*S;g.fillStyle='#000a';g.fillRect(sx-w/2-1,sy-3*DPR,w+2,5*DPR);g.fillStyle=e.t==='wyrm'?'#f63':'#e33';g.fillRect(sx-w/2,sy-2*DPR,w*e.hp/e.mhp,3*DPR)}
+ for(const e of E)if(!e.dead&&vis(e.x,e.y)&&(e.hp<e.mhp||e.st===1)){const [sx,sy]=w2s(e.x,e.y-(e.t==='wyrm'?(artOn()?3.4:2.2):.95)-AL*.5),w=(e.t==='wyrm'||e.t==='wizard'?40:14)*S;g.fillStyle='#000a';g.fillRect(sx-w/2-1,sy-3*DPR,w+2,5*DPR);g.fillStyle=e.t==='wyrm'?'#f63':'#e33';g.fillRect(sx-w/2,sy-2*DPR,w*e.hp/e.mhp,3*DPR)}
  for(const a of actorsList())if(!a.dead&&a.hp<a.mhp&&vis(AX(a),AY(a))){const [sx,sy]=w2s(AX(a),AY(a)-.95-AL*.5),w=14*S;g.fillStyle='#000a';g.fillRect(sx-w/2-1,sy-3*DPR,w+2,5*DPR);g.fillStyle='#e8a030';g.fillRect(sx-w/2,sy-2*DPR,w*a.hp/a.mhp,3*DPR)}
  if(act){const [sx,sy]=w2s(P.x,P.y-1.4-AL),w=22*S/2;g.fillStyle='#000a';g.fillRect(sx-w/2-1,sy-1,w+2,6*DPR);g.fillStyle='#ffd36b';g.fillRect(sx-w/2,sy,w*act.t/act.dur,4*DPR)}
  g.font=`bold ${Math.round(12*DPR)}px system-ui,sans-serif`;for(const f of floats){g.globalAlpha=clamp(f.life*2,0,1);label(String(f.s),f.x,f.y-.5,f.c)}g.globalAlpha=1;

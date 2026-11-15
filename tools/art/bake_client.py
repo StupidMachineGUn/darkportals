@@ -4,7 +4,11 @@ from terrain import BIOMES,LIQ
 from chars import sprites,ARMOR
 from catalog import M
 from items import I
+from mobs2 import dragon2,bat2
+from sprpolish import polish_sprite
 import props2
+for _n,_a,_k in [('wyrm',('#4a8a4a','#c8d890','#3a6a3a'),{}),('ice_wyrm',('#8ac8e8','#e8f4ff','#6aa8d0'),dict(breath='#c8f0ff')),('lava_drake',('#a03a1a','#ffb02e','#7a2a10'),dict(breath='#ff7a2a')),('dragon',('#b03030','#e8b070','#802020'),dict(breath='#ffb02e')),('shadow_drake',('#3a2a5a','#6a5a8a','#2a1a4a'),dict(eye='#ff4aff',breath='#b06aff'))]:M[_n]=(dragon2(*_a,**_k),M[_n][1])
+for _n,_a,_k in [('bat',('#5a3a6a','#6f4a82'),{}),('ice_bat',('#8ad8ff','#b0e4ff'),dict(eye='#ffffff')),('fire_bat',('#d83a1a','#ff7a2a'),dict(eye='#ffd24a'))]:M[_n]=(bat2(*_a,**_k),M[_n][1])
 from props2 import P
 import polish;polish.polish()
 import edges
@@ -31,14 +35,14 @@ CW,CH=22,28;S=Image.new('RGBA',(CW*16,CH*len(rows)),(0,0,0,0))
 for r,kw in enumerate(rows):
     sp=sprites(**kw);c=0
     for d in('d','u','r','l'):
-        for f in range(4):place(S,sp[d][f],c,r,CW,CH);c+=1
+        for f in range(4):place(S,polish_sprite(sp[d][f]),c,r,CW,CH);c+=1
 out['chars']={'img':S,'names':rn,'cell':[CW,CH]}
 # mobs
 mn=list(M);MW_,MH_=44,36;S=Image.new('RGBA',(MW_*8,MH_*len(mn)),(0,0,0,0))
 for r,n in enumerate(mn):
     c=0
     for d in('down','up','right','left'):
-        for f in range(2):place(S,M[n][0][d][f],c,r,MW_,MH_);c+=1
+        for f in range(2):place(S,polish_sprite(M[n][0][d][f]),c,r,MW_,MH_);c+=1
 out['mobs']={'img':S,'names':mn,'cell':[MW_,MH_]}
 iN=list(I);S=sheet([I[n][0] for n in iN],16,pad=0,cell=(18,18),bg=(0,0,0,0));out['items']={'img':S,'names':iN,'cell':18,'cols':16}
 pN=list(P);S=Image.new('RGBA',(68*8,56*((len(pN)+7)//8)),(0,0,0,0))
