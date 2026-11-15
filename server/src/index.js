@@ -145,6 +145,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   const broadcastRentals = () => broadcast({ t: 'hs', l: rentList() });
   const cleanItem = it => { try { if (!it || typeof it.id !== 'string' || it.id.length > 24) return null; const j = JSON.stringify(it); if (j.length > 500) return null; return JSON.parse(j) } catch { return null } };
   const ground = new Map(); let gid = 0; // shared dropped items
+  const GROUND_TTL = +process.env.GROUND_TTL_MS || 600000; // 10 minutes on the floor
   const trades = new Map(); // uid -> session
   const sendTo = (uid, o) => { const q = players.get(uid); if (q && q.ws.readyState === 1) q.ws.send(JSON.stringify(o)) };
   const endTrade = (uid, why) => { const t = trades.get(uid); if (!t) return; trades.delete(t.a); trades.delete(t.b); const other = t.a === uid ? t.b : t.a; sendTo(other, { t: 'tx', why }) };
@@ -198,7 +199,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     const rip = me.ip; wsByIp.set(rip, (wsByIp.get(rip) || 0) + 1); ws.on('close', () => { const n = (wsByIp.get(rip) || 1) - 1; if (n <= 0) wsByIp.delete(rip); else wsByIp.set(rip, n) });
     const allow = bucket(40, 80); let strikes = 0;
     me.sp = sim ? sim.add(a.uid, a.name) : null;
-    ws.send(JSON.stringify({ t: 'hello', id: a.uid, adm: isAdm(me) ? 1 : 0, online: players.size, world: sim ? sim.world() : null, gnd: [...ground.values()].map(g => ({ id: g.id, x: g.x, y: g.y, it: g.it })) }));
+    ws.send(JSON.stringify({ t: 'hello', id: a.uid, adm: isAdm(me) ? 1 : 0, online: players.size, world: sim ? sim.world() : null, gnd: [...ground.values()].map(g => ({ id: g.id, x: g.x, y: g.y, it: g.it, ttl: Math.max(0, g.exp - Date.now()), dth: g.dth })) }));
     ws.send(JSON.stringify({ t: 'hs', l: rentList() }));
     econ.unclaimed(a.uid).then(n => { if (n && ws.readyState === 1) ws.send(JSON.stringify({ t: 'mn', n })) }).catch(() => {});
     broadcast({ t: 'sys', m: `${a.name} entered the world` }, me);
@@ -269,12 +270,14 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
         if (r.ok && r.k === 'pick') r.it = cleanItem(m.it);
         th.ws.send(JSON.stringify(r));
       } else if (m.t === 'pkill') { // victim reports death by player
-        const k = players.get(m.by); if (k && k.ws.readyState === 1) { const sx = {}; if (m.sx && typeof m.sx === 'object') for (const kk in m.sx) if (Number.isFinite(+m.sx[kk])) sx[kk.slice(0, 16)] = Math.min(+m.sx[kk], 1e6); k.ws.send(JSON.stringify({ t: 'pk', who: a.uid, n: a.name, g: Math.max(0, Math.min(+m.g || 0, 1e7)), sx, b: Math.max(0, Math.min(+m.b || 0, 5000)), fl: m.fl ? 1 : 0, it: cleanItem(m.it) })) }
+        const k = players.get(m.by); if (k && k.ws.readyState === 1) { const sx = {}; if (m.sx && typeof m.sx === 'object') for (const kk in m.sx) if (Number.isFinite(+m.sx[kk])) sx[kk.slice(0, 16)] = Math.min(+m.sx[kk], 1e6); k.ws.send(JSON.stringify({ t: 'pk', who: a.uid, n: a.name, g: Math.max(0, Math.min(+m.g || 0, 1e7)), sx, b: Math.max(0, Math.min(+m.b || 0, 5000)), fl: m.fl ? 1 : 0, it: null })) } /* v0.5.9: items never transfer directly; the victim drops them on the floor ('gd') */
         broadcast({ t: 'sys', m: `${a.name} was slain by ${k ? k.name : 'a player'}` });
-      } else if (m.t === 'gd') { // drop an item on the ground
-        const it = cleanItem(m.it); if (!it || !Number.isFinite(m.x) || !Number.isFinite(m.y) || ground.size > 300 || now - (me.lastGd || 0) < 500) return; me.lastGd = now;
-        const g = { id: ++gid, x: +m.x, y: +m.y, it, exp: now + 180000, by: me.uid, free: now + 10000 }; ground.set(g.id, g);
-        broadcast({ t: 'gd', g: { id: g.id, x: g.x, y: g.y, it } });
+      } else if (m.t === 'gd') { // drop item(s) on the ground (death drops, mob loot); stays GROUND_TTL then vanishes
+        const list = (Array.isArray(m.its) ? m.its : [m.it]).slice(0, 8), dth = m.dth ? 1 : 0;
+        if (!Number.isFinite(m.x) || !Number.isFinite(m.y) || ground.size > 600 || now - (me.lastGd || 0) < (dth ? 200 : 400) || Math.hypot(m.x - me.x, m.y - me.y) > 14) return; me.lastGd = now;
+        list.forEach((raw, i) => { const it = cleanItem(raw); if (!it) return; const ang = i * 2.4, r = i ? .5 : 0;
+          const g = { id: ++gid, x: +m.x + Math.cos(ang) * r, y: +m.y + Math.sin(ang) * r, it, exp: now + GROUND_TTL, by: me.uid, free: dth || m.mob ? 0 : now + 10000, dth };
+          ground.set(g.id, g); broadcast({ t: 'gd', g: { id: g.id, x: g.x, y: g.y, it, ttl: GROUND_TTL, dth } }) });
       } else if (m.t === 'gt') { // pick one up
         const g = ground.get(m.id | 0); if (!g || Math.hypot(g.x - me.x, g.y - me.y) > 3.5 || (g.by === me.uid && now < g.free)) return; ground.delete(g.id);
         ws.send(JSON.stringify({ t: 'gt', it: g.it })); broadcast({ t: 'gx', id: g.id });

@@ -1,4 +1,12 @@
 # Changelog
+## 0.5.9 - Death & loot rework
+- Items dropped on death are far more visible: coloured light beam (red for death drops, rarity colours otherwise), pulsing ring, bigger bobbing icon, skull marker; blinks in its last 30 s.
+- PvP kills no longer hand the item to the killer; it drops on the floor like any other drop (gold and skill % still transfer).
+- Mob item loot (not gold/XP) now lands on the floor where the mob died and is picked up by walking over it (offline: local, online: server-owned shared ground).
+- Everything on the ground disappears after 10 minutes (server-owned timer online; `GROUND_TTL_MS`).
+- Death animation: birds and a star circle the head while knocked out (also shown for other players).
+- Offline deaths now drop the item on the ground instead of deleting it.
+
 ## 0.5.8 - Security upgrade
 - Spoof-proof client IP (last proxy hop / CF header), new `PROXY_HOPS` setting.
 - Signup: reserved/lookalike names refused, global hourly cap, optional Cloudflare Turnstile captcha.

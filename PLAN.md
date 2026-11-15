@@ -8,7 +8,7 @@
 - Area name: remove the permanent caption; show a one-time fading "Entering (name of area)" when crossing into a different area (towns, villages, dungeon, wizard chamber).
 - Sleeping-player size bug: could not reproduce, needs a screenshot.
 
-## Death & loot rework (planned)
+## Death & loot rework (DONE in v0.5.9; follow-ups: gold coins on floor, minimap markers)
 - Items dropped on death must be much more visible (glow/beam/bounce, bigger icon, marker).
 - Player death shows an animation, e.g. birds/stars circling the head while dead.
 - PvP: killed player's items drop on the ground like any other drop; they do NOT transfer directly to the killer. Killer must pick them up.
