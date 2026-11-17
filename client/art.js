@@ -1,7 +1,7 @@
 /* ---------- v0.5.3: Art Pack (original pixel art; offline/single-player preview) ---------- */
 const ART={ec:new Map(),ready:false,pref:true,sh:{},tiles:{},fc:new Map(),wc:new Map(),icons:{},nm:{}};
 const ART_ONLINE=true; /* set true to also use the Art Pack in online play */
-try{ART.pref=localStorage.getItem('dp.art')!=='0'}catch(e){}
+try{ART.pref=localStorage.getItem('dp.art2')!=='0'}catch(e){}
 const artOn=()=>ART.ready&&ART.pref&&(typeof NET==='undefined'||!NET.on||ART_ONLINE);
 function artLoad(){if(typeof ARTD==='undefined')return;let n=0;const keys=Object.keys(ARTD);
  for(const k of keys){const im=new Image();im.onload=()=>{ART.sh[k]=im;ARTD[k].names.forEach((nm,i)=>ART.nm[k+'|'+nm]=i);if(++n===keys.length)artInit()};im.src=ARTD[k].src}}
@@ -158,5 +158,5 @@ function icoURL(id){const n=AICON[id],c=n&&ART.icons[n];if(!c)return null;return
 function artItems(){for(const k in ITEMS){const it=ITEMS[k];if('e0' in it)continue;it.e0=it.e;Object.defineProperty(it,'e',{get(){if(!artOn())return this.e0;const u=icoURL(k);return u?`<img class="ico" src="${u}">`:this.e0},configurable:true})}
  const st=document.createElement('style');st.textContent='.ico{width:22px;height:22px;image-rendering:pixelated;vertical-align:middle}.slot .ico,.slo .ico{width:26px;height:26px}@keyframes gp{50%{opacity:.86}}.ico.g1{filter:drop-shadow(0 0 2px #5ae8c8)}.ico.g2{filter:drop-shadow(0 0 3px #4aa8ff) drop-shadow(0 0 1px #9ad0ff);animation:gp 1.6s infinite}.ico.g3{filter:drop-shadow(0 0 4px #b86aff) drop-shadow(0 0 1px #e0b8ff);animation:gp 1.3s infinite}.ico.g4{filter:drop-shadow(0 0 5px #ffb02e) drop-shadow(0 0 2px #fff0b0);animation:gp 1s infinite}';document.head.appendChild(st)}
 function artSkin(){try{document.body.classList.toggle('art',ART.ready&&ART.pref)}catch(e){}}
-function artToggle(v){ART.pref=v;artSkin();try{localStorage.setItem('dp.art',v?'1':'0')}catch(e){}}
+function artToggle(v){ART.pref=v;artSkin();try{localStorage.setItem('dp.art2',v?'1':'0')}catch(e){}}
 if(typeof ARTD!=='undefined')artLoad();

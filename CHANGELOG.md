@@ -1,4 +1,8 @@
 # Changelog
+## 0.6.1 - Art Pack default + spell balance
+- The Art Pack (new graphics) is now the default for everyone, including players who had switched to Classic before (one-time reset; it can still be switched back in settings).
+- Fireball is faster (projectile speed 14 vs 9) and hits 60% harder; Inferno 13 speed and +90%. Chain Bolt and Storm Call stay slower (speed 8) and chain through many enemies at 70% each, so fire is the single-target/burst spell and lightning is the crowd spell.
+
 ## 0.6.0 - Server authority I
 - The server now decides what a save may contain (`server/src/authority.js`, `AUTHORITY=on|log|off`, default on): items must exist in the catalog (`items.json`, regenerate with `tools/gen_items.py`), rarity/enchant are clamped, forged items are stripped.
 - XP and gold can only grow at human rates (token buckets: XP 3000 burst + 25/s per skill, gold 2000 burst + 30/s, plus the value of items you sold and anything the server paid you). Inflated values are clamped, logged (`AUTHORITY ...`) and sent back; the client adopts the corrected numbers ("Server corrected your save").

@@ -17,7 +17,7 @@
 
 ## Server authority II (planned v0.6.2): server computes xp/gold/loot from kills, gathering, crafting and shops; client only sends actions. (Authority I = validation, done in v0.6.0.)
 
-## World & audio expansion (now v0.6.1) (planned, user request)
+## World & audio expansion (now v0.6.2; LPC character graphics v0.6.3 if approved) (planned, user request)
 - Music changes per village/area (own theme or mood per place). Combat music is always more jumpy and alert, and takes over while fighting.
 - Area titles show ONCE when entering a place, then disappear (already listed as "Entering (area)").
 - Use ALL 79 mobs from the Art Pack as real gameplay mobs (biome-based spawns).
