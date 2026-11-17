@@ -66,3 +66,17 @@ Order: 1+2, then 3+4, then 5+6 with the economy work.
 - Bigger world (10x) + new items/weapons/armor tiers (mithril, dragon) as real gameplay content.
 - Real walk/attack animation frames for mobs (currently 2 frames) and per-direction attack poses; skin/hair choices from the pack.
 - Texture-pack selector (Classic / Art Pack) and optional lighting layer at dusk.
+
+## Audio & scenes additions (v0.6.2, from user 17 Nov)
+- Main game music: a "Cloister Hymn" style theme (slow choral/organ feel) as the default overworld music. (Confirm exact track/wording with user; music must be original/procedural or CC0/licensed with credit, no copyrighted recordings.)
+- Tavern music (lively folk: fiddle, lute, drum) plays in villages and shops.
+- Inn / tavern scene: patrons dancing, lots of beer mugs on tables, a bard playing on a stage (animated NPCs, instrument sprite, floating notes).
+- No music inside houses (quiet interior ambience only: fire crackle).
+- Resting/sleeping in a house: flying sheep drift above the sleeper (the same sheep sprites already in the game), "counting sheep" effect.
+- Keeps the earlier items: per-area music, jumpy combat music, area titles shown once, all 79 mobs, bigger map + dungeons, final boss and minions 2x.
+
+## Process rule (user, 17 Nov)
+- Always ask before any deployment: I only deliver bundles and instructions; no deploy step is assumed without the user saying so.
+
+## Version order (current)
+v0.6.1 done (Art Pack default, fire vs lightning). Next: v0.6.2 audio + scenes + world expansion, v0.6.3 LPC characters/monsters (needs approval), then Server authority II, then small items.
