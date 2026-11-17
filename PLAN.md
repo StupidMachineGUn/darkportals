@@ -68,8 +68,7 @@ Order: 1+2, then 3+4, then 5+6 with the economy work.
 - Texture-pack selector (Classic / Art Pack) and optional lighting layer at dusk.
 
 ## Audio & scenes additions (v0.6.2, from user 17 Nov)
-- Main game music: a "Cloister Hymn" style theme (slow choral/organ feel) as the default overworld music. (Confirm exact track/wording with user; music must be original/procedural or CC0/licensed with credit, no copyrighted recordings.)
-- Tavern music (lively folk: fiddle, lute, drum) plays in villages and shops.
+- Music rule (confirmed by user): the existing **Cloister Hymn** track (x.js `MED.cloister`) is the default music everywhere (overworld, villages, dungeons when not in combat). The existing **Tavern Dance** track (`MED.tavern`) plays only inside the **bank and shops** (and the inn). Both are already in the game, original and synthesized, so no new licensing. Combat keeps its own jumpier music; houses are silent.
 - Inn / tavern scene: patrons dancing, lots of beer mugs on tables, a bard playing on a stage (animated NPCs, instrument sprite, floating notes).
 - No music inside houses (quiet interior ambience only: fire crackle).
 - Resting/sleeping in a house: flying sheep drift above the sleeper (the same sheep sprites already in the game), "counting sheep" effect.
