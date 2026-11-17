@@ -145,8 +145,8 @@ function mtone(f,t,d,ty,v){const o=AC.createOscillator(),gn=AC.createGain();o.ty
 function mhat(t,v){if(!noiseBuf){noiseBuf=AC.createBuffer(1,AC.sampleRate*.05,AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}const s=AC.createBufferSource(),gn=AC.createGain();s.buffer=noiseBuf;gn.gain.setValueAtTime(v,t);gn.gain.exponentialRampToValueAtTime(.0001,t+.04);s.connect(gn);gn.connect(mout());s.start(t)}
 
 /* medieval tracks (original compositions, synthesized) */
-function ptone(f,t,d,ty,v,at,cut){const o=AC.createOscillator(),gn=AC.createGain(),fl=AC.createBiquadFilter();o.type=ty;o.frequency.value=f;fl.type='lowpass';fl.frequency.value=cut||2400;gn.gain.setValueAtTime(.0001,t);gn.gain.linearRampToValueAtTime(v,t+(at||.01));gn.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(fl);fl.connect(gn);gn.connect(AC.destination);o.start(t);o.stop(t+d+.05);return o}
-function mdrum(t,k){if(k==='k'){const o=AC.createOscillator(),gn=AC.createGain();o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(45,t+.14);gn.gain.setValueAtTime(.16,t);gn.gain.exponentialRampToValueAtTime(.0001,t+.18);o.connect(gn);gn.connect(AC.destination);o.start(t);o.stop(t+.2)}else mhat(t,.07)}
+function ptone(f,t,d,ty,v,at,cut){const o=AC.createOscillator(),gn=AC.createGain(),fl=AC.createBiquadFilter();o.type=ty;o.frequency.value=f;fl.type='lowpass';fl.frequency.value=cut||2400;gn.gain.setValueAtTime(.0001,t);gn.gain.linearRampToValueAtTime(v,t+(at||.01));gn.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(fl);fl.connect(gn);gn.connect(mout());o.start(t);o.stop(t+d+.05);return o}
+function mdrum(t,k){if(k==='k'){const o=AC.createOscillator(),gn=AC.createGain();o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(45,t+.14);gn.gain.setValueAtTime(.16,t);gn.gain.exponentialRampToValueAtTime(.0001,t+.18);o.connect(gn);gn.connect(mout());o.start(t);o.stop(t+.2)}else mhat(t,.07)}
 const MED={
  tavern:{n:'Tavern Dance',bpm:156,lead:[74,0,72,74,76,0,74,72,71,0,69,71,72,0,71,69,67,69,71,72,74,0,76,0,74,72,71,69,69,0,0,0],roots:[50,50,55,45],lw:'triangle',lv:.07,cut:2600,pl:1},
  cloister:{n:'Cloister Hymn',bpm:54,lead:[69,0,0,0,72,0,0,0,74,0,0,0,72,0,0,0,69,0,0,0,67,0,0,0,69,0,0,0,0,0,0,0],roots:[45,41,43,45],lw:'sine',lv:.06,cut:1800,pad:1,vib:1},
@@ -165,9 +165,9 @@ function musPick(){if(!P||P.dead)return null;const R=DR();
  const any=E.some(e=>!e.dead&&e.st===1&&!ESPEC[e.t].pass&&Math.hypot(e.x-P.x,e.y-P.y)<12);if(any)musFightT=clock+6;
  const inD=P.x<DUN.x0+DUN.w+6&&P.y<DUN.y0+DUN.h+6&&P.x>DUN.x0-5&&P.y>DUN.y0-5,hard=inWiz||inD||E.some(e=>!e.dead&&e.st===1&&(e.t==='wyrm'||e.t==='wizard'||e.t==='demon'));
  if(inWiz||clock<musFightT){if(musPrev!=='f'){musFi=hard?(Math.random()<.6?3:ri(0,3)):ri(0,2)}musPrev='f';return'f'+musFi}musPrev=null;
- if(inD)return'dun';
- if(P.inside||shopSt||safeAt(P.x,P.y))return'v'+musArea();return null}
-function musTick(){if(!P||muted||P.music===false||!AC||AC.state!=='running')return;if(P.mtrack&&MED[P.mtrack]&&!P.dead){musMode=null;medTick(P.mtrack);return}medMode=null;const m=musPick();if(m!==musMode){if(musMode)mfade();musMode=m;musStep=0;musNext=AC.currentTime+.08}if(!m)return;const M=MUS[m],sd=60/M.bpm/2;
+ return null}
+function medPick(){if(!P||P.dead||P.inside)return null;if(shopSt)return'tavern';return'cloister'}
+function musTick(){if(!P||muted||P.music===false||!AC||AC.state!=='running')return;if(P.mtrack&&MED[P.mtrack]&&!P.dead){musMode=null;medTick(P.mtrack);return}const m=musPick();if(!m){const k=medPick();if(musMode){mfade();musMode=null}if(k)medTick(k);else medMode=null;return}medMode=null;if(m!==musMode){if(musMode)mfade();musMode=m;musStep=0;musNext=AC.currentTime+.08}if(!m)return;const M=MUS[m],sd=60/M.bpm/2;
  while(musNext<AC.currentTime+.3){const s=musStep%32,bar=(s>>3)%4,n=M.lead[s],t=musNext;
   if(n)mtone(NOTE(n),t,sd*1.8,M.lw,M.lv);
   if(s%8===0||s%8===4)mtone(NOTE(M.roots[bar]+(s%8===4?7:0)),t,sd*3,'triangle',M.bv);

@@ -1,4 +1,9 @@
 # Changelog
+## 0.6.2 - Music, inn & sheep dreams
+- Music: the Cloister Hymn is now the default everywhere; the Tavern Dance plays only in shops, the bank and the inn; houses are silent; combat keeps its own tracks. Medieval tracks now follow the music volume setting.
+- Inn: stage with a bard playing (floating notes), tables with seats and lots of beer, dancing patrons. Buy a beer at the bar (15g): 3 beers = drunk (wobbly walk, x1.3 attack and magic for 3 min, refreshed per beer). Beer number 6 makes you pass out for 5 s.
+- Resting in a house: flying sheep drift above the sleeper.
+- Area titles (e.g. "Hearthmoor Town") show for 5 seconds when you enter an area, then hide.
 ## 0.6.1 - Art Pack default + spell balance
 - The Art Pack (new graphics) is now the default for everyone, including players who had switched to Classic before (one-time reset; it can still be switched back in settings).
 - Fireball is faster (projectile speed 14 vs 9) and hits 60% harder; Inferno 13 speed and +90%. Chain Bolt and Storm Call stay slower (speed 8) and chain through many enemies at 70% each, so fire is the single-target/burst spell and lightning is the crowd spell.

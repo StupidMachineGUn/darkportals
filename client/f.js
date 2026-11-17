@@ -43,7 +43,7 @@ function roomScene(x0,kind,t,o={}){const big=x0.canvas&&x0.canvas.width===RW;let
  if(kind==='house'){win(18,14);r('#3a2412',70,12,24,18);r('#8ab04a',72,14,20,14);r('#5a8a3a',72,22,20,6);r('#ffe080',84,16,4,4);fire(112,18,38);
   r('#7a2a2a',64,72,60,18);r('#d9b24a',64,72,60,2);r('#d9b24a',64,88,60,2);r('#9a3a3a',70,76,48,10);
   r('#4a2e16',10,64,62,28);r('#e8dcc8',12,66,58,22);r('#ffffff',14,68,14,10);r(o.bc||'#a33',30,68,38,20);r('#ffffff30',30,68,38,3);r('#00000030',30,84,38,4);
-  if(o.player){r('#f2c9a0',18,70,8,7);r('#3a2a1a',17,69,10,3);r('#3a2a1a',17,72,2,4);r('#223',22,73,2,1);x.fillStyle='#ffffffcc';x.font='bold 8px monospace';for(let i=0;i<3;i++){x.globalAlpha=1-((t*.8+i*.33)%1);x.fillText(i?'z':'Z',32+i*7,58-((t*8+i*7)%16)-i*3)}x.globalAlpha=1}
+  if(o.player){r('#f2c9a0',18,70,8,7);r('#3a2a1a',17,69,10,3);r('#3a2a1a',17,72,2,4);r('#223',22,73,2,1);x.fillStyle='#ffffffcc';x.font='bold 8px monospace';for(let i=0;i<3;i++){x.globalAlpha=1-((t*.8+i*.33)%1);x.fillText(i?'z':'Z',32+i*7,58-((t*8+i*7)%16)-i*3)}x.globalAlpha=1}for(let i=0;i<3;i++){const sx=14+((t*10+i*52)%150),sy=18+i*8+Math.sin(t*2+i*2)*4;x.save();x.translate(sx,sy);drawSheep(0,0,i%2?1:2,t,false,true);r('#ffffff88',-2,-2,3,2);r('#ffffff88',16,-2,3,2);x.restore()}
   r('#5a3a1a',128,66,22,5);r('#3a2412',130,71,3,18);r('#3a2412',145,71,3,18);r('#e8e0c0',137,60,3,6);r('#ffcc55',137,57+Math.sin(t*9),3,3);
   r('#6a4a2a',2,76,8,14);r('#2f7a3a',0,66,12,12);r('#3f9a4a',3,62,6,8)}
  else if(kind==='shop'){for(const sy of [14,34]){r('#4a2e16',6,sy+12,148,3);for(let i=0;i<14;i++){const c=['#c33','#3a8','#e90','#39c','#a5a','#ddd'][(i+sy)%6];r(c,10+i*10,sy+3,6,9);r('#ffffff55',11+i*10,sy+4,1,5);r('#5a3a1a',12+i*10,sy+1,2,3)}}
@@ -59,8 +59,18 @@ function roomScene(x0,kind,t,o={}){const big=x0.canvas&&x0.canvas.width===RW;let
   for(let sy=0;sy<2;sy++){r('#2a1608',6,30+sy*16,60,2);for(let i=0;i<7;i++)r(['#3a8a3a','#8a3a8a','#c8a02a','#2a6aa8'][(i+sy)%4],8+i*8,22+sy*16,5,8)}
   r('#222',100,46,30,16);r('#444',98,44,34,4);r('#3a2a1a',102,62,4,6);r('#3a2a1a',124,62,4,6);r('#5aff6a',104,40+Math.sin(t*5)*1,20,5);r('#aaffaa',108+((t*9)%12),34-((t*14)%8),3,3);
   npc(52,16,o.col||'#2f6a3a','staff');counter(52);r('#2a5a2a',140,40,16,22);r('#8a4aff',144,34,8,8)}
- else if(kind==='inn'){win(16,12);fire(112,18,38);for(let i=0;i<2;i++){const bx=64+i*30;r('#6a4222',bx,34,22,24);r('#4a2c14',bx,40,22,2);r('#4a2c14',bx,50,22,2);r('#8a6238',bx+2,34,18,2)}
-  npc(116,14,o.col||'#8a6a2a');counter(46);for(let i=0;i<4;i++){r('#d9a850',14+i*12,38,6,8);r('#fff',14+i*12,38,6,2)}r('#6a4222',2,30,12,24)}
+ else if(kind==='inn'){win(70,10);fire(116,18,38);
+  r('#5a3a1a',3,40,50,6);r('#7a5230',3,40,50,2);
+  for(let i=0;i<2;i++){const bx=62+i*30;r('#6a4222',bx,36,22,6);r('#8a6238',bx+1,36,20,2);r('#4a2c14',bx+3,42,3,6);r('#4a2c14',bx+16,42,3,6);r('#4a2c14',bx-6,40,5,5);r('#4a2c14',bx+23,40,5,5);
+   for(let j=0;j<3;j++){const mx=bx+2+j*7;r('#d9a850',mx,30,5,6);r('#fff',mx,30,5,2);r('#a07830',mx+5,31,1,3)}}
+  x.save();x.translate(15,20);x.scale(1.3,1.3);drawChar(0,0,0,t*6,'#8a3a8a','#a52',{moving:false});x.restore();
+  r('#7a4a1a',13,32,9,7);r('#a8742a',15,34,5,3);r('#5a3a1a',21,33,8,2);
+  x.fillStyle='#ffe9a0';x.font='bold 9px monospace';for(let i=0;i<3;i++){x.globalAlpha=1-((t*.7+i*.33)%1);x.fillText(i%2?'\u266b':'\u266a',32+i*6+Math.sin(t*3+i)*3,36-((t*9+i*8)%18))}x.globalAlpha=1;
+  npc(120,14,o.col||'#8a6a2a');counter(46);
+  for(let i=0;i<11;i++){const mx=56+i*9;r('#d9a850',mx,38,6,8);r('#fff',mx,38,6,2);r('#a07830',mx+6,40,2,4)}
+  const DC=['#c33','#3a8','#38c','#c93','#a3c'];
+  for(let i=0;i<4;i++){const px=18+i*34+Math.sin(t*3+i*1.3)*5,py=62-Math.abs(Math.sin(t*6+i*1.1))*4;x.save();x.translate(px,py);x.scale(1.2,1.2);drawChar(0,0,i%3===1?3:0,t*10+i,DC[i],'#432',{moving:true});x.restore();
+   r('#d9a850',px+(Math.sin(t*6+i)>0?-3:19),py+10,4,5)}}
  else{r('#3a2412',6,6,60,52);for(let sy=0;sy<4;sy++){r('#2a1608',8,10+sy*12+9,56,2);for(let i=0;i<10;i++){const c=['#a33','#36a','#3a6','#a83','#83a','#555'][(i*3+sy)%6];r(c,9+i*5.5,10+sy*12+(i%3),4,9-i%3)}}
   r('#7a2a2a',46,70,66,18);r('#d9b24a',46,70,66,2);r('#d9b24a',46,86,66,2);npc(70,26,o.col||'#4e3d6e','staff');
   r('#5a3a1a',128,50,4,12);r('#2a5a8a',122,34,16,16);r('#4a8a4a',126,38,6,5);r('#d9b24a',122,48,16,2);fire(116,6,0)}

@@ -80,3 +80,6 @@ Order: 1+2, then 3+4, then 5+6 with the economy work.
 
 ## Version order (current)
 v0.6.1 done (Art Pack default, fire vs lightning). Next: v0.6.2 audio + scenes + world expansion, v0.6.3 LPC characters/monsters (needs approval), then Server authority II, then small items.
+
+## v0.6.2 DONE
+Music rule, inn scene + beer/drunk, house sheep, area titles once. World expansion (79 mobs, bigger map, dungeons, boss x2) is next as v0.6.3; LPC after.
