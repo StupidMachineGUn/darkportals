@@ -50,7 +50,7 @@ function sAct(a,v){bookInit();const b=P.book;
  if(a==='eqs'){b.es=v;sfx('pick');toast(supOf(v).e+' '+supOf(v).n+' equipped');return true}
  if(a==='learn'){const [k,key]=v.split(':'),row=k==='a'?ATK_BUY[+key]:SUP_BUY[key],req=k==='a'?+key*10:supOf(key).lv;if(!row||!lvOk(req)||P.gold<row[0]||!Object.entries(row[1]).every(([i,n])=>count(i)>=n))return true;
   P.gold-=row[0];for(const i in row[1])take(i,row[1][i]);if(k==='a'){b.a.push(+key);b.ea=+key;toast('📖 Learned '+SPELLS[+key].n+'!')}else{b.s.push(key);b.es=key;toast('📖 Learned '+supOf(key).n+'!')}sfx('lvl');save();return true}
- if(a==='wbuy'){const r=WSTOCK.find(x=>x[0]===v);if(r&&P.gold>=r[1]&&addItem(v)){P.gold-=r[1];sfx('pick')}return true}
+ if(a==='wbuy'){const r=WSTOCK.find(x=>x[0]===v);if(r&&P.gold>=r[1]&&addItem(v,1,undefined,1)){P.gold-=r[1];sfx('pick')}return true}
  if(a==='wsell'){if(WBUY.has(v)&&count(v)>0){P.gold+=Math.round(ITEMS[v].v*1.4);take(v);sfx('pick')}return true}
  if(a==='wsellall'){if(WBUY.has(v)){const n=count(v);P.gold+=Math.round(ITEMS[v].v*1.4)*n;take(v,n);sfx('pick')}return true}
  return false}

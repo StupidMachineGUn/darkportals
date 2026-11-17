@@ -1,4 +1,9 @@
 # Changelog
+## 0.6.3 - Classic default, real drops, glow
+- Classic graphics (no art pack) are the default again; the Art Pack stays optional in settings (one-time reset).
+- Dropping an item puts it on the floor like loot: anyone can pick it up (you ignore it for 4 s so you don't re-grab it). Equipped items must be unequipped first.
+- Bag full no longer deletes or silently banks things: gathered, crafted-drop, kill and PvP loot falls on the floor instead. Shop buying/crafting still refuse with "Bag full!". Mail and auction returns still go to your bank on purpose.
+- Glow: staffs and other magic weapons glow arcane violet, enchanted weapons teal, rare/unique/legendary by rarity - on your equipped weapon, on the floor and in the bag.
 ## 0.6.2 - Music, inn & sheep dreams
 - Music: the Cloister Hymn is now the default everywhere; the Tavern Dance plays only in shops, the bank and the inn; houses are silent; combat keeps its own tracks. Medieval tracks now follow the music volume setting.
 - Inn: stage with a bard playing (floating notes), tables with seats and lots of beer, dancing patrons. Buy a beer at the bar (15g): 3 beers = drunk (wobbly walk, x1.3 attack and magic for 3 min, refreshed per beer). Beer number 6 makes you pass out for 5 s.

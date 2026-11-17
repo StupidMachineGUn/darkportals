@@ -34,7 +34,7 @@ function netConnect(){if(!NET.on||!NET.tok)return;const w=new WebSocket((locatio
   else if(m.t==='pk')netGotKill(m);
   else if(m.t==='gd'){NET.gnd.set(m.g.id,{...m.g,endMs:Date.now()+(m.g.ttl||600000)})}
   else if(m.t==='gx'){NET.gnd.delete(m.id);NET.gpend.delete(m.id)}
-  else if(m.t==='gt'){NET.gpend.clear();const it=m.it;if(it&&ITEMS[it.id]){giveItem({...it,u:uid(),n:it.n||1});sfx('pick');fl(P.x,P.y-.8,'+'+ITEMS[it.id].e0,'#fff');toast('Picked up '+ITEMS[it.id].n)}}
+  else if(m.t==='gt'){NET.gpend.clear();const it=m.it;if(it&&ITEMS[it.id]){giveOrDrop({...it,u:uid(),n:it.n||1});sfx('pick');fl(P.x,P.y-.8,'+'+ITEMS[it.id].e0,'#fff');toast('Picked up '+ITEMS[it.id].n)}}
   else if(m.t==='tq'){NET.treq={from:m.from,n:m.n,t:clock+45};toast('🤝 '+m.n+' wants to trade – open the Trade House','#9fe3ff');if(panelKind==='trade')renderPanel()}
   else if(m.t==='ts'){TR={p2p:1,who:m.who,name:m.n,mine:[],mg:0,theirs:[],tg:0,bot:0,my:0,msg:'Offer items and gold, then confirm.'};thTab='tbl';NET.treq=null;sys('🤝 Trading with '+m.n,'#9fe3ff');if(panelKind==='trade')renderPanel()}
   else if(m.t==='tu'&&TR&&TR.p2p){TR.theirs=m.items.map(i=>({...i,u:uid()}));TR.tg=m.gold|0;TR.bot=0;TR.my=0;if(panelKind==='trade')renderPanel()}
@@ -62,14 +62,17 @@ function netDeathItem(){const c=P.inv.filter(s=>!isEq(s));if(!c.length)return nu
 function netDeathDrop(){const it=netDeathItem();if(!it)return null;sys('🎒 You dropped '+ITEMS[it.id].n+' when you fell. It stays on the ground for 10 minutes.','#fc6');groundSpawn([it],P.x,P.y,{dth:1});return it}
 /* v0.5.9: floor loot (death, PvP and mob drops stay on the ground 10 min; server-owned online, local offline) */
 let _lg=0;const GROUND_MS=600000;
+let _dI=null;const dropIgn=d=>_dI&&Date.now()<_dI.t&&Math.hypot(d.x-_dI.x,d.y-_dI.y)<2;
+function dropToFloor(it,why){it={...it};delete it.u;_dI={x:P.x,y:P.y,t:Date.now()+4000};groundSpawn([it],P.x,P.y,{});if(why)toast(why,'#fc6')}
+function giveOrDrop(s){const f=ITEMS[s.id];if(P.inv.length>=24&&(f.slot||!P.inv.some(x=>x.id===s.id))){dropToFloor(s,'🎒 Bag full – it fell on the floor');return 'floor'}return giveItem(s)}
 function groundSpawn(its,x,y,o={}){its=its.filter(Boolean);if(!its.length)return;
  if(NET.sim&&NET.ws&&NET.ws.readyState===1){netSend({t:'gd',its,x,y,dth:o.dth?1:0,mob:o.mob?1:0});return}
  its.forEach((it,i)=>{const id=--_lg,a=i*2.4,r=i?.5:0;NET.gnd.set(id,{id,x:x+Math.cos(a)*r,y:y+Math.sin(a)*r,it,endMs:Date.now()+GROUND_MS,loc:1,dth:o.dth?1:0})})}
 function groundLocal(dt){if(!P)return;const now=Date.now();for(const d of [...NET.gnd.values()]){if(!d.loc)continue;if(now>d.endMs){NET.gnd.delete(d.id);continue}
- if(P.dead||shopSt||P.inside||Math.hypot(d.x-P.x,d.y-P.y)>1.2)continue;const it=ITEMS[d.it.id];if(!it)continue;if(P.inv.length>=24&&(it.slot||!P.inv.some(x=>x.id===d.it.id)))continue;
+ if(P.dead||shopSt||P.inside||Math.hypot(d.x-P.x,d.y-P.y)>1.2||dropIgn(d))continue;const it=ITEMS[d.it.id];if(!it)continue;if(P.inv.length>=24&&(it.slot||!P.inv.some(x=>x.id===d.it.id)))continue;
  NET.gnd.delete(d.id);giveItem({...d.it,u:uid(),n:d.it.n||1});sys('🎒 Picked up '+it.n,'#ffd36b');sfx&&0}}
 function groundDraw(R,vis){const now=Date.now();for(const d of NET.gnd.values())if(vis(d.x,d.y))R.push([d.y*T+6,()=>{const it=ITEMS[d.it.id];if(!it)return;const left=(d.endMs||now+1e6)-now;if(left<30000&&((now/250)|0)%2)return;
-  const rar=d.it.rar|0,col=d.dth?'255,90,90':rar>=3?'255,200,70':rar===2?'200,130,255':rar===1?'110,180,255':d.it.ench?'120,240,210':'255,255,255',px=d.x*T,py=d.y*T,p=.5+.5*Math.sin(clock*4+d.id);
+  const rar=d.it.rar|0,col=d.dth?'255,90,90':rar>=3?'255,200,70':rar===2?'200,130,255':rar===1?'110,180,255':d.it.ench?'120,240,210':(it.slot==='w'&&it.mag>0)?'150,130,255':'255,255,255',px=d.x*T,py=d.y*T,p=.5+.5*Math.sin(clock*4+d.id);
   g.save();g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(px,py+2,6,2.2,0,0,6.283);g.fill();
   const gr=g.createLinearGradient(0,py-26,0,py+2);gr.addColorStop(0,`rgba(${col},0)`);gr.addColorStop(1,`rgba(${col},${.35+.25*p})`);g.fillStyle=gr;g.fillRect(px-3,py-26,6,28);
   g.strokeStyle=`rgba(${col},${.5+.4*p})`;g.lineWidth=1;g.beginPath();g.ellipse(px,py+2,7+p*2,3+p,0,0,6.283);g.stroke();
@@ -78,7 +81,7 @@ function groundDraw(R,vis){const now=Date.now();for(const d of NET.gnd.values())
 function deathFx(x,y,t){g.save();g.font='11px sans-serif';g.textAlign='center';for(let i=0;i<3;i++){const a=t*4+i*2.094;g.fillText(i===1?'⭐':'🐦',x+Math.cos(a)*10,y+Math.sin(a)*4);}g.restore()}
 function netDied(by,it){const g=Math.floor(P.gold*.1);P.gold-=g;const sx={};for(const s of SK){const k=s[0],t=Math.floor((P.xp[k]||0)*.01);if(t>0){P.xp[k]-=t;sx[k]=t}}
  const vf=flagOf(P),b=vf==='red'?100*Math.max(1,P.vic||1):0;netSend({t:'pkill',by:by.id,g,sx,b,it,fl:vf?1:0});P.flag=null;P.fT=0;P.vic=0;sys('💀 '+by.name+' killed you and took '+g+'g + 1% of your skills','#f66')}
-function netGotKill(m){if(m.it&&ITEMS[m.it.id]){giveItem({...m.it,u:uid(),n:m.it.n||1});sys('🎒 You took '+ITEMS[m.it.id].n+' from '+m.n,'#ffd36b')}
+function netGotKill(m){if(m.it&&ITEMS[m.it.id]){giveOrDrop({...m.it,u:uid(),n:m.it.n||1});sys('🎒 You took '+ITEMS[m.it.id].n+' from '+m.n,'#ffd36b')}
 const o=NET.others.get(m.who),vf=o?flagOf(o):null;P.gold+=m.g|0;let tot=0;for(const k in m.sx||{}){const t=+m.sx[k]||0;if(t>0&&P.xp[k]!==undefined){gainXp(k,t);tot+=t}}
  sys('🏴‍☠️ Spoils from '+m.n+': +'+(m.g|0)+'g and +'+tot+' skill xp','#ffd36b');P.kills++;P.pvpK=(P.pvpK|0)+1;
  if(m.b>0){P.gold+=m.b;sys('💰 Bounty collected: '+m.b+'g for '+m.n+'!','#ffd36b');toast('💰 +'+m.b+'g bounty')}
@@ -91,7 +94,7 @@ function netSnap(m){const em=NET.em;if(!em)return;
 function netKill(l){for(const k of l){const e=NET.em&&NET.em.get(k.id);if(!e)continue;if(k.by===NET.id||(e.t==='wyrm'&&(P.bossDmg||0)>=40)){e.dead=0;try{meleeT=clock;killEnemy(e)}catch(x){}}if(e.t==='wyrm')P.bossDmg=0;e.dead=clock+1e9}}
 function netMobs(dt){const k=Math.min(1,dt*12);for(const e of E){if(e.dead)continue;e.tx+=(e.vx||0)*dt;e.ty+=(e.vy||0)*dt;const dx=e.tx-e.x,dy=e.ty-e.y;e.mv=Math.abs(dx)+Math.abs(dy)>.03;e.x+=dx*k;e.y+=dy*k;if(e.flash>0)e.flash-=dt;if(e.sw>0)e.sw-=dt}}
 function netSay(t){t=t.trim();if(/^\/p\s/i.test(t)){if(NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify({t:'pyc',m:t.slice(3)}));return}if(t&&NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify({t:'chat',m:t}))}
-function netStep(dt){groundLocal(dt);if(typeof jailTick==='function')jailTick(dt);if(P&&NET.sim&&!P.dead&&!shopSt&&!P.inside&&NET.gnd.size){NET.gT=(NET.gT||0)-dt;if(NET.gT<=0){NET.gT=.4;for(const d of NET.gnd.values()){if((NET.gpend.get(d.id)||0)>clock||Math.hypot(d.x-P.x,d.y-P.y)>1.2)continue;const it=ITEMS[d.it.id];if(!it)continue;if(P.inv.length>=24&&(it.slot||!P.inv.some(x=>x.id===d.it.id)))continue;NET.gpend.set(d.id,clock+2);netSend({t:'gt',id:d.id});break}}}
+function netStep(dt){groundLocal(dt);if(typeof jailTick==='function')jailTick(dt);if(P&&NET.sim&&!P.dead&&!shopSt&&!P.inside&&NET.gnd.size){NET.gT=(NET.gT||0)-dt;if(NET.gT<=0){NET.gT=.4;for(const d of NET.gnd.values()){if((NET.gpend.get(d.id)||0)>clock||Math.hypot(d.x-P.x,d.y-P.y)>1.2||dropIgn(d))continue;const it=ITEMS[d.it.id];if(!it)continue;if(P.inv.length>=24&&(it.slot||!P.inv.some(x=>x.id===d.it.id)))continue;NET.gpend.set(d.id,clock+2);netSend({t:'gt',id:d.id});break}}}
 if(P){const mv=NET.sx==null||Math.hypot(P.x-NET.sx,P.y-NET.sy)>.05||P.swing>0||CD.bolt>CDM.bolt-.2;NET.sx=P.x;NET.sy=P.y;if(mv)NET.idle=0;else NET.idle=(NET.idle||0)+dt;NET.mySayT=(NET.mySayT||0)-dt;NET.self=shopSt?2:NET.idle>30?1:0;NET.ac=(typeof act!=='undefined'&&act)?act.kind:(NET.acT>clock?NET.acK:'');if(NET.ac)NET.idle=0}for(const o of NET.others.values()){const k=Math.min(1,dt*10),dx=o.tx-o.x,dy=o.ty-o.y;o.mv=Math.abs(dx)+Math.abs(dy)>.05;o.swing=(o.swing||0)-dt;o.sayT=(o.sayT||0)-dt;if(o.bd){const k2=Math.min(1,dt*12);o.drx=(o.drx==null?o.rx:o.drx+(o.rx-o.drx)*k2);o.dry=(o.dry==null?o.ry:o.dry+(o.ry-o.dry)*k2);o.rph=(o.rph||0)+(o.rm?dt*9:0)}else{o.drx=null}o.x+=dx*k;o.y+=dy*k;o.ph=(o.ph||0)+dt*8}}
 function netDraw(R,vis){groundDraw(R,vis);
 for(const o of NET.others.values())if(!o.bd&&vis(o.x,o.y)&&o.hp<=0&&!o.ch)R.push([o.y*T+30,()=>deathFx(o.x*T,o.y*T-30,clock)]);

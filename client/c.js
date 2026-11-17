@@ -44,13 +44,18 @@ function statOf(s){const b=ITEMS[s.id],r=s.rar|0,o={atk:0,def:0,mag:0,hp:0,mp:0,
 const nameOf=s=>{const b=ITEMS[s.id];return b.slot?RARN[s.rar|0]+b.n+(s.ench?' of '+ENCH[s.ench.t][0]:''):b.n};
 const valOf=s=>{const b=ITEMS[s.id];return b.slot?Math.round(b.v*RVAL[s.rar|0]+(s.ench?b.v*.5:0)):b.v};
 function statLine(s){const o=statOf(s);return Object.keys(o).filter(k=>o[k]).map(k=>(ENCH[k]?ENCH[k][1]:k.toUpperCase())+' +'+o[k]).join(' · ')}
+/* weapon glow: staffs/wands = arcane violet, enchanted = teal, rarity colours otherwise */
+function wGlow(s){if(!s)return null;const it=ITEMS[s.id];if(!it||it.slot!=='w')return null;const r=s.rar|0;if(r>=3)return'255,200,70';if(r===2)return'200,130,255';if(r===1)return'110,180,255';if(s.ench)return'120,240,210';if(it.mag>0)return'150,130,255';return null}
 const isDrunk=()=>(P.beers|0)>=3&&P.drunkT>0;
 function G(){const g={atk:0,def:0,mag:0,hp:0,mp:0,crit:0,spd:0};for(const k of['w','a','h','b']){const e=eqE(k);if(e){const o=statOf(e);for(const x in g)g[x]+=o[x]}}if(isDrunk()){g.atk=Math.round(g.atk*1.3);g.mag=Math.round(g.mag*1.3)}return g}
 const W_=()=>({atk:G().atk,mag:G().mag}),A_=()=>({def:G().def});
 function gainXp(k,a){if(P.rested>Date.now())a*=1.2;const o=lv(k);P.xp[k]+=a;const n=lv(k);if(n>o){const s=SK.find(s=>s[0]===k);toast(`${s[2]} ${s[1]} level ${n}!`);sys(`${s[2]} ${s[1]} is now level ${n}!`,'#7dff9b');sfx('lvl');netSaveSoon();burst(P.x,P.y-.5,'#ffd36b',24);
   if(k==='magic'&&n===5)sys('🔮 You learned Mend! (hotbar 2)','#9cf');if(k==='magic'&&Math.floor(n/10)>Math.floor(o/10)){const sp=SPELLS[Math.min(9,Math.floor(n/10))];sys(`✨ Your spell evolved: ${sp.e} ${sp.n}!`,'#d9a6ff');toast(sp.e+' '+sp.n+'!')}if(k==='vitality'||k==='defense')P.hp=Math.min(maxHp(),P.hp+5)}}
 const count=id=>P.inv.reduce((s,i)=>s+(i.id===id?i.n:0),0);
-function addItem(id,n=1,extra){const it=ITEMS[id];if(it.slot){if(P.inv.length>=24){toast('Bag full!','#f66');return false}const s={id,n:1,u:uid(),...(extra||{})};P.inv.push(s);return s}if(!it.slot){const s=P.inv.find(i=>i.id===id);if(s){s.n+=n;return true}}if(P.inv.length>=24){toast('Bag full!','#f66');return false}P.inv.push({id,n});return true}
+function addItem(id,n=1,extra,refuse){const it=ITEMS[id];const full=()=>{if(refuse){toast('Bag full!','#f66');return false}return true};
+ if(it.slot){const s={id,n:1,u:uid(),...(extra||{})};if(P.inv.length>=24){if(!full())return false;queueMicrotask(()=>dropToFloor(s,'🎒 Bag full – it fell on the floor'));return s}P.inv.push(s);return s}
+ const t=P.inv.find(i=>i.id===id);if(t){t.n+=n;return true}
+ if(P.inv.length>=24){if(!full())return false;dropToFloor({id,n},'🎒 Bag full – it fell on the floor');return true}P.inv.push({id,n});return true}
 function take(id,n=1){for(let i=0;i<P.inv.length&&n>0;i++){const s=P.inv[i];if(s.id!==id)continue;const t=Math.min(n,s.n);s.n-=t;n-=t;if(!s.n){P.inv.splice(i,1);i--}}}
 const canStand=(x,y,r=.28)=>walkable(Math.floor(x-r),Math.floor(y-r))&&walkable(Math.floor(x+r),Math.floor(y-r))&&walkable(Math.floor(x-r),Math.floor(y+r))&&walkable(Math.floor(x+r),Math.floor(y+r));
 function moveEnt(e,dx,dy){if(canStand(e.x+dx,e.y))e.x+=dx;if(canStand(e.x,e.y+dy))e.y+=dy}
