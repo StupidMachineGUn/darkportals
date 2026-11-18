@@ -99,3 +99,5 @@ Version order: v0.6.3 (test/accept) -> v0.6.4 world expansion (maybe split: map+
 Next: step 2 = Citadel + 3 new big hard dungeons with traps/secrets/mini-bosses (hazard system); step 3 = Ashen Wyrm boss fight, legendary-only drops.
 
 ## v0.6.6 DONE (step 2): 4 big dungeons, traps, secrets, seals. Next step 3: Ashen Wyrm boss fight + legendary-only drops.
+
+## v0.6.7 DONE (step 3): Ashen Wyrm raid boss, legendary-only drops. World expansion II complete. Next: LPC graphics (needs approval), Server authority II, small items.

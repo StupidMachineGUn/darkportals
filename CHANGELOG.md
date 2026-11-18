@@ -1,4 +1,10 @@
 # Changelog
+## 0.6.7 - The Ashen Wyrm
+- Final boss in the Wyrm's Citadel: the Ashen Wyrm. Its HP scales with how many heroes are near it (90,000 +28% per extra hero up to 10) so it takes a raid, not a few players.
+- Attacks are telegraphed with red zones: fireball barrages on every hero, sweeping fire walls with a safe gap, lingering lava patches, minion waves, and meteor rain. Phase 2 below 60% (minions and lava) and Phase 3 enrage below 30% (meteors). After 12 minutes the room burns down.
+- Legendary gear now drops ONLY from the Ashen Wyrm (about 40% per contributing hero, 3000+ damage needed). Every other source (smithing, dungeons, chests, other bosses) is capped at Unique.
+- Fixed: the online server could crash when a mob summoned minions (cultists, liches, orc warlords, the Dark Wizard).
+- Online HP bars of the Wyrm may look off while its HP rescales (known, cosmetic).
 ## 0.6.6 - Four huge dungeons
 - Four big procedural dungeons (18-24 rooms each, dark with limited vision): Sunken Crypts (gate at Gloomspire), Frostbound Vault (Mistfall), Ashen Forge (Cinderhold) and the Wyrm's Citadel (Frostmere). The old Dark Wizard dungeon stays.
 - Traps: spike floors and fire jets with a warning glow, poison gas clouds, dart walls and teleport pads. They work online and hurt everyone in the room.

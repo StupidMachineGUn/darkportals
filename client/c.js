@@ -69,8 +69,8 @@ const GEAR_DROPS={slime:[.01,['sword1','hm0','bt0']],goblin:[.04,['sword1','hm0'
  wraith:[.10,['staff','staff2','sword3','staff4']],golem:[.12,['mace1','axe2','hm3','bt3','arm3','great1','hm4','bt4']],troll:[.12,['sword3','arm3','staff2','sword4','hm4','bt4','hm5','bt5','axe2','great1','staff4']],
  demon:[.15,['sword4','arm4','staff3','arm3','hm5','bt5','sword5','arm5','hm6','bt6','staff4','staff5','great1']],rooster:[.5,['sword3','arm3','hm3','bt3','axe2','hm4','bt4','mace1','spear1']],wyrm:[1,['arm3','sword4','staff3','scalearm','arm4','hm4','bt4','hm5','bt5','sword5','arm5']],guard:[.12,['sword2','arm2','sword3','hm2','bt2']],npc:[.04,['sword1','arm1']]};
 const ENDGAME=['sword6','arm6','hm7','bt7','axe3','staff5','sword7','arm7','hm8','bt8','staff6','hm6','bt6'];
-function rollGear(s,src,tough){const smith=src==='smith',k=smith?1:.1,q=Math.random(),b=ITEMS[s.id];
- s.rar=q<.001*k?3:q<.011*k?2:q<.111*k?1:0;
+function rollGear(s,src,tough,leg){const smith=src==='smith',k=smith?1:.1,q=Math.random(),b=ITEMS[s.id];
+ s.rar=q<.011*k?2:q<.111*k?1:0;/* legendary (rar 3) only from the Ashen Wyrm */
  if(Math.random()<(smith?.30:tough?.10:.03)){const t=b.slot!=='w'?pick(['def','hp','spd','mp']):b.mag?pick(['mag','mp','crit']):pick(['atk','crit','hp']);
   s.ench={t,v:t==='hp'?ri(5,12):t==='mp'?ri(4,8):(t==='crit'||t==='spd')?ri(3,6):ri(1,3)}}
  return s}
@@ -174,7 +174,7 @@ ESPEC.wizard={hp:9000,dmg:70,spd:2.4,ag:13,xp:25000,tiles:[],n:0,gold:[3000,5000
  X('crystal_golem',1600,60,1.6,6,2000,90,200,['shield','nova'],0,[['gem',.25]]);X('ice_golem',1500,58,1.6,6,1900,80,180,['frost','nova'],0,[['gem',.15]]);X('lava_golem',1700,66,1.6,6,2100,90,200,['fire','nova'],0,[['gem',.18],['iron',.7]]);
  X('lava_hound',600,50,3.4,8,1200,40,100,['fire']);X('jelly_king',1200,50,1.8,6,1800,70,160,['split'],0,[['gel',1,6],['gem',.1]]);X('phoenix',900,60,3.2,9,2600,100,240,['fire','heal'],0,[['feather',1,3],['essence',.8],['gem',.2]]);
  X('ice_wyrm',2200,85,2.4,10,5000,200,420,['frost','nova'],0,[['scale',.6],['gem',.4]]);X('lava_drake',2400,95,2.6,10,5500,220,460,['fire','nova'],0,[['scale',.6],['gem',.4]]);X('shadow_drake',2300,90,2.8,10,5500,220,460,['blink','curse','fire'],0,[['scale',.6],['gem',.4],['essence',1,4]]);
- X('dragon',6000,120,2.4,14,20000,600,1200,['fire','nova','summon'],'lava_hound',[['scale',1,4],['gem',.8]]);
+ X('dragon',6000,150,2.0,14,60000,600,1200,[],0,[['scale',1,4],['gem',.8]]);
 })();
 /* player status effects from mob magic: slow, poison */
 function playerFx(fx){if(!P||P.dead)return;if(fx==='slow'){P.slowT=4;fl(P.x,P.y-1.2,'❄ Slowed','#8cf')}else if(fx==='curse'){P.slowT=5;P.curseT=5;fl(P.x,P.y-1.2,'☠ Cursed','#c9f')}else if(fx==='psn'){P.psnT=5;fl(P.x,P.y-1.2,'☣ Poisoned','#8d4')}}
@@ -230,7 +230,7 @@ function shroomTick(dt){if(!(P.shroomT>0))return;const b0=P.shroomT;P.shroomT-=d
  for(let i=ills.length-1;i>=0;i--){const m=ills[i];m.life-=dt;m.x+=m.vx*dt;m.y+=m.vy*dt;if(Math.hypot(m.x-P.x,m.y-P.y)<1.1){burst(m.x,m.y-.4,hsl2hex((clock*200)%360,.9,.6),16);fl(m.x,m.y-.8,pick(['?!','boo','bawk','wow','🌈']),'#e9a8ff');sfx('pick');ills.splice(i,1)}else if(m.life<=0)ills.splice(i,1)}
  if(Math.random()<dt*.15)fl(P.x,P.y-1.1,pick(['whoa…','so colorful','the walls are breathing','bawk?','🌈','is that a slime?']),'#e9a8ff')}
 function spawnEnemies(){let c=0,tries=0;while(c<3800&&tries++<600000){const x=ri(3,MW-4),y=ri(3,MH-4),k=idx(x,y);if(!reach[k]||solid[k]||objAt.has(k)||safeAt(x,y))continue;const d=Math.hypot(x-CX,y-CY);if(d<TOWN_R+14||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R+13))continue;const t=pickMob(d,map[k]);if(!t)continue;E.push(mkEnemy(t,x+.5,y+.5));c++}}
-function hurtEnemy(e,d,src='p'){if(e.dead)return;if(e.shield>clock)d=Math.max(1,Math.round(d*.15));if(meleeT===clock)bloodHit(e);if(src==='p'&&P.shroomT>0)d*=3;if(NET.sim){if(src==='p')netHit(e,d);e.flash=.18;e.hp=Math.max(1,e.hp-d);if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;return}if(e.t==='chicken'||e.t==='sheep'){e.flee=5;if(Math.random()<.4)sfx('bawk')}e.hp-=d;e.flash=.18;e.st=1;if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.hp<=0)killEnemy(e)}
+function hurtEnemy(e,d,src='p'){if(e.dead)return;if(e.shield>clock)d=Math.max(1,Math.round(d*.15));if(meleeT===clock)bloodHit(e);if(src==='p'&&P.shroomT>0)d*=3;if(NET.sim){if(src==='p')netHit(e,d);e.flash=.18;e.hp=Math.max(1,e.hp-d);if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.dragon&&src==='p')P.dragDmg=(P.dragDmg||0)+d;return}if(e.t==='chicken'||e.t==='sheep'){e.flee=5;if(Math.random()<.4)sfx('bawk')}e.hp-=d;e.flash=.18;e.st=1;if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.dragon&&src==='p')P.dragDmg=(P.dragDmg||0)+d;if(e.hp<=0)killEnemy(e)}
 const ELN=e=>e.nm?e.nm:(e.el==='shaman'?'Shaman ':e.el==='elite'?'Elite ':'Chief ')+e.t[0].toUpperCase()+e.t.slice(1);
 function killEnemy0(e){if(!NET.sim)mobDie(e);if(meleeT===clock)goreKill(e);if(e.dun)dunKill(e);e.dead=clock+(e.temp?1e9:e.t==='wizard'?1e9:e.dun?ri(240,360):e.t==='wyrm'||e.t==='rooster'?1e9:ri(45,70)*(e.el?4:1));P.kills++;const s=ESPEC[e.t],xm=e.xm||1;gainXp('melee',s.xp*.4*xm);if(e.el&&e.el!=='lord'&&!e.dun){const g2=ri(...s.gold)*4;P.gold+=g2;fl(e.x,e.y-1.2,'+'+g2+'g','#ffd36b');toast('☠️ '+ELN(e)+' slain!','#ffd36b');dropGear(e.t,true);dropGear(e.t,true)}onEvent(e.t);burst(e.x,e.y-.4,'#fff',14);
  const g=ri(...s.gold);P.gold+=g;fl(e.x,e.y-.6,'+'+g+'g','#ffd36b');const dr=(id,p,n=1)=>{if(Math.random()<p&&addItem(id,n)){fl(e.x+.3,e.y-1,'+'+ITEMS[id].e0,'#fff')}};
@@ -310,7 +310,7 @@ function updEnemies(dt){if(NET.sim)return netMobs(dt);for(const e of E){if(e.dea
    if(e.dotA>=1){const dm=Math.floor(e.dotA);e.dotA-=dm;hurtEnemy(e,dm,'p');if(e.dead)continue;e.dotS=(e.dotS||0)+dm;if(clock>(e.dotT||0)){fl(e.x,e.y-.7,e.dotS,col);e.dotS=0;e.dotT=clock+.8;gainXp('magic',.5)}}
    if(Math.random()<dt*10)parts.push({x:e.x+rnd(-.3,.3),y:e.y-.4,vx:rnd(-.3,.3),vy:-1.2,life:.5,c:col,sz:2})}
   if(e.slow){e.slow.left-=dt;if(Math.random()<dt*6)parts.push({x:e.x+rnd(-.3,.3),y:e.y,vx:0,vy:-.5,life:.4,c:DOTC.slow,sz:2});if(e.slow.left<=0)e.slow=null}
-  const s=ESPEC[e.t];if(s.pass){updPassive(e,s,dt);continue}e.cd-=dt;e.flash-=dt;e.sw=(e.sw||0)-dt;const d=Math.hypot(P.x-e.x,P.y-e.y),hd=Math.hypot(e.hx-e.x,e.hy-e.y);
+  const s=ESPEC[e.t];if(s.pass){updPassive(e,s,dt);continue}if(e.dragon)dragonAI(e,s,dt);e.cd-=dt;e.flash-=dt;e.sw=(e.sw||0)-dt;const d=Math.hypot(P.x-e.x,P.y-e.y),hd=Math.hypot(e.hx-e.x,e.hy-e.y);
   if(!P.dead&&e.st===0&&d<s.ag&&!safeAt(P.x,P.y))e.st=1;
   if(e.st===1&&(P.dead||d>s.ag*(e.t==='wyrm'||e.t==='wizard'?2.2:1.5)||hd>(e.t==='wyrm'?60:e.t==='wizard'?24:13)||safeAt(P.x,P.y)))e.st=2;
   if(e.t==='wyrm'&&e.st===2){e.st=0;e.hx=e.x;e.hy=e.y}

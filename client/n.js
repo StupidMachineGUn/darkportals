@@ -26,7 +26,7 @@ function netConnect(){if(!NET.on||!NET.tok)return;const w=new WebSocket((locatio
   else if(m.t==='pong'){NET.ping=Math.round(performance.now()-m.c);NET.ld=m.ld;NET.q=m.q;netPingUi()}
   else if(m.t==='hurt'){if(P&&!P.dead){if(m.fx==='tp')tele(m.x,m.y);else{playerHit(m.d,null);if(m.fx)playerFx(m.fx)}}}
   else if(m.t==='kill')netKill(m.l);
-  else if(m.t==='ev'){if(m.k==='proj'&&Math.hypot(m.x-P.x,m.y-P.y)<30)proj.push({x:m.x,y:m.y,vx:m.vx,vy:m.vy,dmg:0,life:m.life,own:'e'})}
+  else if(m.t==='ev'){if(m.k==='zone'&&Math.hypot(m.x-P.x,m.y-P.y)<45){ZONES.push({x:m.x,y:m.y,r:m.r,t0:Date.now()+(m.d||0)*1000,warn:m.w,act:m.a,dm:0,tick:m.tk,seen:new Map(),c:m.c,vis:1})}if(m.k==='proj'&&Math.hypot(m.x-P.x,m.y-P.y)<30)proj.push({x:m.x,y:m.y,vx:m.vx,vy:m.vy,dmg:0,life:m.life,own:'e'})}
   else if(m.t==='shake'){shakeT=3.2;shakeA=3;sfx('boss')}
   else if(m.t==='big')bigMsg(m.m,m.c);
   else if(m.t==='act'){const o=NET.others.get(m.id);if(o){o.swing=.25;o.dir=m.dir;if(m.k==='bolt'&&SPELLS[+m.sp]){const a=DIR[m.dir];proj.push({x:o.x,y:o.y-.3,vx:a[0]*9,vy:a[1]*9,dmg:0,life:1.1,own:'o',sp:+m.sp,sz:3})}}}
@@ -88,7 +88,7 @@ const o=NET.others.get(m.who),vf=o?flagOf(o):null;P.gold+=m.g|0;let tot=0;for(co
  else if(vf!=='orange'&&vf!=='red'){setFlag(P,'red',Infinity);P.vic=(P.vic||0)+1}}
 function netBin(ab){const dv=new DataView(ab);if(dv.getUint8(0)!==1||!NET.em)return;const n=dv.getUint16(1,true);let o=3;for(let i=0;i<n;i++,o+=13){const e=NET.em.get(dv.getUint32(o,true));if(!e)continue;e.tx=dv.getUint16(o+4,true)/16;e.ty=dv.getUint16(o+6,true)/16;e.vx=dv.getInt8(o+8)/8;e.vy=dv.getInt8(o+9)/8;e.hp=dv.getUint16(o+10,true);const f=dv.getUint8(o+12);e.dir=(f>>4)&3;e.st=(f>>6)&1;if(f&1)e.sw=.2}}
 function netSnap(m){const em=NET.em;if(!em)return;
- for(const a of m.a){let e=em.get(a[0]);if(e)continue;if(!ESPEC[a[1]])continue;e=mkEnemy(a[1],a[2],a[3]);Object.assign(e,{id:a[0],hp:a[4],mhp:a[5],dir:a[6],st:a[7],tx:a[2],ty:a[3],vx:0,vy:0,hx:a[12],hy:a[13]});if(a[8])e.el=a[8];if(a[9]!==1)e.sc=a[9];else if(e.el)e.sc=1;if(a[10])e.dun=1;if(a[11]>=0){e.pt=a[11];e.temp=1}em.set(e.id,e);E.push(e);if(e.t==='wyrm')boss=e}
+ for(const a of m.a){let e=em.get(a[0]);if(e)continue;if(!ESPEC[a[1]])continue;e=mkEnemy(a[1],a[2],a[3]);Object.assign(e,{id:a[0],hp:a[4],mhp:a[5],dir:a[6],st:a[7],tx:a[2],ty:a[3],vx:0,vy:0,hx:a[12],hy:a[13]});if(a[8])e.el=a[8];if(a[9]!==1)e.sc=a[9];else if(e.el)e.sc=1;if(a[10])e.dun=1;if(a[14]>=0){e.mb=1;e.mbI=a[14];e.dgid=a[15];e.nm=a[16]}if(e.t==='dragon')e.dragon=1;if(a[11]>=0){e.pt=a[11];e.temp=1}em.set(e.id,e);E.push(e);if(e.t==='wyrm')boss=e}
   if(m.r.length){const rs=new Set(m.r);for(const id of rs){const e=em.get(id);if(e){e.dead=clock+1e9;if(e===boss)boss=null;em.delete(id)}}E=E.filter(e=>!(e.id&&rs.has(e.id)))}
  PT.open=!!m.pt[0];PT.reopen=clock+m.pt[1]}
 function netKill(l){for(const k of l){const e=NET.em&&NET.em.get(k.id);if(!e)continue;if(k.by===NET.id||(e.t==='wyrm'&&(P.bossDmg||0)>=40)){e.dead=0;try{meleeT=clock;killEnemy(e)}catch(x){}}if(e.t==='wyrm')P.bossDmg=0;e.dead=clock+1e9}}

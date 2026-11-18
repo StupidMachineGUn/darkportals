@@ -99,8 +99,8 @@ function spawnDungeon(){const R=DR(),T4=[['skeleton','ogre'],['wraith','golem'],
  const [bx,by,bw,bh]=R[5],w=mkEnemy('wizard',bx+bw-4+.5,by+bh/2+.5);w.el='lord';w.dun=1;w.sc=1.6;w.hx=w.x;w.hy=w.y;E.push(w);
  for(const [dx,dy] of [[-4,-5],[-4,5]]){const e=dunMob('demon',w.x+dx,w.y+dy,5);E.push(e)}
  spawnBigDungeons()}
-function megaLoot(rar){const s=addItem(pick(ENDGAME));if(!s)return;rollGear(s,'smith',true);s.rar=Math.max(s.rar|0,rar);if(rar>=2&&!s.ench)rollGear(Object.assign(s,{}),'smith',true),s.rar=Math.max(s.rar|0,rar);announceGear(s,'Looted');sys('🎁 Dungeon loot: '+nameOf(s),RARC[s.rar|0])}
-function dunKill(e){if(e.mb)return mbLoot(e);if(e.t==='wizard')closePortals();if(e.el==='elite'){if(Math.random()<.45)megaLoot(Math.random()<.04?3:Math.random()<.2?2:1);if(Math.random()<.3){addItem('gem');fl(e.x,e.y-1,'💎','#fff')}if(Math.random()<.3)addItem(pick(['hpotion','potion']),2)}
+function megaLoot(rar){rar=Math.min(rar,2);const s=addItem(pick(ENDGAME));if(!s)return;rollGear(s,'smith',true);s.rar=Math.max(s.rar|0,rar);if(rar>=2&&!s.ench)rollGear(Object.assign(s,{}),'smith',true),s.rar=Math.max(s.rar|0,rar);announceGear(s,'Looted');sys('🎁 Dungeon loot: '+nameOf(s),RARC[s.rar|0])}
+function dunKill(e){if(e.dragon)return dragonLoot(e);if(e.mb)return mbLoot(e);if(e.t==='wizard')closePortals();if(e.el==='elite'){if(Math.random()<.45)megaLoot(Math.random()<.04?3:Math.random()<.2?2:1);if(Math.random()<.3){addItem('gem');fl(e.x,e.y-1,'💎','#fff')}if(Math.random()<.3)addItem(pick(['hpotion','potion']),2)}
  else if(e.t==='wizard'){for(let i=0;i<3;i++)megaLoot(3);addItem('essence',6);addItem('gem',4);addItem('hpotion',5);P.wiz=(P.wiz|0)+1;addBoard();sys('💀 MALACHAR, THE DARK WIZARD, HAS FALLEN! The portals fall silent… for now.','#ffd34a');toast('🏆 The Dark Wizard is defeated!','#ffd34a');for(let i=0;i<5;i++)fxs.push({k:'ring',x:e.x,y:e.y,r:2+i*1.6,life:.8+i*.15,max:.8+i*.15,c:'#ffd34a'})}}
 const ELL=e=>e.el==='lord'?'💀 Malachar, the Dark Wizard':e.el==='elite'?'⚔ Elite '+e.t:(e.el==='shaman'?'🔮 Shaman ':'👑 Chief ')+e.t;
 /* ---------- gore · shadows · shake · music ---------- */
@@ -276,7 +276,7 @@ function bigMob(t,x,y,dep,boss){const e=mkEnemy(t,x,y);e.dun=1;if(boss){e.el='bo
 function spawnBigDungeons(){for(const d of DG){const dep0=d.tier*1.4;let rn=0;
   for(const rm of d.rooms){if(rm===d.start)continue;rn++;if(rm===d.boss||d.minis.includes(rm))continue;const grp=ri(2,3+(d.tier>>1)),t=pick(d.mobs);for(let m=0;m<grp;m++){const x=rm.x+ri(2,rm.w-3)+.5,y=rm.y+ri(2,rm.h-3)+.5;if(solid[idx(Math.floor(x),Math.floor(y))])continue;E.push(bigMob(t,x,y,dep0+rm.d*.12))}}
   d.minis.forEach((rm,i)=>{const [t,nm]=d.mini[i],e=bigMob(t,rm.cx+.5,rm.cy+.5,dep0+rm.d*.12,5+d.tier*2);e.nm=nm;e.hx=e.x;e.hy=e.y;e.mbI=i;e.dgid=d.id;E.push(e)});
-  {const [t,nm]=d.mini[2],rm=d.boss,e=bigMob(t,rm.cx+.5,rm.cy+.5,dep0+rm.d*.12,12+d.tier*4);e.nm=nm;e.hx=e.x;e.hy=e.y;e.mbI=2;e.dgid=d.id;e.sc=2;E.push(e);
+  {const [t,nm]=d.mini[2],rm=d.boss,e=bigMob(t,rm.cx+.5,rm.cy+.5,dep0+rm.d*.12,12+d.tier*4);if(d.citadel){e.mhp=e.hp=DRAGON_HP;e.dragon=1;e.dm=1;e.xm=60}e.nm=nm;e.hx=e.x;e.hy=e.y;e.mbI=2;e.dgid=d.id;e.sc=2;E.push(e);
    for(const [dx,dy] of [[-3,-3],[3,-3],[-3,3],[3,3]]){const m=bigMob(pick(d.mobs),rm.cx+dx+.5,rm.cy+dy+.5,dep0+rm.d*.12);E.push(m)}}}}
 function mbLoot(e){const d=DG.find(q=>q.id===e.dgid)||{tier:2},tr=d.tier,fin=e.mbI===2;
  const g=ri(300,700)*(tr+(fin?2:0));P.gold+=g;fl(e.x,e.y-1.2,'+'+g+'g','#ffd36b');
@@ -292,14 +292,14 @@ function chestOpen(o){if(o.dead)return;o.dead=clock+900;const tr=o.tier||1;sfx('
 const hazActors=()=>typeof SRV!=='undefined'&&SRV.players?[...SRV.players.values()].filter(p=>p.ready&&!p.dead&&!p.inside):(P&&!P.dead&&!P.inside&&!shopSt?[P]:[]);
 function hzHit(p,d,fx,x,y){if(typeof SRV!=='undefined'&&SRV.hits){SRV.hits.push({to:p.id,d:fx==='tp'?0:Math.max(1,Math.round(d)),fx,x,y});return}if(NET.sim)return;if(fx==='tp'){tele(x,y);return}playerHit(d);if(fx)playerFx(fx)}
 const hzPh=h=>{const t=Date.now()/1000+h.o,ci=Math.floor(t/h.cy),ph=t%h.cy;return{ci,st:ph<h.warn?1:ph<h.warn+h.act?2:0,ph}};
-function hazTick(dt){if(!HAZ.length)return;const A=hazActors();if(!A.length)return;
+function hazTick(dt){zoneTick();if(!HAZ.length)return;const A=hazActors();if(!A.length)return;
  for(const h of HAZ){let near=null;for(const p of A)if(Math.abs(p.x-h.x)<16&&Math.abs(p.y-h.y)<16){near=1;break}if(!near)continue;
   if(h.k==='dart'){h.t-=dt;if(h.t<=0){h.t=2.4;if(!NET.sim){const v=[[0,1],[0,-1],[1,0],[-1,0]][h.dir];proj.push({x:h.x,y:h.y,vx:v[0]*6,vy:v[1]*6,dmg:Math.round(h.dm*.7),life:3.4,own:'e'})}}continue}
   for(const p of A){const d=Math.hypot(p.x-h.x,p.y-h.y);if(d>h.r+.3)continue;
    if(h.k==='spike'||h.k==='fire'){const s=hzPh(h);if(s.st===2&&h.seen.get(p.id||'p')!==s.ci){h.seen.set(p.id||'p',s.ci);hzHit(p,h.dm,h.k==='fire'?'psn':null)}}
    else if(h.k==='gas'){const k=(p.id||'p')+'g',n=Date.now();if(n-(h.seen.get(k)||0)>1000){h.seen.set(k,n);hzHit(p,1,'psn')}}
    else if(h.k==='tele'){const k=(p.id||'p')+'t',n=Date.now();if(n-(h.seen.get(k)||0)>4000){h.seen.set(k,n);const d2=DG.find(q=>q.id===h.dg),o=pick(d2.rooms.filter(r=>r!==h.rm&&r!==d2.boss));if(o)hzHit(p,0,'tp',o.cx+.5,o.cy+.5)}}}}}
-function hazDraw(R,vis){for(const h of HAZ){if(!vis(h.x,h.y))continue;R.push([h.y*T-6,()=>{const px=h.x*T,py=h.y*T,t=Date.now()/1000;
+function hazDraw(R,vis){zoneDraw(R,vis);for(const h of HAZ){if(!vis(h.x,h.y))continue;R.push([h.y*T-6,()=>{const px=h.x*T,py=h.y*T,t=Date.now()/1000;
   if(h.k==='spike'||h.k==='fire'){const s=hzPh(h),fire=h.k==='fire',r=h.r*T;g.fillStyle='#0006';g.beginPath();g.ellipse(px,py,r*.8,r*.5,0,0,6.3);g.fill();g.strokeStyle=fire?'#6a3a1a':'#555';g.lineWidth=1;g.beginPath();g.ellipse(px,py,r*.8,r*.5,0,0,6.3);g.stroke();
    if(s.st===1){g.fillStyle=`rgba(255,${fire?120:60},40,${.25+.25*Math.sin(t*14)})`;g.beginPath();g.ellipse(px,py,r*.85,r*.55,0,0,6.3);g.fill()}
    else if(s.st===2){if(fire){for(let i=0;i<7;i++){const a=i*.9+t*6;g.fillStyle=i%2?'#ffb02a':'#ff4a1a';g.fillRect(px+Math.cos(a)*r*.5-2,py-6-Math.abs(Math.sin(a*2+t*9))*12,4,10)}}else{for(let i=0;i<5;i++){const a=i*1.26;g.fillStyle='#cfd2d8';const sx=px+Math.cos(a)*r*.45,sy=py+Math.sin(a)*r*.3;g.beginPath();g.moveTo(sx-2,sy);g.lineTo(sx,sy-10);g.lineTo(sx+2,sy);g.fill()}}}}
@@ -307,3 +307,47 @@ function hazDraw(R,vis){for(const h of HAZ){if(!vis(h.x,h.y))continue;R.push([h.
   else if(h.k==='tele'){g.strokeStyle=`rgba(190,110,255,${.5+.4*Math.sin(t*4)})`;g.lineWidth=2;for(let i=0;i<3;i++){g.beginPath();g.ellipse(px,py,5+i*3+Math.sin(t*3+i)*1.5,3+i*2,t+i,0,6.3);g.stroke()}}
   else if(h.k==='dart'){g.fillStyle='#222';const v=[[0,-1],[0,1],[-1,0],[1,0]][h.dir];g.fillRect(px-3+v[0]*5,py-2+v[1]*5,6,4);g.fillStyle='#a33';g.fillRect(px-1+v[0]*5,py+v[1]*5,2,2)}}])}
   for(const s of SECR){if(!vis(s.x,s.y)||Math.hypot(s.x+.5-P.x,s.y+.5-P.y)>3.2)continue;R.push([s.y*T+17,()=>{g.strokeStyle='rgba(255,255,255,'+(.15+.1*Math.sin(Date.now()/300))+')';g.lineWidth=1;const px=s.x*T,py=s.y*T;g.beginPath();g.moveTo(px+3,py+2);g.lineTo(px+7,py+7);g.lineTo(px+5,py+12);g.moveTo(px+10,py+3);g.lineTo(px+12,py+9);g.stroke()}])}}
+
+/* ---------- v0.6.6: the Ashen Wyrm (raid boss) + timed fire zones ---------- */
+const ZONES=[];
+function mkZone(x,y,r,warn,act,dm,o){o=o||{};const z={x,y,r,t0:Date.now()+(o.delay||0)*1000,warn,act,dm,tick:o.tick||0,seen:new Map(),c:o.c||0};ZONES.push(z);
+ if(typeof SRV!=='undefined'&&SRV.evs)SRV.evs.push({t:'ev',k:'zone',x,y,r,w:warn,a:act,d:o.delay||0,c:z.c,tk:z.tick?1:0});return z}
+function zoneTick(){if(!ZONES.length)return;const now=Date.now(),A=hazActors();
+ for(let i=ZONES.length-1;i>=0;i--){const z=ZONES[i],t=(now-z.t0)/1000;if(t>z.warn+z.act+.6){ZONES.splice(i,1);continue}
+  if(z.vis||t<z.warn||t>z.warn+z.act)continue;
+  for(const p of A){if(Math.hypot(p.x-z.x,p.y-z.y)>z.r)continue;const k=p.id||'p';
+   if(z.tick){if(now-(z.seen.get(k)||0)>500){z.seen.set(k,now);hzHit(p,z.dm,'psn')}}else if(!z.seen.get(k)){z.seen.set(k,1);hzHit(p,z.dm,null)}}}}
+function zoneDraw(R,vis){const now=Date.now();for(const z of ZONES){if(!vis(z.x,z.y))continue;const t=(now-z.t0)/1000;if(t<0||t>z.warn+z.act+.5)continue;R.push([z.y*T-8,()=>{const px=z.x*T,py=z.y*T,rr=z.r*T,w=t<z.warn;
+  if(w){const k=t/z.warn;g.fillStyle=`rgba(255,40,20,${.12+.22*k})`;g.beginPath();g.ellipse(px,py,rr,rr*.62,0,0,6.3);g.fill();g.strokeStyle=`rgba(255,${80+120*(1-k)|0},40,${.5+.4*Math.sin(now/70)})`;g.lineWidth=2;g.beginPath();g.ellipse(px,py,rr*(1-.15*(1-k)),rr*.62*(1-.15*(1-k)),0,0,6.3);g.stroke()}
+  else{g.fillStyle=z.tick?'rgba(255,90,20,.35)':'rgba(255,150,40,.5)';g.beginPath();g.ellipse(px,py,rr,rr*.62,0,0,6.3);g.fill();for(let i=0;i<9;i++){const a=i*.7+now/180+z.x,rd=rr*((i*.37)%1)*.9;g.fillStyle=i%2?'#ffc02a':'#ff4a1a';g.fillRect(px+Math.cos(a)*rd-2,py+Math.sin(a)*rd*.6-5-Math.abs(Math.sin(now/110+i))*10,4,9)}}}])}}
+const DRAGON_HP=90000;
+function dragonAI(e,s,dt){const A=hazActors().filter(p=>Math.hypot(p.x-e.x,p.y-e.y)<28),now=clock;
+ e.dragon=1;
+ if(!A.length){e.idleT=(e.idleT||0)+dt;if(e.eng&&e.idleT>20){e.eng=0;e.hp=e.mhp;e.ph=1;e.mw=0;for(const o of E)if(o.own===e)o.dead=1e9;sys('🐉 The Ashen Wyrm recovers…','#f96')}return}
+ e.idleT=0;
+ if(!e.eng){e.eng=1;e.t1=0;e.ph=1;e.cd1=3;e.cd2=10;e.cd3=18;e.cd4=14;e.cd5=9999;sys('🐉 THE ASHEN WYRM AWAKENS!','#ff7a3a');if(typeof bigMsg==='function')bigMsg('🐉 THE ASHEN WYRM AWAKENS','#ff7a3a')}
+ e.t1+=dt;
+ // HP scales with how many heroes are present (needs a raid)
+ const n=Math.min(10,A.length),want=Math.round(DRAGON_HP*(1+.28*(n-1)));if(want!==e.mhp){const f=e.hp/e.mhp;e.mhp=want;e.hp=Math.max(1,Math.round(f*want))}
+ const f=e.hp/e.mhp,ph=f>.6?1:f>.3?2:3;if(ph!==e.ph){e.ph=ph;sys(ph===2?'🔥 The Wyrm roars – minions and lava!':'💀 THE WYRM IS ENRAGED – meteors rain down!','#ff4a2a');if(typeof bigMsg==='function')bigMsg(ph===2?'🔥 PHASE 2 – MINIONS & LAVA':'💀 PHASE 3 – ENRAGE','#ff4a2a');e.cd4=2;e.cd5=4}
+ const D=DG.find(q=>q.citadel),rm=D&&D.boss;if(!rm)return;
+ const dmg=s.dmg||120;
+ // 1 - fireball barrage on every hero
+ e.cd1-=dt;if(e.cd1<=0){e.cd1=ph===1?6:ph===2?5:3.5;for(const p of A)mkZone(p.x+(Math.random()-.5)*1.5,p.y+(Math.random()-.5)*1.5,3.2,1.6,.4,dmg*2+ph*30);sfx('boss');fl(e.x,e.y-2,'🔥 FIREBALLS','#f84')}
+ // 2 - sweeping fire wall with a safe gap
+ e.cd2-=dt;if(e.cd2<=0){e.cd2=ph===1?15:ph===2?12:9;const horiz=Math.random()<.5,gap=ri(1,Math.max(1,(horiz?Math.floor(rm.h/2.6):Math.floor(rm.w/2.6))-3)),segs=horiz?Math.floor(rm.h/2.6):Math.floor(rm.w/2.6),dirn=Math.random()<.5;
+  const cols=horiz?Math.floor(rm.w/2.6):Math.floor(rm.h/2.6);for(let c=0;c<cols;c++){const cc=dirn?c:cols-1-c;for(let sg=0;sg<segs;sg++){if(sg>=gap&&sg<gap+2)continue;const zx=horiz?rm.x+1.3+cc*2.6:rm.x+1.3+sg*2.6,zy=horiz?rm.y+1.3+sg*2.6:rm.y+1.3+cc*2.6;mkZone(zx,zy,1.7,1.2,.5,dmg*2.2,{delay:c*.28})}}sfx('boss');fl(e.x,e.y-2,'🔥 FIRE WALL','#f84')}
+ // 3 - minion waves (phase 2+)
+ e.cd3-=dt;if(ph>=2&&e.cd3<=0){e.cd3=ph===2?24:18;let live=0;for(const o of E)if(o.own===e&&!o.dead)live++;if(live<8){const pool=ph===2?['lava_hound','imp','fire_bat']:['lava_hound','demon','shadow_drake'];for(let i=0;i<4;i++){const a=i*1.57+Math.random(),m=bigMob(pick(pool),e.x+Math.cos(a)*5,e.y+Math.sin(a)*4,6);m.temp=1;m.st=1;m.own=e;m.xm=.5;if(!solid[idx(Math.floor(m.x),Math.floor(m.y))])E.push(m)}fl(e.x,e.y-2,'☠ MINIONS','#c9f')}}
+ // 4 - lingering lava patches (phase 2+)
+ e.cd4-=dt;if(ph>=2&&e.cd4<=0){e.cd4=ph===2?18:13;for(let i=0;i<5;i++)mkZone(rm.x+2+Math.random()*(rm.w-4),rm.y+2+Math.random()*(rm.h-4),2.1,1,10,dmg*.7,{tick:1})}
+ // 5 - meteor rain (phase 3)
+ e.cd5-=dt;if(ph>=3&&e.cd5<=0){e.cd5=11;for(let i=0;i<12;i++){const t=A.length&&i%3===0?pick(A):null;mkZone(t?t.x:rm.x+1+Math.random()*(rm.w-2),t?t.y:rm.y+1+Math.random()*(rm.h-2),2.2,1.4,.4,dmg*2.4,{delay:i*.25})}fl(e.x,e.y-2,'☄ METEORS','#fc6')}
+ // soft enrage: 12 minutes and the room burns
+ if(e.t1>720){e.cdx=(e.cdx||0)-dt;if(e.cdx<=0){e.cdx=1.5;for(let i=0;i<18;i++)mkZone(rm.x+Math.random()*rm.w,rm.y+Math.random()*rm.h,2.6,.9,.4,dmg*6,{delay:i*.05})}}}
+function dragonLoot(e){const d=DG.find(q=>q.citadel)||{tier:4};if((P.dragDmg||0)<3000){sys('The Wyrm fell, but you did too little damage to share the hoard.','#f96');return}
+ P.dragDmg=0;const g=ri(4000,9000);P.gold+=g;fl(e.x,e.y-1.2,'+'+g+'g','#ffd36b');addItem('gem',ri(4,8));addItem('scale',ri(4,8));addItem('essence',ri(8,14));
+ for(let i=0;i<3;i++)megaLoot(2);
+ if(Math.random()<.4){legendaryDrop();if(Math.random()<.2)legendaryDrop()}
+ toast('🐉 THE ASHEN WYRM IS SLAIN!','#ffd36b');bigMsg&&0}
+function legendaryDrop(){const s=addItem(pick(ENDGAME));if(!s)return;rollGear(s,'smith',true,1);s.rar=3;if(!s.ench)rollGear(s,'smith',true,1),s.rar=3;announceGear(s,'The Wyrm dropped')}

@@ -73,7 +73,7 @@ SRV.step = function (dt) {
   for (const e of E) { e.px = e.x; e.py = e.y; e.sv = e.sv || [0, 0]; e.sv[0] *= .5; e.sv[1] *= .5 }
   for (const [p, list] of groups) { P = p; CUR = p; const n0 = list.length; E = list; updEnemies(dt); E = master; for (let i = n0; i < list.length; i++) master.push(list[i]) }
   E = master; CUR = null;
-  for (const list of groups.values()) for (const e of list) { if (e.dead) { e.sv[0] = e.sv[1] = 0; continue } e.sv[0] = e.sv[0] * .5 + (e.x - e.px) / dt * .5; e.sv[1] = e.sv[1] * .5 + (e.y - e.py) / dt * .5 }
+  for (const list of groups.values()) for (const e of list) { if (!e.sv) { e.sv = [0, 0]; e.px = e.x; e.py = e.y } if (e.dead) { e.sv[0] = e.sv[1] = 0; continue } e.sv[0] = e.sv[0] * .5 + (e.x - e.px) / dt * .5; e.sv[1] = e.sv[1] * .5 + (e.y - e.py) / dt * .5 }
   // enemy projectiles
   for (let i = proj.length - 1; i >= 0; i--) {
     const q = proj[i]; q.x += q.vx * dt; q.y += q.vy * dt; q.life -= dt;
@@ -96,7 +96,7 @@ SRV.snapshot = function (p) {
     seen.add(e.id);
     const f = (e.sw > 0 ? 1 : 0) | (e.novaT > 0 ? 2 : 0) | (e.slow ? 4 : 0) | (e.dots && e.dots.length ? 8 : 0) | ((e.dir & 3) << 4) | ((e.st ? 1 : 0) << 6);
     const vx = Math.max(-15, Math.min(15, e.sv ? e.sv[0] : 0)), vy = Math.max(-15, Math.min(15, e.sv ? e.sv[1] : 0)), hp = Math.round(e.hp);
-    if (!kn) { p.known.add(e.id); last.set(e.id, { x: e.x, y: e.y, vx, vy, hp, f, t: clock }); a.push([e.id, e.t, +e.x.toFixed(2), +e.y.toFixed(2), hp, e.mhp, e.dir, e.st, e.el || 0, e.sc || 1, e.dun ? 1 : 0, e.pt == null ? -1 : e.pt, +e.hx.toFixed(1), +e.hy.toFixed(1)]); continue }
+    if (!kn) { p.known.add(e.id); last.set(e.id, { x: e.x, y: e.y, vx, vy, hp, f, t: clock }); a.push([e.id, e.t, +e.x.toFixed(2), +e.y.toFixed(2), hp, e.mhp, e.dir, e.st, e.el || 0, e.sc || 1, e.dun ? 1 : 0, e.pt == null ? -1 : e.pt, +e.hx.toFixed(1), +e.hy.toFixed(1), e.mbI == null ? -1 : e.mbI, e.dgid || '', e.nm || '']); continue }
     const l = last.get(e.id), age = clock - l.t, dev = Math.hypot(e.x - (l.x + l.vx * age), e.y - (l.y + l.vy * age)), dist = Math.max(dx, dy);
     const must = hp !== l.hp || f !== l.f;
     if (!must && !(dev > .3 || Math.abs(vx - l.vx) + Math.abs(vy - l.vy) > 2)) continue;
