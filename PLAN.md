@@ -101,3 +101,9 @@ Next: step 2 = Citadel + 3 new big hard dungeons with traps/secrets/mini-bosses 
 ## v0.6.6 DONE (step 2): 4 big dungeons, traps, secrets, seals. Next step 3: Ashen Wyrm boss fight + legendary-only drops.
 
 ## v0.6.7 DONE (step 3): Ashen Wyrm raid boss, legendary-only drops. World expansion II complete. Next: LPC graphics (needs approval), Server authority II, small items.
+
+## Next version (NOT built yet - user said wait; 18 Nov late)
+1. Dev mode additions (dev toggle, admin-only on client): automatic GODMODE (no damage), speed x2, "Kill all" button (all mobs dead), plus existing all skills 99 + all spells.
+2. Mob material drops cut down x3: every mob material drop chance (bone, pelt, feather, essence, gem, scale, tusk, gel, iron, shroom etc, both the old and new ESPEC lt tables and the old dr() drops) divided by 3. Gold/potion drops unchanged unless asked.
+3. Revert the v0.6.10 Ember Wyrm change (user: "don't change the Ember Wyrm"): spawn distance, leash and re-home go back to v0.6.9 behaviour. (Working tree already restored, not yet versioned.)
+4. FIXED in working tree (not versioned): in Classic graphics (the default) every mob without a classic drawing fell back to the Ember Wyrm sprite, so all 60+ new mobs looked like the red dragon. Now they always use their art-pack sprite (classic look kept for the old mobs). All 79 art sprites exist; none were missing.
