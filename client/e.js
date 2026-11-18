@@ -67,7 +67,8 @@ $('#bDev').onpointerdown=ev=>{ev.preventDefault();P.dev=!P.dev;const on=P.dev;
  devUi()};
 $('#bSp').onpointerdown=ev=>{ev.preventDefault();if(!P.dev)return;P.devT=((P.devT|0)+1)%SPELLS.length;toast(SPELLS[P.devT].e+' '+SPELLS[P.devT].n,'#8cf');devUi()};
 function devOk(){let o=false;try{o=localStorage.getItem('dp.dev')==='1'||/[#?&]dev\b/.test(location.href)}catch(e){}return !!((typeof NET!=='undefined'&&NET.on&&NET.adm)||(typeof NET!=='undefined'&&!NET.on&&o))}
-function devUi(){const ok=devOk();if(!ok&&typeof P!=='undefined'&&P&&P.dev)P.dev=false;$('#bDev').style.display=ok?'':'none';const on=!!(typeof P!=='undefined'&&P&&P.dev);$('#bSp').style.display=on?'':'none';if(on)$('#bSp').textContent=SPELLS[P.devT|0].e;$('#bDev').style.outline=on?'2px solid #ffd36b':'none'}
+$('#bKill').onpointerdown=ev=>{ev.preventDefault();if(!P.dev)return;let n=0;for(const m of E){if(!m.dead&&m.t!=='wyrm'&&!m.temp){hurtEnemy(m,1e9);n++}}toast('💀 Killed '+n,'#f66')};
+function devUi(){$('#bKill').style.display=(typeof P!=='undefined'&&P&&P.dev&&devOk())?'':'none';const ok=devOk();if(!ok&&typeof P!=='undefined'&&P&&P.dev)P.dev=false;$('#bDev').style.display=ok?'':'none';const on=!!(typeof P!=='undefined'&&P&&P.dev);$('#bSp').style.display=on?'':'none';if(on)$('#bSp').textContent=SPELLS[P.devT|0].e;$('#bDev').style.outline=on?'2px solid #ffd36b':'none'}
 $('#bMute').onpointerdown=e=>{muted=!muted;e.target.textContent=muted?'🔇':'🔊'};
 /* ---------- input ---------- */
 const stick=$('#stick'),knob=$('#knob');let sid=null;const keys={};

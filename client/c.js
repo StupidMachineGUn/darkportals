@@ -235,7 +235,7 @@ function spawnEnemies(){let c=0,tries=0;while(c<3800&&tries++<600000){const x=ri
 function hurtEnemy(e,d,src='p'){if(e.dead)return;if(e.shield>clock)d=Math.max(1,Math.round(d*.15));if(meleeT===clock)bloodHit(e);if(src==='p'&&P.shroomT>0)d*=3;if(NET.sim){if(src==='p')netHit(e,d);e.flash=.18;e.hp=Math.max(1,e.hp-d);if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.dragon&&src==='p')P.dragDmg=(P.dragDmg||0)+d;return}if(e.t==='chicken'||e.t==='sheep'){e.flee=5;if(Math.random()<.4)sfx('bawk')}e.hp-=d;e.flash=.18;e.st=1;if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.dragon&&src==='p')P.dragDmg=(P.dragDmg||0)+d;if(e.hp<=0)killEnemy(e)}
 const ELN=e=>e.nm?e.nm:(e.el==='shaman'?'Shaman ':e.el==='elite'?'Elite ':'Chief ')+e.t[0].toUpperCase()+e.t.slice(1);
 function killEnemy0(e){if(!NET.sim)mobDie(e);if(meleeT===clock)goreKill(e);if(e.dun)dunKill(e);e.dead=clock+(e.temp?1e9:e.t==='wizard'?1e9:e.dun?ri(240,360):e.t==='wyrm'||e.t==='rooster'?1e9:ri(45,70)*(e.el?4:1));P.kills++;const s=ESPEC[e.t],xm=e.xm||1;gainXp('melee',s.xp*.4*xm);if(e.el&&e.el!=='lord'&&!e.dun){const g2=ri(...s.gold)*4;P.gold+=g2;fl(e.x,e.y-1.2,'+'+g2+'g','#ffd36b');toast('☠️ '+ELN(e)+' slain!','#ffd36b');dropGear(e.t,true);dropGear(e.t,true)}onEvent(e.t);burst(e.x,e.y-.4,'#fff',14);
- const g=ri(...s.gold);P.gold+=g;fl(e.x,e.y-.6,'+'+g+'g','#ffd36b');const dr=(id,p,n=1)=>{if(Math.random()<p&&addItem(id,n)){fl(e.x+.3,e.y-1,'+'+ITEMS[id].e0,'#fff')}};
+ const g=ri(...s.gold);P.gold+=g;fl(e.x,e.y-.6,'+'+g+'g','#ffd36b');const dr=(id,p,n=1)=>{if(id!=='hpotion'&&id!=='potion'&&p<1)p/=3;if(Math.random()<p&&addItem(id,n)){fl(e.x+.3,e.y-1,'+'+ITEMS[id].e0,'#fff')}};
  if(e.t!=='wyrm')dropGear(e.t,TOUGH.has(e.t));
  if(e.t==='troll'){dr('tusk',.8,3);dr('iron',.7,3);dr('gem',.08);dr('hpotion',.3)}if(e.t==='demon'){dr('essence',.8,3);dr('gem',.12);dr('scale',.1);dr('hpotion',.4);dr('potion',.3)}
  dr('hpotion',e.t==='slime'?0:.04);if(s.lt)for(const [id,p,n] of s.lt){if(p>=1)addItem(id,ri(p,n||p)) ;else dr(id,p,n||1)}
@@ -249,7 +249,7 @@ function killEnemy(e){if(!FLOORLOOT)return killEnemy0(e);const before=new Map(P.
  const out=[];for(const s of [...P.inv]){if(!before.has(s)){if(!isEq(s)){P.inv.splice(P.inv.indexOf(s),1);const it={...s};delete it.u;out.push(it)}}else if(!ITEMS[s.id].slot&&s.n>before.get(s)){const k=s.n-before.get(s);s.n-=k;out.push({id:s.id,n:k})}}
  if(out.length)groundSpawn(out,e.x,e.y,{mob:1})}
 let FLOORLOOT=true;
-function playerHit(d,by){if(P.dead||P.inside||shopSt)return;const df=A_().def||0;let dmg=Math.max(Math.ceil(d*.12),Math.round(d*(1-df/(df+60))-Math.min(lv('defense')*.12,d*.2)+rnd(-1,1)));if(P.shield&&P.shield.v>0){const ab=Math.min(P.shield.v,dmg);P.shield.v-=ab;dmg-=ab;fl(P.x,P.y-.8,'🛡️'+ab,'#6af');if(dmg<=0){sfx('hit');return}}
+function playerHit(d,by){if(P.dead||P.inside||shopSt||P.dev)return;const df=A_().def||0;let dmg=Math.max(Math.ceil(d*.12),Math.round(d*(1-df/(df+60))-Math.min(lv('defense')*.12,d*.2)+rnd(-1,1)));if(P.shield&&P.shield.v>0){const ab=Math.min(P.shield.v,dmg);P.shield.v-=ab;dmg-=ab;fl(P.x,P.y-.8,'🛡️'+ab,'#6af');if(dmg<=0){sfx('hit');return}}
  P.hp-=dmg;P.hurt=5;fl(P.x,P.y-.8,'-'+dmg,'#f55');sfx('hurt');gainXp('defense',2+dmg);gainXp('vitality',1+dmg*.6);burst(P.x,P.y-.4,'#d33',5);
  if(P.hp<=0){if(by&&by.remote){netDeathDrop();netDied(by,null)}else{netDeathDrop();if(by&&by.act)killActor(by,P)}P.flag=null;P.fT=0;P.vic=0;P.dead=2.2;P.deaths=(P.deaths|0)+1;netSaveSoon();if(by&&by.act)P.pvpD=(P.pvpD|0)+1;if(!(by&&by.isBot)){P.gold=Math.floor(P.gold*.9);sys('💀 You were knocked out and lost 10% gold.','#f66')}P.path=null;stopAct();P.chase=null}}
 function nearestEnemy(r,fr=P){let b=null,bd=r;for(const e of E){if(e.dead)continue;const d=Math.hypot(e.x-fr.x,e.y-fr.y);if(d<bd){bd=d;b=e}}return b}
@@ -374,7 +374,7 @@ function updPlayer(dt){
  const sprint=input.run&&moving&&P.st>0&&!P.tired;
  if(P.slowT>0)P.slowT-=dt;if(P.psnT>0){P.psnT-=dt;P.psnA=(P.psnA||0)+dt;if(P.psnA>=1){P.psnA=0;playerHit(4+Math.round(maxHp()*.012))}}
  if(P.tired&&P.st>maxSt()*.25)P.tired=false;if(P.st<=0)P.tired=true;
- let sp=(P.shroomT>0?1.6:(chickenForm()?1.15:1))*(P.hasteT>0?1.4:1)*3.3*(1+Math.min(.25,lv('agility')*.004+G().spd/100))*(sprint?1.7:1)*(act?0:1)*(P.slowT>0?.55:1);
+ let sp=(P.shroomT>0?1.6:(chickenForm()?1.15:1))*(P.hasteT>0?1.4:1)*(P.dev?2:1)*3.3*(1+Math.min(.25,lv('agility')*.004+G().spd/100))*(sprint?1.7:1)*(act?0:1)*(P.slowT>0?.55:1);
  if(moving){moveEnt(P,vx*sp*dt,vy*sp*dt);P.dir=Math.abs(vx)>Math.abs(vy)?(vx>0?2:1):(vy>0?0:3);P.d8=((Math.round(Math.atan2(vx,vy)/.7854)%8)+8)%8;P.walk=(P.walk||0)+dt*(sprint?12:8);P.play+=0}
  if(sprint){P.st-=7*dt;P.agT=(P.agT||0)+dt;if(P.agT>1.4){P.agT=0;gainXp('agility',3)}}else{P.st=Math.min(maxSt(),P.st+(act&&(act.kind==='fish'||act.kind==='mine')?.6:moving?2.5:5.5)*dt)}
  if(moving&&!sprint){P.wT=(P.wT||0)+dt;if(P.wT>6){P.wT=0;gainXp('agility',1)}}
