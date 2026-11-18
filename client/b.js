@@ -25,7 +25,7 @@ const ITEMS={
  shrimp:{n:'Raw Shrimp',e:'🦐',v:2,raw:'cshrimp',lv:1},trout:{n:'Raw Trout',e:'🐟',v:6,raw:'ctrout',lv:8},salmon:{n:'Raw Salmon',e:'🐠',v:14,raw:'csalmon',lv:20},
  cshrimp:{n:'Fried Shrimp',e:'🍤',v:4,heal:8},ctrout:{n:'Grilled Trout',e:'🍖',v:12,heal:20},csalmon:{n:'Salmon Feast',e:'🍱',v:28,heal:40},
  berry:{n:'Wild Berries',e:'🍇',v:2,heal:4},bread:{n:'Bread',e:'🍞',v:6,heal:12,buy:8},potion:{n:'Mana Potion',e:'🧪',v:10,mana:25,buy:18},
- tusk:{n:'Orc Tusk',e:'🦷',v:14},essence:{n:'Spirit Essence',e:'💠',v:30},hpotion:{n:'Health Potion',e:'🍷',v:12,heal:45,pot:1,buy:25},gel:{n:'Slime Gel',e:'🟢',v:2},pelt:{n:'Wolf Pelt',e:'🐺',v:6},bone:{n:'Bone',e:'🦴',v:4},scale:{n:'Wyrm Scale',e:'🐉',v:80},
+ tusk:{n:'Orc Tusk',e:'🦷',v:14},essence:{n:'Spirit Essence',e:'💠',v:30},tscroll:{n:'Scroll of Town Portal',e:'📜',v:40,buy:90,tscroll:1,pot:0},hpotion:{n:'Health Potion',e:'🍷',v:12,heal:45,pot:1,buy:25},gel:{n:'Slime Gel',e:'🟢',v:2},pelt:{n:'Wolf Pelt',e:'🐺',v:6},bone:{n:'Bone',e:'🦴',v:4},scale:{n:'Wyrm Scale',e:'🐉',v:80},
  sword0:{n:'Rusty Sword',e:'🗡️',v:1,slot:'w',atk:1},sword1:{n:'Copper Blade',e:'🔪',v:20,slot:'w',atk:3,req:['melee',3]},
  sword2:{n:'Iron Sword',e:'⚔️',v:60,slot:'w',atk:6,req:['melee',10]},staff:{n:'Oak Staff',e:'🪄',v:60,slot:'w',atk:1,mag:4,buy:120,req:['magic',5]},
  arm0:{n:'Cloth Tunic',e:'👕',v:1,slot:'a',def:0},arm1:{n:'Copper Mail',e:'🥋',v:40,slot:'a',def:3,req:['defense',3]},arm2:{n:'Iron Armor',e:'🛡️',v:120,slot:'a',def:7,req:['defense',10]},
@@ -120,6 +120,7 @@ function genWorld(){
   for(let y=vy-8;y<=vy+8;y++)for(let x=vx-8;x<=vx+8;x++)if(Math.hypot(x-vx,y-vy)<6.2)map[idx(x,y)]=TL.PATH;
   const bds=[];for(const [n,bx,c] of [['Smithy',vx-7,'#6a4a2a'],['Inn',vx+3,'#553a20']]){const bd={n,x:bx,y:vy-5,w:4,h:3,c,dx:bx+2,dy:vy-2};buildings.push(bd);bds.push(bd);for(let j=0;j<3;j++)for(let i=0;i<4;i++)solid[idx(bd.x+i,bd.y+j)]=1;map[idx(bd.dx,bd.dy)]=TL.PATH}
   if(tier>=4){const mb={n:'Mage Tower',x:vx-1,y:vy-5,w:3,h:3,c:'#4a3a7a',dx:vx,dy:vy-2};buildings.push(mb);for(let j=0;j<3;j++)for(let i=0;i<3;i++)solid[idx(mb.x+i,mb.y+j)]=1;map[idx(mb.dx,mb.dy)]=TL.PATH;npc(mb,'Magus '+nn[0],'mage','#4a3a7a')}
+  {const bk={n:'Bank',x:vx-2,y:vy+3,w:4,h:3,c:'#6b5a2a',dx:vx,dy:vy+6};buildings.push(bk);for(let j=0;j<3;j++)for(let i=0;i<4;i++)solid[idx(bk.x+i,bk.y+j)]=1;map[idx(bk.dx,bk.dy)]=TL.PATH;npc(bk,'Teller '+nn[1],'bank','#6b5a2a')}
   npc(bds[0],nn[0],'shop','#6a4a2a');npc(bds[1],nn[1],'inn','#7a5a30');guard(vx-3,vy+2);guard(vx+3,vy+2);guard(vx-9,vy);guard(vx+9,vy)}
  /* ---- the Witch's hut (forest) ---- */
  {let best=null,bd2=1e9;const tx=CX-52,ty=CY+34,forestN=(vx,vy)=>{let n=0;for(let y=vy-5;y<=vy+5;y++)for(let x=vx-5;x<=vx+5;x++)if(map[idx(x,y)]===TL.FOREST)n++;return n};

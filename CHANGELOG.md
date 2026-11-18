@@ -1,4 +1,8 @@
 # Changelog
+## 0.6.4 - Town portal & village banks
+- Scroll of Town Portal (90g at the shop): read it from the bag, stand still 3 s, and you arrive in the main town. No cooldown; one scroll is used up.
+- Your portal spell now always opens to the main town (Hearthmoor), not the last village.
+- Every village now has a small Bank (same vault as the capital's).
 ## 0.6.3 - Classic default, real drops, glow
 - Classic graphics (no art pack) are the default again; the Art Pack stays optional in settings (one-time reset).
 - Dropping an item puts it on the floor like loot: anyone can pick it up (you ignore it for 4 s so you don't re-grab it). Equipped items must be unequipped first.
