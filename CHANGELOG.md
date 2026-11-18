@@ -1,4 +1,6 @@
 # Changelog
+## 0.6.10 - Wyrm stays in the wilds
+- The roaming Ember Wyrm (the red dragon with fireballs) can no longer wake up near villages: it now appears at least 55 tiles from any village and only in the dangerous outer lands, and the announcement says how far it is from the nearest town.
 ## 0.6.9 - One session per account, safe saving
 - Only one live session per account: logging in on a new tab or device ends the old one with a clear "Opened somewhere else" screen (different accounts in different tabs are fine and save separately).
 - Fixed a save race: if a save reached the server but the reply was lost (phone sleep, bad signal), the retry was wrongly refused as "saved from another session" and progress stopped saving. The live session can now always save.

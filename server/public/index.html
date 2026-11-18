@@ -130,7 +130,7 @@ body.art .bf{border:2px solid #2c1a0c;border-radius:4px;background:#e3cc98cc}
 <div id="story"><canvas id="stc" width="192" height="108"></canvas><div id="stt"></div><div id="stb"><div class="btn" id="stSkip">Skip</div><div class="btn" id="stNext">Next ▶</div></div></div>
 <div id="toast"></div>
 <div id="title"><canvas id="wcv"></canvas>
-<div id="wtop"><h1>🌀 DARK PORTALS</h1><div id="walpha">ALPHA v0.6.9</div><div style="opacity:.8;max-width:320px;margin-top:8px;font-size:14px">A tiny MMO that grows with you</div></div>
+<div id="wtop"><h1>🌀 DARK PORTALS</h1><div id="walpha">ALPHA v0.6.10</div><div style="opacity:.8;max-width:320px;margin-top:8px;font-size:14px">A tiny MMO that grows with you</div></div>
 <div id="wst">Checking server…</div>
 <div id="wbot">
 <div id="wmain" class="wv"><div class="btn" id="wbOn">Play online</div><div class="btn" id="wbOff" style="background:#1b1536">Play offline (single player)</div></div>
@@ -854,8 +854,8 @@ function updBots(dt){for(const b of bots){
  if(boss&&!boss.dead){const d=Math.hypot(boss.x-b.x,boss.y-b.y);if(d>2.2){b.tx=boss.x+rnd(-1.5,1.5);b.ty=boss.y+rnd(-1.5,1.5)}else{if(boss.hp>boss.mhp*.12)boss.hp=Math.max(boss.mhp*.12,boss.hp-1.4*dt)}}
  else if(b.wait>0){b.wait-=dt}else if(b.tx==null){let tries=0,x,y;do{x=b.x+rnd(-9,9);y=b.y+rnd(-9,9);tries++}while(tries<10&&(!canStand(x,y)||Math.hypot(x-CX,y-CY)>18));b.tx=x;b.ty=y}
  if(b.tx!=null){const dx=b.tx-b.x,dy=b.ty-b.y,m=Math.hypot(dx,dy);if(m<.3){b.tx=null;b.wait=rnd(2,7)}else{moveEnt(b,dx/m*2.6*dt,dy/m*2.6*dt);b.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?2:1):(dy>0?0:3)}}}}
-function spawnBoss(){let x,y,t=0;do{x=ri(5,MW-5);y=ri(5,MH-5);t++}while(t<9000&&(!reach[idx(x,y)]||solid[idx(x,y)]||Math.hypot(x-CX,y-CY)<70||safeAt(x,y)));if(t>=9000)return;
- const e=mkEnemy('wyrm',x+.5,y+.5);e.born=clock;E.push(e);boss=e;P.bossDmg=0;sfx('boss');sys('🐉 The EMBER WYRM has awoken! Heroes are rushing to fight it.','#ff7a3a');toast('🐉 EMBER WYRM AWAKENS');}
+function spawnBoss(){let x,y,t=0;do{x=ri(5,MW-5);y=ri(5,MH-5);t++}while(t<9000&&(!reach[idx(x,y)]||solid[idx(x,y)]||Math.hypot(x-CX,y-CY)<70||diffAt(x,y)<90||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<55)||safeAt(x,y)));if(t>=9000)return;
+ const e=mkEnemy('wyrm',x+.5,y+.5);e.born=clock;E.push(e);boss=e;P.bossDmg=0;sfx('boss');{const hub=[{n:'the capital',x:CX,y:CY},...VIL.map(v=>({n:v.name,x:v.x,y:v.y}))].sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];sys('🐉 The EMBER WYRM has awoken in the wilds, '+Math.round(Math.hypot(hub.x-x,hub.y-y))+' tiles from '+hub.n+'! Heroes are rushing to fight it.','#ff7a3a')}toast('🐉 EMBER WYRM AWAKENS');}
 function updProj(dt){for(let i=proj.length-1;i>=0;i--){const p=proj[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;let rm=p.life<=0||!inb(Math.floor(p.x),Math.floor(p.y))||(solid[idx(Math.floor(p.x),Math.floor(p.y))]&&isWater(Math.floor(p.x),Math.floor(p.y))===false&&!objAt.has(idx(Math.floor(p.x),Math.floor(p.y))));
   if(p.own==='p'){let hit=null;for(const e of E){if(!e.dead&&Math.hypot(e.x-p.x,e.y-.3-p.y)<.7){hit=e;break}}if(hit){spellHit(p,hit);rm=true}else if(rm&&SPELLS[p.sp].aoe)spellAoe(p,new Set())}
   else if(p.own==='o'||NET.sim){}
@@ -1647,7 +1647,7 @@ function dragonLoot(e){const d=DG.find(q=>q.citadel)||{tier:4};if((P.dragDmg||0)
  toast('🐉 THE ASHEN WYRM IS SLAIN!','#ffd36b');bigMsg&&0}
 function legendaryDrop(){const s=addItem(pick(ENDGAME));if(!s)return;rollGear(s,'smith',true,1);s.rar=3;if(!s.ench)rollGear(s,'smith',true,1),s.rar=3;announceGear(s,'The Wyrm dropped')}
 /* ---------- online layer (accounts, cloud save, other players, chat) ---------- */
-const NET={gnd:new Map(),gpend:new Map(),on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'0.6.9',board:[],lastSave:0,reg:false,tpT:0};
+const NET={gnd:new Map(),gpend:new Map(),on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'0.6.10',board:[],lastSave:0,reg:false,tpT:0};
 function authUi(){$('#pw').style.display='block';$('#regt').style.display='block';$('#nm').placeholder='Username';$('#nm').maxLength=16;$('#nm').value=localStorage.getItem('emberfall.user')||'';$('#go').textContent='Log in';}
 function authMsg(t){$('#authmsg').textContent=t||''}
 async function netAuth(){const username=$('#nm').value.trim(),password=$('#pw').value;if(!username||!password){authMsg('Enter username and password');return false}
