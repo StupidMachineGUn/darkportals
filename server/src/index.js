@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
+import crypto from 'node:crypto';
 import { makeDb } from './db.js';
 import { hashPw, checkPw, makeToken, readToken } from './auth.js';
 import { createAuthority } from './authority.js';
@@ -23,6 +24,10 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   const send = (res, code, obj) => { const b = JSON.stringify(obj); res.writeHead(code, { 'content-type': 'application/json', 'cache-control': 'no-store' }); res.end(b); };
   const body = req => new Promise((res, rej) => { let s = '', n = 0; req.on('data', c => { n += c.length; if (n > MAX_BODY) { rej(new Error('big')); req.destroy() } else s += c }); req.on('end', () => { try { res(s ? JSON.parse(s) : {}) } catch (e) { rej(e) } }); });
   const authed = req => readToken((req.headers.authorization || '').replace(/^Bearer /, ''));
+  // v0.6.9: one live session per account. Every login/register mints a new session id; older tokens/tabs are told to stop.
+  const SID = new Map();
+  const sessOk = async a => { if (!a) return false; if (!a.sid) return true; let s = SID.get(a.uid); if (s === undefined) { const r = await db.query('SELECT sid FROM users WHERE id=$1', [a.uid]); s = r.rows[0] ? r.rows[0].sid : ''; SID.set(a.uid, s) } return s === a.sid };
+  const newSession = async (uid, name) => { const sid = crypto.randomBytes(12).toString('hex'); await db.query('UPDATE users SET sid=$2 WHERE id=$1', [uid, sid]); SID.set(uid, sid); const old = players.get(uid); if (old) { try { old.ws.send(JSON.stringify({ t: 'moved' })); old.ws.close(4001, 'Logged in elsewhere') } catch {} } return makeToken(uid, name, 30, sid) };
   const ip = clientIp;
   const authority = createAuthority({ isAdmin: n => ADM.has(String(n).toLowerCase()) });
   const lock = createLockout(), signupCap = createSignupCap(process.env.SIGNUPS_PER_HOUR === undefined ? 20 : +process.env.SIGNUPS_PER_HOUR);
@@ -61,7 +66,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
         if (IP_LIMIT > 0 && !IP_ALLOW.has(rip)) { const n = await db.query('SELECT count(*) AS n FROM users WHERE ip=$1', [rip]); if (+n.rows[0].n >= IP_LIMIT) return send(res, 403, { err: 'This connection already has an account' }) }
         const { salt, hash } = await hashPw(password);
         const r = await db.query('INSERT INTO users(username,salt,hash,ip) VALUES($1,$2,$3,$4) RETURNING id', [username, salt, hash, rip]);
-        return send(res, 200, { token: makeToken(r.rows[0].id, username), username, character: null });
+        return send(res, 200, { token: await newSession(r.rows[0].id, username), username, character: null });
       }
       if (u.pathname === '/api/login' && req.method === 'POST') {
         if (limited(ip(req))) return send(res, 429, { err: 'Too many attempts, wait a minute' });
@@ -73,15 +78,16 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
         lock.ok(username);
         if (maintBlocks(row.id, row.username)) return send(res, 503, { err: 'Server under maintenance' + (maint.msg ? ': ' + maint.msg : ''), maint: 1 });
         const c = await db.query('SELECT name,data,ver FROM characters WHERE user_id=$1', [row.id]);
-        return send(res, 200, { token: makeToken(row.id, row.username), username: row.username, character: c.rows[0] ? { name: c.rows[0].name, data: JSON.parse(c.rows[0].data), ver: c.rows[0].ver | 0 } : null });
+        return send(res, 200, { token: await newSession(row.id, row.username), username: row.username, character: c.rows[0] ? { name: c.rows[0].name, data: JSON.parse(c.rows[0].data), ver: c.rows[0].ver | 0 } : null });
       }
       if (u.pathname === '/api/save' && req.method === 'PUT') {
         const a = authed(req); if (!a) return send(res, 401, { err: 'Not logged in' });
+        if (!(await sessOk(a))) return send(res, 401, { err: 'This account was opened in another tab or device', moved: 1 });
         if (saveLim(String(a.uid))) { flag(ip(req), 'save-rate uid=' + a.uid); return send(res, 429, { err: 'Saving too fast' }) }
         let ch = await body(req), fix = null;
         if (!ch || typeof ch !== 'object' || !ch.xp || typeof ch.name !== 'string' || !Array.isArray(ch.inv)) return send(res, 400, { err: 'Bad character' });
         if (ch.inv.length > 80) return send(res, 400, { err: 'Bad inventory' });
-        let data = JSON.stringify(ch), baseH = req.headers['x-base'], base = baseH === undefined ? null : parseInt(baseH, 10);
+        let data = JSON.stringify(ch), baseH = req.headers['x-base'], base = baseH === undefined || a.sid ? null : parseInt(baseH, 10); // session-id tokens: the live session is the only writer, so no version race
         let out = null;
         saveQ.set(a.uid, (saveQ.get(a.uid) || Promise.resolve()).catch(() => {}).then(async () => {
           let u;
@@ -106,7 +112,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
         return send(res, 200, r.rows.map(x => ({ ...JSON.parse(x.data), name: x.name, score: x.score })));
       }
       if (u.pathname === '/api/board' && req.method === 'POST') {
-        const a = authed(req); if (!a) return send(res, 401, { err: 'Not logged in' });
+        const a = authed(req); if (!a || !(await sessOk(a))) return send(res, 401, { err: 'Not logged in' });
         const e = await body(req);
         if (!e || typeof e.name !== 'string' || !Number.isFinite(e.score)) return send(res, 400, { err: 'Bad entry' });
         const img = typeof e.img === 'string' && e.img.length < 20000 ? e.img : '';
@@ -130,12 +136,12 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
   const blocked = new Map(); // uid -> until (kicked)
   const players = new Map(); // uid -> {ws,name,x,y,dir,eq,t,lastChat}
   const wss = new WebSocketServer({ noServer: true, maxPayload: 16384 });
-  server.on('upgrade', (req, sock, head) => {
+  server.on('upgrade', async (req, sock, head) => {
     const u = new URL(req.url, 'http://x');
     sock.setNoDelay?.(true);
     const rip = ip(req); if (wsConnLim(rip) || (wsByIp.get(rip) || 0) >= WS_PER_IP) { flag(rip, 'ws-conn'); sock.write('HTTP/1.1 429 Too Many Requests\r\n\r\n'); return sock.destroy() }
     const a = u.pathname === '/ws' ? readToken(u.searchParams.get('token')) : null;
-    if (!a) { sock.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); return sock.destroy(); }
+    if (!a || !(await sessOk(a))) { sock.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); return sock.destroy(); }
     if (maintBlocks(a.uid, a.name)) { sock.write('HTTP/1.1 503 Service Unavailable\r\n\r\n'); return sock.destroy(); }
     if ((blocked.get(a.uid) || 0) > Date.now()) { sock.write('HTTP/1.1 403 Forbidden\r\n\r\n'); return sock.destroy(); }
     wss.handleUpgrade(req, sock, head, ws => wss.emit('connection', ws, a, req));

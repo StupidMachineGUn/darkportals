@@ -1,0 +1,20 @@
+process.env.IP_LIMIT = '0'; process.env.USE_PGMEM = '1'; process.env.JWT_SECRET = 'test'; process.env.NO_SIM = '1';
+import assert from 'node:assert/strict';
+import WebSocket from 'ws';
+const { createServer } = await import('../src/index.js');
+const s = await createServer({ port: 0 });
+const J = async (p, o = {}, tok) => { const r = await fetch(`http://127.0.0.1:${s.port}${p}`, { method: o.method || 'GET', headers: { 'content-type': 'application/json', ...(tok ? { authorization: 'Bearer ' + tok } : {}), ...(o.headers || {}) }, body: o.body ? JSON.stringify(o.body) : undefined }); return { s: r.status, j: await r.json().catch(() => ({})) } };
+const ch = g => ({ name: 'Zed', xp: { melee: 5 }, inv: [{ id: 'bread', n: 1 }], gold: g });
+let r = await J('/api/register', { method: 'POST', body: { username: 'Zed', password: 'secret12' } }); const t1 = r.j.token;
+r = await J('/api/save', { method: 'PUT', body: ch(1), headers: { 'x-base': '0' } }, t1); assert.equal(r.s, 200);
+// lost-response retry: same base again must not conflict
+r = await J('/api/save', { method: 'PUT', body: ch(2), headers: { 'x-base': '0' } }, t1); assert.equal(r.s, 200, 'retry with stale base ok'); console.log('ok   retry with stale base');
+const ws1 = new WebSocket(`ws://127.0.0.1:${s.port}/ws?token=${t1}`); const got = []; ws1.on('message', (d, b) => { if (!b) got.push(JSON.parse(d)) }); let code = 0; ws1.on('close', c => code = c); await new Promise(res => ws1.on('open', res));
+r = await J('/api/login', { method: 'POST', body: { username: 'Zed', password: 'secret12' } }); const t2 = r.j.token;
+await new Promise(res => setTimeout(res, 300));
+assert.equal(code, 4001, 'old tab socket closed with 4001'); assert.ok(got.some(m => m.t === 'moved')); console.log('ok   old tab told it moved');
+r = await J('/api/save', { method: 'PUT', body: ch(50) }, t1); assert.equal(r.s, 401); assert.equal(r.j.moved, 1); console.log('ok   old token cannot save');
+r = await J('/api/save', { method: 'PUT', body: ch(60) }, t2); assert.equal(r.s, 200); console.log('ok   new session saves');
+r = await J('/api/login', { method: 'POST', body: { username: 'Zed', password: 'secret12' } }); assert.equal(r.j.character.data.gold, 60); console.log('ok   data intact');
+await assert.rejects(new Promise((res, rej) => { const w = new WebSocket(`ws://127.0.0.1:${s.port}/ws?token=${t1}`); w.on('open', res); w.on('error', rej) })); console.log('ok   old token cannot connect');
+console.log('v069 done'); process.exit(0);

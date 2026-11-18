@@ -8,8 +8,8 @@ export const checkPw = async (pw, salt, hash) => {
   const { hash: h } = await hashPw(pw, salt);
   return crypto.timingSafeEqual(Buffer.from(h, 'hex'), Buffer.from(hash, 'hex'));
 };
-export function makeToken(uid, name, days = 30) {
-  const body = Buffer.from(JSON.stringify({ uid, name, exp: Date.now() + days * 864e5 })).toString('base64url');
+export function makeToken(uid, name, days = 30, sid) {
+  const body = Buffer.from(JSON.stringify({ uid, name, sid, exp: Date.now() + days * 864e5 })).toString('base64url');
   const sig = crypto.createHmac('sha256', SECRET).update(body).digest('base64url');
   return body + '.' + sig;
 }

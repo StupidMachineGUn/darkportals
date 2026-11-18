@@ -15,9 +15,10 @@ r = await reg('fam1', '9.9.9.9'); const r2 = await reg('fam2', '9.9.9.9'); ok('I
 // versioned save
 r = await J('/api/save', { method: 'PUT', body: ch(1), headers: { 'x-base': '0' } }, aTok); ok('first save ok ver 1', r.s === 200 && r.j.ver === 1);
 r = await J('/api/save', { method: 'PUT', body: ch(2), headers: { 'x-base': '1' } }, aTok); ok('next save ver 2', r.s === 200 && r.j.ver === 2);
-r = await J('/api/save', { method: 'PUT', body: ch(99), headers: { 'x-base': '1' } }, aTok); ok('stale save refused 409', r.s === 409);
-r = await J('/api/login', { method: 'POST', body: { username: 'anna1', password: 'secret12' } }); ok('login returns ver 2 + newest data', r.j.character.ver === 2 && r.j.character.data.xp.melee === 2);
-r = await J('/api/save', { method: 'PUT', body: ch(3) }, aTok); ok('legacy save without header still works', r.s === 200 && r.j.ver === 3);
+r = await J('/api/save', { method: 'PUT', body: ch(99), headers: { 'x-base': '1' } }, aTok); ok('same-session retry with a stale base is accepted (lost-response safe)', r.s === 200 && r.j.ver === 3);
+r = await J('/api/login', { method: 'POST', body: { username: 'anna1', password: 'secret12' } }); ok('login returns newest data', r.j.character.ver === 3 && r.j.character.data.xp.melee === 99);const nTok = r.j.token;
+r = await J('/api/save', { method: 'PUT', body: ch(5) }, aTok); ok('old session token refused after a new login (one session per account)', r.s === 401 && r.j.moved === 1);
+r = await J('/api/save', { method: 'PUT', body: ch(3) }, nTok); ok('new session saves without header', r.s === 200 && r.j.ver === 4);
 // admin features
 process.env.IP_LIMIT = '0';
 const mk = async (n, ip) => { const x = await J('/api/register', { method: 'POST', body: { username: n, password: 'secret12' }, headers: { 'x-forwarded-for': ip } }); const ws = new WebSocket(`ws://localhost:${s.port}/ws?token=${encodeURIComponent(x.j.token)}`, { headers: { 'x-forwarded-for': ip } }); const st = { ws, msgs: [], tok: x.j.token, n }; ws.on('message', (d, b) => { if (!b) st.msgs.push(JSON.parse(d)) }); await new Promise(res => ws.on('open', res)); return st };
@@ -32,6 +33,7 @@ r = await J('/api/ping'); ok('ping shows maintenance', r.j.maint === true && r.j
 const late = await J('/api/register', { method: 'POST', body: { username: 'latecomer', password: 'secret12' } }); ok('new sign-ups refused in maintenance', late.s === 503);
 r = await J('/api/login', { method: 'POST', body: { username: 'anna3', password: 'secret12' } }); ok('normal login refused in maintenance', r.s === 503);
 r = await J('/api/login', { method: 'POST', body: { username: 'boss', password: 'secret12' } }); ok('admin login allowed', r.s === 200);
+{ const w2 = new WebSocket(`ws://localhost:${s.port}/ws?token=${encodeURIComponent(r.j.token)}`, { headers: { 'x-forwarded-for': '9.9.9.9' } }); w2.on('message', (d, bin) => { if (!bin) boss.msgs.push(JSON.parse(d)) }); await new Promise(res => w2.on('open', res)); boss.ws = w2; boss.tok = r.j.token; await wait(300) }
 pl.ws.close(); await wait(200);
 const back = await new Promise(res => { const w = new WebSocket(`ws://localhost:${s.port}/ws?token=${encodeURIComponent(pl.tok)}`); w.on('open', () => { res('open'); w.close() }); w.on('unexpected-response', () => res('refused')); w.on('error', () => res('refused')) }); ok('current players may reconnect', back === 'open');
 send(boss, { t: 'adm', c: 'maint', on: false }); await wait(250); r = await J('/api/ping'); ok('maintenance off', r.j.maint === false);

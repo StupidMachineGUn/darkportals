@@ -17,14 +17,14 @@ const ch = { name: 'Alice', xp: { melee: 5 }, inv: [{ id: 'bread', n: 2 }], gold
 assert.equal((await j('PUT', '/api/save', ch, l.b.token)).s, 200);
 assert.equal((await j('PUT', '/api/save', { ...ch, gold: 99 }, l.b.token)).s, 200);
 const l2 = await j('POST', '/api/login', { username: 'Alice', password: 'secret1' }); assert.equal(l2.b.character.data.gold, 99);
-assert.equal((await j('POST', '/api/board', { name: 'Alice', score: 6000, tl: 10, wiz: 1 }, l.b.token)).s, 200);
-assert.equal((await j('POST', '/api/board', { name: 'Alice', score: 100 }, l.b.token)).s, 200);
+assert.equal((await j('POST', '/api/board', { name: 'Alice', score: 6000, tl: 10, wiz: 1 }, l2.b.token)).s, 200);
+assert.equal((await j('POST', '/api/board', { name: 'Alice', score: 100 }, l2.b.token)).s, 200);
 const bd = await j('GET', '/api/board'); assert.equal(bd.b[0].score, 6000);
 // websocket presence
 const b = await j('POST', '/api/register', { username: 'Bob', password: 'secret2' });
 const open = (tok) => new Promise((res, rej) => { const w = new WebSocket(`ws://127.0.0.1:${s.port}/ws?token=${tok}`); const msgs = []; w.on('message', (d, bin) => { if (!bin) msgs.push(JSON.parse(d)) }); w.on('open', () => res({ w, msgs })); w.on('error', rej) });
 await assert.rejects(open('bad'));
-const A = await open(l.b.token), B = await open(b.b.token);
+const A = await open(l2.b.token), B = await open(b.b.token);
 A.w.send(JSON.stringify({ t: 'pos', x: 10, y: 10, dir: 1, eq: 2 })); B.w.send(JSON.stringify({ t: 'pos', x: 12, y: 10, dir: 0, eq: 0 }));
 await new Promise(r => setTimeout(r, 500));
 assert.ok(A.msgs.some(m => m.t === 'players' && m.l.some(p => p.n === 'Bob')), 'A sees Bob');

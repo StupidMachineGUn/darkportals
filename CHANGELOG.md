@@ -1,4 +1,8 @@
 # Changelog
+## 0.6.9 - One session per account, safe saving
+- Only one live session per account: logging in on a new tab or device ends the old one with a clear "Opened somewhere else" screen (different accounts in different tabs are fine and save separately).
+- Fixed a save race: if a save reached the server but the reply was lost (phone sleep, bad signal), the retry was wrongly refused as "saved from another session" and progress stopped saving. The live session can now always save.
+- The game now warns loudly when saves are rejected or the connection keeps failing, so progress is never silently lost.
 ## 0.6.8 - Safe hunting near villages
 - Monster difficulty now eases around every village and town: the closer you are to any settlement the weaker the mobs, and they get harder the farther you walk from one. Far-off towns no longer sit in dragon country.
 - Village-themed spawns toned down (no trolls/demons/giants/liches around villages).
