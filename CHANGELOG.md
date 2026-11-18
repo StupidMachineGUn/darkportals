@@ -1,4 +1,6 @@
 # Changelog
+## 0.6.10 - The Ember Wyrm stays in the wilds
+- The roaming Ember Wyrm (red dragon) now spawns at least 90 tiles from every village and 110 from the capital, and can no longer be dragged more than 40 tiles from where it appeared, so beginners never meet it near a settlement.
 ## 0.6.10 - Wyrm stays in the wilds
 - The roaming Ember Wyrm (the red dragon with fireballs) can no longer wake up near villages: it now appears at least 55 tiles from any village and only in the dangerous outer lands, and the announcement says how far it is from the nearest town.
 ## 0.6.9 - One session per account, safe saving

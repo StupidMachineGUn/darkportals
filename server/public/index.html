@@ -822,8 +822,8 @@ function updEnemies(dt){if(NET.sim)return netMobs(dt);for(const e of E){if(e.dea
   if(e.slow){e.slow.left-=dt;if(Math.random()<dt*6)parts.push({x:e.x+rnd(-.3,.3),y:e.y,vx:0,vy:-.5,life:.4,c:DOTC.slow,sz:2});if(e.slow.left<=0)e.slow=null}
   const s=ESPEC[e.t];if(s.pass){updPassive(e,s,dt);continue}if(e.dragon)dragonAI(e,s,dt);e.cd-=dt;e.flash-=dt;e.sw=(e.sw||0)-dt;const d=Math.hypot(P.x-e.x,P.y-e.y),hd=Math.hypot(e.hx-e.x,e.hy-e.y);
   if(!P.dead&&e.st===0&&d<s.ag&&!safeAt(P.x,P.y))e.st=1;
-  if(e.st===1&&(P.dead||d>s.ag*(e.t==='wyrm'||e.t==='wizard'?2.2:1.5)||hd>(e.t==='wyrm'?60:e.t==='wizard'?24:13)||safeAt(P.x,P.y)))e.st=2;
-  if(e.t==='wyrm'&&e.st===2){e.st=0;e.hx=e.x;e.hy=e.y}
+  if(e.st===1&&(P.dead||d>s.ag*(e.t==='wyrm'||e.t==='wizard'?2.2:1.5)||hd>(e.t==='wyrm'?36:e.t==='wizard'?24:13)||safeAt(P.x,P.y)))e.st=2;
+  if(e.t==='wyrm'&&e.st===2){if(e.sx!=null&&Math.hypot(e.x-e.sx,e.y-e.sy)>40){e.hx=e.sx;e.hy=e.sy}else{e.st=0;e.hx=e.x;e.hy=e.y}}
   let tx=null,ty=null,sp=s.spd*(e.slow?e.slow.m:1)*(FASTM.has(e.t)||e.el||e.t==='wyrm'||e.t==='rooster'?1:.65);
   if(e.st===1){tx=P.x;ty=P.y;if(d<1.05){if(e.cd<=0){e.cd=e.t==='wyrm'?1.6:1.2;e.sw=.25;if(Math.random()<.88-clamp(lv('agility')*.003,0,.25)){const dd=s.dmg*(e.dm||1)*rnd(.8,1.2);playerHit(dd);if(s.ab&&s.ab.includes('drain'))e.hp=Math.min(e.mhp,e.hp+dd*.5)}else{fl(P.x,P.y-.8,'Dodge!','#9cf');gainXp('agility',3);sfx('miss')}}tx=null}
    if(s.ab)mobAb(e,s,d,dt);
@@ -854,8 +854,8 @@ function updBots(dt){for(const b of bots){
  if(boss&&!boss.dead){const d=Math.hypot(boss.x-b.x,boss.y-b.y);if(d>2.2){b.tx=boss.x+rnd(-1.5,1.5);b.ty=boss.y+rnd(-1.5,1.5)}else{if(boss.hp>boss.mhp*.12)boss.hp=Math.max(boss.mhp*.12,boss.hp-1.4*dt)}}
  else if(b.wait>0){b.wait-=dt}else if(b.tx==null){let tries=0,x,y;do{x=b.x+rnd(-9,9);y=b.y+rnd(-9,9);tries++}while(tries<10&&(!canStand(x,y)||Math.hypot(x-CX,y-CY)>18));b.tx=x;b.ty=y}
  if(b.tx!=null){const dx=b.tx-b.x,dy=b.ty-b.y,m=Math.hypot(dx,dy);if(m<.3){b.tx=null;b.wait=rnd(2,7)}else{moveEnt(b,dx/m*2.6*dt,dy/m*2.6*dt);b.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?2:1):(dy>0?0:3)}}}}
-function spawnBoss(){let x,y,t=0;do{x=ri(5,MW-5);y=ri(5,MH-5);t++}while(t<9000&&(!reach[idx(x,y)]||solid[idx(x,y)]||Math.hypot(x-CX,y-CY)<70||diffAt(x,y)<90||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<55)||safeAt(x,y)));if(t>=9000)return;
- const e=mkEnemy('wyrm',x+.5,y+.5);e.born=clock;E.push(e);boss=e;P.bossDmg=0;sfx('boss');{const hub=[{n:'the capital',x:CX,y:CY},...VIL.map(v=>({n:v.name,x:v.x,y:v.y}))].sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];sys('🐉 The EMBER WYRM has awoken in the wilds, '+Math.round(Math.hypot(hub.x-x,hub.y-y))+' tiles from '+hub.n+'! Heroes are rushing to fight it.','#ff7a3a')}toast('🐉 EMBER WYRM AWAKENS');}
+function spawnBoss(){let x,y,t=0;/* v0.6.10: the Ember Wyrm lives far from every settlement (>=90 tiles from villages, >=110 from the capital) so newcomers never meet it */const FAR=t=>t<4000?[90,110]:t<7000?[75,95]:[55,70];do{x=ri(5,MW-5);y=ri(5,MH-5);t++;var fr=FAR(t)}while(t<9000&&(!reach[idx(x,y)]||solid[idx(x,y)]||Math.hypot(x-CX,y-CY)<fr[1]||diffAt(x,y)<90||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<fr[0])||safeAt(x,y)));if(t>=9000)return;
+ const e=mkEnemy('wyrm',x+.5,y+.5);e.sx=x+.5;e.sy=y+.5;e.born=clock;E.push(e);boss=e;P.bossDmg=0;sfx('boss');{const hub=[{n:'the capital',x:CX,y:CY},...VIL.map(v=>({n:v.name,x:v.x,y:v.y}))].sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];sys('🐉 The EMBER WYRM has awoken in the wilds, '+Math.round(Math.hypot(hub.x-x,hub.y-y))+' tiles from '+hub.n+'! Heroes are rushing to fight it.','#ff7a3a')}toast('🐉 EMBER WYRM AWAKENS');}
 function updProj(dt){for(let i=proj.length-1;i>=0;i--){const p=proj[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;let rm=p.life<=0||!inb(Math.floor(p.x),Math.floor(p.y))||(solid[idx(Math.floor(p.x),Math.floor(p.y))]&&isWater(Math.floor(p.x),Math.floor(p.y))===false&&!objAt.has(idx(Math.floor(p.x),Math.floor(p.y))));
   if(p.own==='p'){let hit=null;for(const e of E){if(!e.dead&&Math.hypot(e.x-p.x,e.y-.3-p.y)<.7){hit=e;break}}if(hit){spellHit(p,hit);rm=true}else if(rm&&SPELLS[p.sp].aoe)spellAoe(p,new Set())}
   else if(p.own==='o'||NET.sim){}
