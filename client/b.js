@@ -25,7 +25,7 @@ const ITEMS={
  shrimp:{n:'Raw Shrimp',e:'🦐',v:2,raw:'cshrimp',lv:1},trout:{n:'Raw Trout',e:'🐟',v:6,raw:'ctrout',lv:8},salmon:{n:'Raw Salmon',e:'🐠',v:14,raw:'csalmon',lv:20},
  cshrimp:{n:'Fried Shrimp',e:'🍤',v:4,heal:8},ctrout:{n:'Grilled Trout',e:'🍖',v:12,heal:20},csalmon:{n:'Salmon Feast',e:'🍱',v:28,heal:40},
  berry:{n:'Wild Berries',e:'🍇',v:2,heal:4},bread:{n:'Bread',e:'🍞',v:6,heal:12,buy:8},potion:{n:'Mana Potion',e:'🧪',v:10,mana:25,buy:18},
- tusk:{n:'Orc Tusk',e:'🦷',v:14},essence:{n:'Spirit Essence',e:'💠',v:30},tscroll:{n:'Scroll of Town Portal',e:'📜',v:40,buy:90,tscroll:1,pot:0},hpotion:{n:'Health Potion',e:'🍷',v:12,heal:45,pot:1,buy:25},gel:{n:'Slime Gel',e:'🟢',v:2},pelt:{n:'Wolf Pelt',e:'🐺',v:6},bone:{n:'Bone',e:'🦴',v:4},scale:{n:'Wyrm Scale',e:'🐉',v:80},
+ tusk:{n:'Orc Tusk',e:'🦷',v:14},essence:{n:'Spirit Essence',e:'💠',v:30},seal1:{n:'Crypt Seal',e:'🗝️',v:3000},seal2:{n:'Frost Seal',e:'🔑',v:3000},seal3:{n:'Forge Seal',e:'🪬',v:3000},tscroll:{n:'Scroll of Town Portal',e:'📜',v:40,buy:90,tscroll:1,pot:0},hpotion:{n:'Health Potion',e:'🍷',v:12,heal:45,pot:1,buy:25},gel:{n:'Slime Gel',e:'🟢',v:2},pelt:{n:'Wolf Pelt',e:'🐺',v:6},bone:{n:'Bone',e:'🦴',v:4},scale:{n:'Wyrm Scale',e:'🐉',v:80},
  sword0:{n:'Rusty Sword',e:'🗡️',v:1,slot:'w',atk:1},sword1:{n:'Copper Blade',e:'🔪',v:20,slot:'w',atk:3,req:['melee',3]},
  sword2:{n:'Iron Sword',e:'⚔️',v:60,slot:'w',atk:6,req:['melee',10]},staff:{n:'Oak Staff',e:'🪄',v:60,slot:'w',atk:1,mag:4,buy:120,req:['magic',5]},
  arm0:{n:'Cloth Tunic',e:'👕',v:1,slot:'a',def:0},arm1:{n:'Copper Mail',e:'🥋',v:40,slot:'a',def:3,req:['defense',3]},arm2:{n:'Iron Armor',e:'🛡️',v:120,slot:'a',def:7,req:['defense',10]},

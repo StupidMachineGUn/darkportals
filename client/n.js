@@ -24,7 +24,7 @@ function netConnect(){if(!NET.on||!NET.tok)return;const w=new WebSocket((locatio
    for(const id of [...NET.others.keys()])if(!seen.has(id))NET.others.delete(id)}
   else if(m.t==='m')netSnap(m);
   else if(m.t==='pong'){NET.ping=Math.round(performance.now()-m.c);NET.ld=m.ld;NET.q=m.q;netPingUi()}
-  else if(m.t==='hurt'){if(P&&!P.dead){playerHit(m.d,null);if(m.fx)playerFx(m.fx)}}
+  else if(m.t==='hurt'){if(P&&!P.dead){if(m.fx==='tp')tele(m.x,m.y);else{playerHit(m.d,null);if(m.fx)playerFx(m.fx)}}}
   else if(m.t==='kill')netKill(m.l);
   else if(m.t==='ev'){if(m.k==='proj'&&Math.hypot(m.x-P.x,m.y-P.y)<30)proj.push({x:m.x,y:m.y,vx:m.vx,vy:m.vy,dmg:0,life:m.life,own:'e'})}
   else if(m.t==='shake'){shakeT=3.2;shakeA=3;sfx('boss')}
@@ -96,7 +96,7 @@ function netMobs(dt){const k=Math.min(1,dt*12);for(const e of E){if(e.dead)conti
 function netSay(t){t=t.trim();if(/^\/p\s/i.test(t)){if(NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify({t:'pyc',m:t.slice(3)}));return}if(t&&NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify({t:'chat',m:t}))}
 function netStep(dt){groundLocal(dt);if(typeof jailTick==='function')jailTick(dt);if(P&&NET.sim&&!P.dead&&!shopSt&&!P.inside&&NET.gnd.size){NET.gT=(NET.gT||0)-dt;if(NET.gT<=0){NET.gT=.4;for(const d of NET.gnd.values()){if((NET.gpend.get(d.id)||0)>clock||Math.hypot(d.x-P.x,d.y-P.y)>1.2||dropIgn(d))continue;const it=ITEMS[d.it.id];if(!it)continue;if(P.inv.length>=24&&(it.slot||!P.inv.some(x=>x.id===d.it.id)))continue;NET.gpend.set(d.id,clock+2);netSend({t:'gt',id:d.id});break}}}
 if(P){const mv=NET.sx==null||Math.hypot(P.x-NET.sx,P.y-NET.sy)>.05||P.swing>0||CD.bolt>CDM.bolt-.2;NET.sx=P.x;NET.sy=P.y;if(mv)NET.idle=0;else NET.idle=(NET.idle||0)+dt;NET.mySayT=(NET.mySayT||0)-dt;NET.self=shopSt?2:NET.idle>30?1:0;NET.ac=(typeof act!=='undefined'&&act)?act.kind:(NET.acT>clock?NET.acK:'');if(NET.ac)NET.idle=0}for(const o of NET.others.values()){const k=Math.min(1,dt*10),dx=o.tx-o.x,dy=o.ty-o.y;o.mv=Math.abs(dx)+Math.abs(dy)>.05;o.swing=(o.swing||0)-dt;o.sayT=(o.sayT||0)-dt;if(o.bd){const k2=Math.min(1,dt*12);o.drx=(o.drx==null?o.rx:o.drx+(o.rx-o.drx)*k2);o.dry=(o.dry==null?o.ry:o.dry+(o.ry-o.dry)*k2);o.rph=(o.rph||0)+(o.rm?dt*9:0)}else{o.drx=null}o.x+=dx*k;o.y+=dy*k;o.ph=(o.ph||0)+dt*8}}
-function netDraw(R,vis){groundDraw(R,vis);
+function netDraw(R,vis){groundDraw(R,vis);hazDraw(R,vis);
 for(const o of NET.others.values())if(!o.bd&&vis(o.x,o.y)&&o.hp<=0&&!o.ch)R.push([o.y*T+30,()=>deathFx(o.x*T,o.y*T-30,clock)]);
 for(const o of NET.others.values())if(!o.bd&&vis(o.x,o.y))R.push([o.y*T,()=>{buffFx(o.x*T,o.y*T,o.bf|0,clock);drawChar(Math.round(o.x*T-8),Math.round(o.y*T-14),o.dir,o.ph||0,(o.lk&&o.lk.ta)?shade(o.lk.ta,.7):o.col,'#432',{moving:o.mv,wid:(o.lk||{}).w,wt:(o.lk||{}).wt|0,d8:(o.lk||{}).d8,tw:(o.lk||{}).tw,ta:(o.lk||{}).ta,arm:(o.lk||{}).a,helm:(o.lk||{}).h,boots:(o.lk||{}).b,chick:o.ch,sp:o.swing>0?1-o.swing/.25:-1})}])}
 const ACI={chop:'🪓',mine:'⛏️',fish:'🎣',cook:'🍳',bush:'🌿',fight:'⚔️',cast:'🔮',heal:'💚',shield:'🛡️',haste:'💨',pot:'🥔'};

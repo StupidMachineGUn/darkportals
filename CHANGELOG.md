@@ -1,4 +1,11 @@
 # Changelog
+## 0.6.6 - Four huge dungeons
+- Four big procedural dungeons (18-24 rooms each, dark with limited vision): Sunken Crypts (gate at Gloomspire), Frostbound Vault (Mistfall), Ashen Forge (Cinderhold) and the Wyrm's Citadel (Frostmere). The old Dark Wizard dungeon stays.
+- Traps: spike floors and fire jets with a warning glow, poison gas clouds, dart walls and teleport pads. They work online and hurt everyone in the room.
+- Secrets: some walls are fake - walk into suspicious cracked-looking walls (they shimmer when you are close) to find hidden closets with treasure chests (gold, gems, essence, potions, gear).
+- Each dungeon has 3 named mini-bosses with big HP. The last one drops that dungeon's Seal (Crypt, Frost, Forge) plus good loot.
+- The Citadel gate needs all three Seals. Its boss room holds the Ashen Wyrm (full boss rework comes next).
+- Dungeon mobs use the new magic mobs and are tough elites.
 ## 0.6.5 - A bigger, stranger world
 - The world grows from 300x300 to 420x420 tiles, with three new far-off hard towns: Mistfall, Cinderhold and Gloomspire (each with a bank). Existing characters are moved to the main town once because the map moved.
 - All 79 art mobs are now in the game, spread by distance from the capital and by terrain (foxes, boars, yetis, giants, liches, wisps, ghosts, phoenixes, drakes...). Cows, pigs, deer, rabbits and camels roam as harmless animals. Gold slimes carry lots of gold.

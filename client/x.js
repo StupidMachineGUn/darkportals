@@ -85,11 +85,11 @@ function carveDungeon(){const X0=DUN.x0,Y0=DUN.y0,X1=X0+DUN.w,Y1=Y0+DUN.h;
  {const [x,y]=R[5];for(const [px,py] of [[3,6],[9,6],[3,23],[9,23],[6,14],[6,15]])pil(x+px,y+py)}
  const e=R[0];GATE_X={x:e[0]+1,y:e[1]+5};const o={x:GATE_X.x,y:GATE_X.y,t:'gate',hp:1,dead:0,exit:true};objs.push(o);objAt.set(idx(o.x,o.y),o);solid[idx(o.x,o.y)]=1;
  // outside gate near the last village
- const v=VIL[VIL.length-1]||{x:CX-80,y:CY-80};let best=null;
+ const v=VIL.find(q=>q.name==='Dragonwatch')||VIL[VIL.length-1]||{x:CX-80,y:CY-80};let best=null;
  for(let r=VIL_R+4;r<VIL_R+12&&!best;r++)for(let a=0;a<6.283;a+=.1){const x=Math.round(v.x+Math.cos(a)*r),y=Math.round(v.y+Math.sin(a)*r),k=idx(x,y);if(inb(x,y+1)&&reach[k]&&!solid[k]&&!objAt.has(k)&&!solid[idx(x,y+1)]&&!objAt.has(idx(x,y+1))&&!safeAt(x,y)&&map[k]>=2&&map[k]<=8){best={x,y};break}}
  if(best){const g2={x:best.x,y:best.y,t:'gate',hp:1,dead:0,exit:false};objs.push(g2);objAt.set(idx(g2.x,g2.y),g2);solid[idx(g2.x,g2.y)]=1;GATE=g2;o.to={x:best.x+.5,y:best.y+1.5}}
- else o.to={x:CX+.5,y:CY+2.5}}
-function useGate(o){if(!o.exit){if(clock>gateArm){gateArm=clock+6;return toast('☠️ Dungeon of the Dark Wizard – deadly! Bring a party. Tap again to enter.','#c9f')}
+ else o.to={x:CX+.5,y:CY+2.5};carveBigAll()}
+function useGate(o){if(o.dg)return useBigGate(o);if(!o.exit){if(clock>gateArm){gateArm=clock+6;return toast('☠️ Dungeon of the Dark Wizard – deadly! Bring a party. Tap again to enter.','#c9f')}
   const R=DR()[0];tele(R[0]+7.5,R[1]+6.5);sys('☠️ You step into the Dungeon of the Dark Wizard…','#c9f');return}
  tele(o.to.x,o.to.y);sys('🌅 You escape the dungeon.','#9fe3ff')}
 function tele(x,y){NET.tpT=1;stopAct();P.x=x;P.y=y;P.path=null;P.chase=null;cam.x=x;cam.y=y;burst(x,y-.4,'#b46aff',26,5);fxs.push({k:'ring',x,y,r:2,life:.6,max:.6,c:'#b46aff'});sfx('lvl')}
@@ -97,9 +97,10 @@ function dunMob(t,x,y,dep){const e=mkEnemy(t,x,y);e.el='elite';e.dun=1;e.mhp=e.h
 function spawnDungeon(){const R=DR(),T4=[['skeleton','ogre'],['wraith','golem'],['troll','golem','ogre'],['demon','troll']];
  for(let i=1;i<=4;i++){const [rx,ry,rw,rh]=R[i];let n=0,tr=0;while(n<3&&tr++<200){const cx=rx+ri(2,rw-3),cy=ry+ri(2,rh-3);if(solid[idx(cx,cy)])continue;const t=pick(T4[i-1]);for(let m=0;m<3;m++){const x=cx+(m-1)*.9,y=cy+(m%2)*.7;if(solid[idx(Math.floor(x),Math.floor(y))])continue;E.push(dunMob(t,x+.5,y+.5,i))}n++}}
  const [bx,by,bw,bh]=R[5],w=mkEnemy('wizard',bx+bw-4+.5,by+bh/2+.5);w.el='lord';w.dun=1;w.sc=1.6;w.hx=w.x;w.hy=w.y;E.push(w);
- for(const [dx,dy] of [[-4,-5],[-4,5]]){const e=dunMob('demon',w.x+dx,w.y+dy,5);E.push(e)}}
+ for(const [dx,dy] of [[-4,-5],[-4,5]]){const e=dunMob('demon',w.x+dx,w.y+dy,5);E.push(e)}
+ spawnBigDungeons()}
 function megaLoot(rar){const s=addItem(pick(ENDGAME));if(!s)return;rollGear(s,'smith',true);s.rar=Math.max(s.rar|0,rar);if(rar>=2&&!s.ench)rollGear(Object.assign(s,{}),'smith',true),s.rar=Math.max(s.rar|0,rar);announceGear(s,'Looted');sys('🎁 Dungeon loot: '+nameOf(s),RARC[s.rar|0])}
-function dunKill(e){if(e.t==='wizard')closePortals();if(e.el==='elite'){if(Math.random()<.45)megaLoot(Math.random()<.04?3:Math.random()<.2?2:1);if(Math.random()<.3){addItem('gem');fl(e.x,e.y-1,'💎','#fff')}if(Math.random()<.3)addItem(pick(['hpotion','potion']),2)}
+function dunKill(e){if(e.mb)return mbLoot(e);if(e.t==='wizard')closePortals();if(e.el==='elite'){if(Math.random()<.45)megaLoot(Math.random()<.04?3:Math.random()<.2?2:1);if(Math.random()<.3){addItem('gem');fl(e.x,e.y-1,'💎','#fff')}if(Math.random()<.3)addItem(pick(['hpotion','potion']),2)}
  else if(e.t==='wizard'){for(let i=0;i<3;i++)megaLoot(3);addItem('essence',6);addItem('gem',4);addItem('hpotion',5);P.wiz=(P.wiz|0)+1;addBoard();sys('💀 MALACHAR, THE DARK WIZARD, HAS FALLEN! The portals fall silent… for now.','#ffd34a');toast('🏆 The Dark Wizard is defeated!','#ffd34a');for(let i=0;i<5;i++)fxs.push({k:'ring',x:e.x,y:e.y,r:2+i*1.6,life:.8+i*.15,max:.8+i*.15,c:'#ffd34a'})}}
 const ELL=e=>e.el==='lord'?'💀 Malachar, the Dark Wizard':e.el==='elite'?'⚔ Elite '+e.t:(e.el==='shaman'?'🔮 Shaman ':'👑 Chief ')+e.t;
 /* ---------- gore · shadows · shake · music ---------- */
@@ -213,3 +214,96 @@ function drawPortal(p){const px=p.x*T,py=p.y*T,o=PT.open,tt=clock;g.fillStyle='#
  if(o){for(let i=0;i<7;i++){const y=py-20+((tt*18+i*13)%32),w=3+Math.sin(tt*4+i)*2.5;g.fillStyle='hsl('+(270+i*8)+',85%,'+(50+15*Math.sin(tt*3+i))+'%)';g.fillRect(px+8-w/2+Math.sin(tt*5+i*2)*3,y,w,2)}
   g.fillStyle='#d9a8ff';g.fillRect(px+7,py-30,2,2);if(Math.random()<.15)parts.push({x:p.x+.5,y:p.y-1.4,vx:rnd(-.4,.4),vy:rnd(-1.2,-.4),life:rnd(.5,1),c:'#c9f',sz:1})}
  else{g.fillStyle='#55525c';g.fillRect(px+3,py-20,2,6);g.fillRect(px+9,py-12,3,2)}}
+
+/* ---------- v0.6.6: big dungeons (generator, traps, secret walls, mini-bosses) ---------- */
+const DUNX=[
+ {id:'crypt',name:'Sunken Crypts',x0:130,y0:8,w:125,h:56,seed:11,tier:1,gate:'Gloomspire',mobs:['zombie','ghoul','mummy','skeleton_knight','ghost','cultist','wisp'],mini:[['mummy','Pharaoh Anhotep'],['ghoul','Gravewarden Mol'],['lich','Vorgath the Undying']],seal:'seal1'},
+ {id:'frost',name:'Frostbound Vault',x0:8,y0:362,w:115,h:50,seed:23,tier:2,gate:'Mistfall',mobs:['yeti','ice_golem','frost_spider','snow_wolf','ice_bat','polar_bear','frost_giant'],mini:[['yeti','Old Rimefang'],['frost_giant','Jarl Skaldir'],['ice_wyrm','Glaciax the Frozen']],seal:'seal2'},
+ {id:'forge',name:'Ashen Forge',x0:300,y0:362,w:112,h:50,seed:37,tier:3,gate:'Cinderhold',mobs:['fire_giant','lava_golem','lava_hound','imp','fire_bat','phoenix','crystal_golem'],mini:[['lava_golem','Slagheart'],['fire_giant','Surtha the Burning'],['lava_drake','Pyroclast the Drake']],seal:'seal3'},
+ {id:'citadel',name:"The Wyrm's Citadel",x0:262,y0:8,w:150,h:56,seed:53,tier:4,gate:'Frostmere',citadel:1,mobs:['demon','lich','shadow_drake','lava_golem','ghost','fire_giant','iron_golem','ice_wyrm'],mini:[['lich','Archlich Morwen'],['demon','Doomlord Azhar'],['dragon','The Ashen Wyrm']]}
+];
+const DG=[],HAZ=[],SECR=[];
+function rng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function dunXAt(x,y){for(const d of DG)if(x>=d.x0-2&&x<=d.x0+d.w+2&&y>=d.y0-2&&y<=d.y0+d.h+2)return d;return null}
+function carveBig(def){
+ const R=rng(def.seed*7919+SEED),ri2=(a,b)=>a+Math.floor(R()*(b-a+1)),X0=def.x0,Y0=def.y0,X1=X0+def.w,Y1=Y0+def.h;
+ for(let y=Y0-5;y<=Y1+5;y++)for(let x=X0-5;x<=X1+5;x++){if(!inb(x,y))continue;const k=idx(x,y);map[k]=TL.WALL;solid[k]=1;reach[k]=0;objAt.delete(k)}
+ for(let i=objs.length-1;i>=0;i--){const o=objs[i];if(o.x>=X0-5&&o.x<=X1+5&&o.y>=Y0-5&&o.y<=Y1+5)objs.splice(i,1)}
+ const fl=(x,y,w,h)=>{for(let j=0;j<h;j++)for(let i=0;i<w;i++){if(x+i<X0||x+i>X1||y+j<Y0||y+j>Y1)continue;const k=idx(x+i,y+j);map[k]=TL.DARK;solid[k]=0}};
+ const CW=18,CH=16,cols=Math.floor(def.w/CW),rows=Math.floor(def.h/CH),rooms=[],grid=[];
+ for(let r=0;r<rows;r++){grid.push([]);for(let c=0;c<cols;c++){const w=ri2(9,CW-4),h=ri2(7,CH-4),x=X0+c*CW+2+ri2(0,CW-w-4),y=Y0+r*CH+2+ri2(0,CH-h-4);const rm={x,y,w,h,cx:x+(w>>1),cy:y+(h>>1),c,r,d:-1,nb:[]};fl(x,y,w,h);rooms.push(rm);grid[r].push(rm)}}
+ const link=(a,b)=>{if(a.nb.includes(b))return;a.nb.push(b);b.nb.push(a);const wd=def.citadel?3:2;
+  const hx0=Math.min(a.cx,b.cx),hx1=Math.max(a.cx,b.cx);fl(hx0,a.cy,hx1-hx0+wd,wd);fl(b.cx,Math.min(a.cy,b.cy),wd,Math.abs(a.cy-b.cy)+wd)};
+ {const start=grid[rows>>1][0],seen=new Set([start]),st=[start];while(st.length){const a=st[st.length-1],ops=[[0,1],[1,0],[0,-1],[-1,0]].map(([dc,dr])=>grid[a.r+dr]&&grid[a.r+dr][a.c+dc]).filter(b=>b&&!seen.has(b));if(!ops.length){st.pop();continue}const b=ops[Math.floor(R()*ops.length)];seen.add(b);link(a,b);st.push(b)}
+  for(const a of rooms)for(const [dc,dr] of [[1,0],[0,1]]){const b=grid[a.r+dr]&&grid[a.r+dr][a.c+dc];if(b&&R()<.3)link(a,b)}
+  start.d=0;const q=[start];for(let i=0;i<q.length;i++){const a=q[i];for(const b of a.nb)if(b.d<0){b.d=a.d+1;q.push(b)}}
+  def.start=start}
+ def.rooms=rooms;const byD=[...rooms].sort((a,b)=>b.d-a.d);def.boss=byD[0];def.minis=[byD[2],byD[Math.min(5,byD.length-1)]];
+ // pillars
+ for(const rm of rooms)if(rm.w>=11&&rm.h>=9)for(const [px,py] of [[3,3],[rm.w-4,3],[3,rm.h-4],[rm.w-4,rm.h-4]]){const k=idx(rm.x+px,rm.y+py);map[k]=TL.WALL;solid[k]=1}
+ // secret closets behind cracked (illusory) walls
+ let ns=0,tr=0;const nWant=3+def.tier*2;
+ while(ns<nWant&&tr++<400){const rm=rooms[ri2(0,rooms.length-1)];if(rm===def.start)continue;const side=ri2(0,3);let cx,cy,px,py;
+  if(side===0){px=rm.x+ri2(2,rm.w-3);py=rm.y-1;cx=px-1;cy=py-5}else if(side===1){px=rm.x+ri2(2,rm.w-3);py=rm.y+rm.h;cx=px-1;cy=py+1}else if(side===2){px=rm.x-1;py=rm.y+ri2(2,rm.h-3);cx=px-5;cy=py-1}else{px=rm.x+rm.w;py=rm.y+ri2(2,rm.h-3);cx=px+1;cy=py-1}
+  let ok=true;for(let j=-1;j<=4&&ok;j++)for(let i=-1;i<=4;i++){const xx=cx+i,yy=cy+j;if(xx<X0+1||xx>X1-1||yy<Y0+1||yy>Y1-1||map[idx(xx,yy)]!==TL.WALL){ok=false;break}}
+  if(!ok||map[idx(px,py)]!==TL.WALL)continue;
+  fl(cx,cy,4,4);const sx=side===0||side===1?px:px,sy=py;
+  // illusory passage: tiles look like wall but can be walked through
+  const pas=[];if(side<2){for(let yy=Math.min(py,side===0?cy+3:cy);yy<=Math.max(py,side===0?cy+3:cy);yy++)pas.push([px,yy])}else{for(let xx=Math.min(px,side===2?cx+3:cx);xx<=Math.max(px,side===2?cx+3:cx);xx++)pas.push([xx,py])}
+  for(const [a,b] of pas){if(map[idx(a,b)]===TL.WALL){solid[idx(a,b)]=0;SECR.push({x:a,y:b,dg:def.id})}}
+  // make sure the closet inner tile that touches passage is floor
+  const chx=cx+1+(R()<.5?1:0),chy=cy+1+(R()<.5?1:0),o={x:chx,y:chy,t:'chest',hp:1,dead:0,tier:def.tier};objs.push(o);objAt.set(idx(o.x,o.y),o);solid[idx(o.x,o.y)]=1;ns++}
+ // traps
+ for(const rm of rooms){if(rm===def.start)continue;const n=ri2(1,2+def.tier>>1);for(let i=0;i<n;i++){const kinds=['spike','spike','fire','gas','dart','tele'];const k=kinds[ri2(0,kinds.length-1)],x=rm.x+ri2(2,rm.w-3)+.5,y=rm.y+ri2(2,rm.h-3)+.5;if(solid[idx(Math.floor(x),Math.floor(y))])continue;
+   const h={k,x,y,dg:def.id,o:R()*10,rm,dm:40+def.tier*45,seen:new Map()};
+   if(k==='spike'){h.r=1.3;h.cy=3.4;h.warn=1;h.act=.5}else if(k==='fire'){h.r=1.2;h.cy=5;h.warn=1.3;h.act=1.1;h.dm*=1.4}else if(k==='gas'){h.r=2.4}else if(k==='tele'){h.r=.7}else if(k==='dart'){h.r=0;h.t=R()*3;h.dir=ri2(0,3);h.x=rm.x+.5;h.y=rm.y+ri2(2,rm.h-3)+.5;if(h.dir===0){h.x=rm.x+ri2(2,rm.w-3)+.5;h.y=rm.y+.5}else if(h.dir===1){h.x=rm.x+ri2(2,rm.w-3)+.5;h.y=rm.y+rm.h-.5}else if(h.dir===2){h.x=rm.x+.5;h.y=rm.y+ri2(2,rm.h-3)+.5}else{h.x=rm.x+rm.w-.5;h.y=rm.y+ri2(2,rm.h-3)+.5}}
+   HAZ.push(h)}}
+ DG.push(def);
+ // exit gate inside the entrance room
+ const s=def.start,eg={x:s.x+1,y:s.y+(s.h>>1),t:'gate',hp:1,dead:0,exit:true,dg:def.id};objs.push(eg);objAt.set(idx(eg.x,eg.y),eg);solid[idx(eg.x,eg.y)]=1;def.exitGate=eg;
+ // outside gate near the named town
+ const v=VIL.find(v=>v.name===def.gate)||VIL[0];let best=null;
+ for(let r=VIL_R+3;r<VIL_R+14&&!best;r++)for(let a=0;a<6.283;a+=.1){const px=Math.round(v.x+Math.cos(a)*r),py=Math.round(v.y+Math.sin(a)*r),k=idx(px,py);if(inb(px,py+1)&&reach[k]&&!solid[k]&&!objAt.has(k)&&!solid[idx(px,py+1)]&&!objAt.has(idx(px,py+1))&&!safeAt(px,py)&&map[k]>=2&&map[k]<=8){best={x:px,y:py};break}}
+ if(!best)best={x:v.x+VIL_R+2,y:v.y};
+ const g2={x:best.x,y:best.y,t:'gate',hp:1,dead:0,exit:false,dg:def.id};objs.push(g2);objAt.set(idx(g2.x,g2.y),g2);solid[idx(g2.x,g2.y)]=1;eg.to={x:best.x+.5,y:best.y+1.5};def.gateObj=g2}
+function carveBigAll(){for(const d of DUNX)carveBig(d)}
+function useBigGate(o){const d=DG.find(q=>q.id===o.dg);if(!d)return;
+ if(o.exit){tele(o.to.x,o.to.y);sys('🌅 You escape '+d.name+'.','#9fe3ff');return}
+ if(d.citadel&&!(count('seal1')&&count('seal2')&&count('seal3'))){return toast('🔒 The Citadel gate is sealed. Bring the Crypt, Frost and Forge Seals (from the three big dungeons).','#f96')}
+ if(clock>gateArm){gateArm=clock+6;return toast('☠️ '+d.name+' – deadly! Traps, secrets and bosses. Bring a party. Tap again to enter.','#c9f')}
+ tele(d.start.cx+.5,d.start.cy+.5);sys('☠️ You enter '+d.name+'…','#c9f')}
+function bigMob(t,x,y,dep,boss){const e=mkEnemy(t,x,y);e.dun=1;if(boss){e.el='boss';e.mb=1;e.mhp=e.hp=Math.round(ESPEC[t].hp*boss);e.dm=2+dep*.1;e.xm=15;e.sc=1.6}else{e.el='elite';e.mhp=e.hp=Math.round(ESPEC[t].hp*(2.2+dep*.45));e.dm=1.2+dep*.1;e.xm=4;e.sc=1.15}return e}
+function spawnBigDungeons(){for(const d of DG){const dep0=d.tier*1.4;let rn=0;
+  for(const rm of d.rooms){if(rm===d.start)continue;rn++;if(rm===d.boss||d.minis.includes(rm))continue;const grp=ri(2,3+(d.tier>>1)),t=pick(d.mobs);for(let m=0;m<grp;m++){const x=rm.x+ri(2,rm.w-3)+.5,y=rm.y+ri(2,rm.h-3)+.5;if(solid[idx(Math.floor(x),Math.floor(y))])continue;E.push(bigMob(t,x,y,dep0+rm.d*.12))}}
+  d.minis.forEach((rm,i)=>{const [t,nm]=d.mini[i],e=bigMob(t,rm.cx+.5,rm.cy+.5,dep0+rm.d*.12,5+d.tier*2);e.nm=nm;e.hx=e.x;e.hy=e.y;e.mbI=i;e.dgid=d.id;E.push(e)});
+  {const [t,nm]=d.mini[2],rm=d.boss,e=bigMob(t,rm.cx+.5,rm.cy+.5,dep0+rm.d*.12,12+d.tier*4);e.nm=nm;e.hx=e.x;e.hy=e.y;e.mbI=2;e.dgid=d.id;e.sc=2;E.push(e);
+   for(const [dx,dy] of [[-3,-3],[3,-3],[-3,3],[3,3]]){const m=bigMob(pick(d.mobs),rm.cx+dx+.5,rm.cy+dy+.5,dep0+rm.d*.12);E.push(m)}}}}
+function mbLoot(e){const d=DG.find(q=>q.id===e.dgid)||{tier:2},tr=d.tier,fin=e.mbI===2;
+ const g=ri(300,700)*(tr+(fin?2:0));P.gold+=g;fl(e.x,e.y-1.2,'+'+g+'g','#ffd36b');
+ for(let i=0;i<(fin?3:1)+tr;i++){if(Math.random()<.6)addItem('gem');else addItem('essence',ri(2,4))}if(tr>=2)addItem('scale',ri(1,2+(fin?3:0)));
+ for(let i=0;i<(fin?3:1);i++)megaLoot(Math.random()<(fin?.35:.15)?2:1);
+ if(fin&&d.seal){addItem(d.seal);sys('🗝️ You found the '+ITEMS[d.seal].n+'!','#ffd36b')}
+ toast('☠️ '+(e.nm||'Boss')+' slain!','#ffd36b')}
+function chestOpen(o){if(o.dead)return;o.dead=clock+900;const tr=o.tier||1;sfx('pick');burst(o.x+.5,o.y,'#ffd36b',16,4);
+ const g=ri(150,450)*tr;P.gold+=g;fl(o.x+.5,o.y-.6,'+'+g+'g','#ffd36b');
+ if(Math.random()<.7)addItem('gem');addItem('essence',ri(1,3));addItem('hpotion',ri(1,3));if(tr>=2&&Math.random()<.5)addItem('scale');if(Math.random()<.5)megaLoot(Math.random()<.15?2:1);
+ toast('🎁 Treasure chest!','#ffd36b')}
+/* traps */
+const hazActors=()=>typeof SRV!=='undefined'&&SRV.players?[...SRV.players.values()].filter(p=>p.ready&&!p.dead&&!p.inside):(P&&!P.dead&&!P.inside&&!shopSt?[P]:[]);
+function hzHit(p,d,fx,x,y){if(typeof SRV!=='undefined'&&SRV.hits){SRV.hits.push({to:p.id,d:fx==='tp'?0:Math.max(1,Math.round(d)),fx,x,y});return}if(NET.sim)return;if(fx==='tp'){tele(x,y);return}playerHit(d);if(fx)playerFx(fx)}
+const hzPh=h=>{const t=Date.now()/1000+h.o,ci=Math.floor(t/h.cy),ph=t%h.cy;return{ci,st:ph<h.warn?1:ph<h.warn+h.act?2:0,ph}};
+function hazTick(dt){if(!HAZ.length)return;const A=hazActors();if(!A.length)return;
+ for(const h of HAZ){let near=null;for(const p of A)if(Math.abs(p.x-h.x)<16&&Math.abs(p.y-h.y)<16){near=1;break}if(!near)continue;
+  if(h.k==='dart'){h.t-=dt;if(h.t<=0){h.t=2.4;if(!NET.sim){const v=[[0,1],[0,-1],[1,0],[-1,0]][h.dir];proj.push({x:h.x,y:h.y,vx:v[0]*6,vy:v[1]*6,dmg:Math.round(h.dm*.7),life:3.4,own:'e'})}}continue}
+  for(const p of A){const d=Math.hypot(p.x-h.x,p.y-h.y);if(d>h.r+.3)continue;
+   if(h.k==='spike'||h.k==='fire'){const s=hzPh(h);if(s.st===2&&h.seen.get(p.id||'p')!==s.ci){h.seen.set(p.id||'p',s.ci);hzHit(p,h.dm,h.k==='fire'?'psn':null)}}
+   else if(h.k==='gas'){const k=(p.id||'p')+'g',n=Date.now();if(n-(h.seen.get(k)||0)>1000){h.seen.set(k,n);hzHit(p,1,'psn')}}
+   else if(h.k==='tele'){const k=(p.id||'p')+'t',n=Date.now();if(n-(h.seen.get(k)||0)>4000){h.seen.set(k,n);const d2=DG.find(q=>q.id===h.dg),o=pick(d2.rooms.filter(r=>r!==h.rm&&r!==d2.boss));if(o)hzHit(p,0,'tp',o.cx+.5,o.cy+.5)}}}}}
+function hazDraw(R,vis){for(const h of HAZ){if(!vis(h.x,h.y))continue;R.push([h.y*T-6,()=>{const px=h.x*T,py=h.y*T,t=Date.now()/1000;
+  if(h.k==='spike'||h.k==='fire'){const s=hzPh(h),fire=h.k==='fire',r=h.r*T;g.fillStyle='#0006';g.beginPath();g.ellipse(px,py,r*.8,r*.5,0,0,6.3);g.fill();g.strokeStyle=fire?'#6a3a1a':'#555';g.lineWidth=1;g.beginPath();g.ellipse(px,py,r*.8,r*.5,0,0,6.3);g.stroke();
+   if(s.st===1){g.fillStyle=`rgba(255,${fire?120:60},40,${.25+.25*Math.sin(t*14)})`;g.beginPath();g.ellipse(px,py,r*.85,r*.55,0,0,6.3);g.fill()}
+   else if(s.st===2){if(fire){for(let i=0;i<7;i++){const a=i*.9+t*6;g.fillStyle=i%2?'#ffb02a':'#ff4a1a';g.fillRect(px+Math.cos(a)*r*.5-2,py-6-Math.abs(Math.sin(a*2+t*9))*12,4,10)}}else{for(let i=0;i<5;i++){const a=i*1.26;g.fillStyle='#cfd2d8';const sx=px+Math.cos(a)*r*.45,sy=py+Math.sin(a)*r*.3;g.beginPath();g.moveTo(sx-2,sy);g.lineTo(sx,sy-10);g.lineTo(sx+2,sy);g.fill()}}}}
+  else if(h.k==='gas'){for(let i=0;i<5;i++){const a=t*.6+i*1.3,rr=h.r*T*(.35+.25*Math.sin(t+i));g.fillStyle='rgba(110,220,80,.16)';g.beginPath();g.arc(px+Math.cos(a)*h.r*T*.4,py+Math.sin(a*1.2)*h.r*T*.3,rr,0,6.3);g.fill()}}
+  else if(h.k==='tele'){g.strokeStyle=`rgba(190,110,255,${.5+.4*Math.sin(t*4)})`;g.lineWidth=2;for(let i=0;i<3;i++){g.beginPath();g.ellipse(px,py,5+i*3+Math.sin(t*3+i)*1.5,3+i*2,t+i,0,6.3);g.stroke()}}
+  else if(h.k==='dart'){g.fillStyle='#222';const v=[[0,-1],[0,1],[-1,0],[1,0]][h.dir];g.fillRect(px-3+v[0]*5,py-2+v[1]*5,6,4);g.fillStyle='#a33';g.fillRect(px-1+v[0]*5,py+v[1]*5,2,2)}}])}
+  for(const s of SECR){if(!vis(s.x,s.y)||Math.hypot(s.x+.5-P.x,s.y+.5-P.y)>3.2)continue;R.push([s.y*T+17,()=>{g.strokeStyle='rgba(255,255,255,'+(.15+.1*Math.sin(Date.now()/300))+')';g.lineWidth=1;const px=s.x*T,py=s.y*T;g.beginPath();g.moveTo(px+3,py+2);g.lineTo(px+7,py+7);g.lineTo(px+5,py+12);g.moveTo(px+10,py+3);g.lineTo(px+12,py+9);g.stroke()}])}}

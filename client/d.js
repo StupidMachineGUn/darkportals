@@ -179,6 +179,7 @@ function render(){if(P.inside){drawInside();return}if(insideOn)hideInside();if(s
  for(const o of objs)if(vis(o.x,o.y))R.push([o.y*T+16,()=>{const px=o.x*T,py=o.y*T;if(ART_ON&&artObj(o,px,py))return;
   if(o.t==='tree')o.dead?g.drawImage(SPR.stump,px,py):g.drawImage(SPR.tree,px-8,py-24);else if(o.t==='rock')g.drawImage(o.dead?SPR.rockdead:SPR[o.ore],px,py);
   else if(o.t==='gate'){g.fillStyle='#0004';g.fillRect(px-2,py+13,20,3);const gl=.5+.3*Math.sin(clock*3);g.fillStyle='rgba(150,60,255,'+gl*.35+')';g.beginPath();g.arc(px+8,py-2,16,0,6.3);g.fill();g.fillStyle='#4a4650';g.fillRect(px,py-14,4,30);g.fillRect(px+12,py-14,4,30);g.fillRect(px-1,py-18,18,6);g.fillStyle='#2f2c36';g.fillRect(px+1,py-14,1,28);g.fillRect(px+13,py-14,1,28);g.fillStyle='#12081e';g.fillRect(px+4,py-12,8,28);g.fillStyle='hsl(280,85%,'+(45+20*Math.sin(clock*4))+'%)';g.fillRect(px+5,py-10+((clock*14)|0)%20,6,2);g.fillRect(px+6,py-6+((clock*9)|0)%18,4,2);g.fillStyle='#e8e0d0';g.fillRect(px+6,py-17,4,3);g.fillRect(px+7,py-14,2,1)}
+  else if(o.t==='chest'){g.fillStyle='#0005';g.fillRect(px,py+12,16,3);g.fillStyle=o.dead?'#5a3a1a':'#8a5a22';g.fillRect(px+1,py+5,14,9);g.fillStyle=o.dead?'#3a2210':'#b07a30';g.fillRect(px+1,py+(o.dead?3:5),14,4);g.fillStyle='#ffd36b';g.fillRect(px+7,py+8,2,3);if(!o.dead){g.fillStyle='rgba(255,230,120,'+(.2+.15*Math.sin(clock*4+o.x))+')';g.beginPath();g.arc(px+8,py+7,11,0,6.3);g.fill()}}
   else if(o.t==='shroom'){g.fillStyle='rgba(120,255,240,'+(.22+.14*Math.sin(clock*3+o.x))+')';g.beginPath();g.arc(px+8,py+9,9+Math.sin(clock*2+o.y),0,6.3);g.fill();g.drawImage(SPR.shroom,px,py);if(Math.random()<.04)parts.push({x:o.x+.5+rnd(-.3,.3),y:o.y+.4,vx:0,vy:-1,life:.8,c:'#9ffff0',sz:2})}else if(o.t==='bush')g.drawImage(o.dead?SPR.bushdead:SPR.bush,px,py);else if(o.t==='anvil')g.drawImage(SPR.anvil,px,py);else if(o.t==='fire')drawFire(o)}]);
  for(const b of buildings)R.push([(b.y+b.h)*T,()=>{if(!(ART_ON&&artBuilding(b)))g.drawImage(b.img,b.x*T,b.y*T-16)}]);
  for(const n of npcs)if(!n.dead)R.push([n.y*T+16,()=>drawChar(n.x*T,n.y*T,0,0,n.col,'#552',{sp:n.sw>0?1-n.sw/.25:-1,wid:n.sw>0?'sword0':null,flash:n.flash>0})]);
@@ -197,13 +198,13 @@ function render(){if(P.inside){drawInside();return}if(insideOn)hideInside();if(s
   const sp=SPELLS[p.sp],c=spCol(sp),s=p.sz||3;g.globalAlpha=.3;g.fillStyle=c;g.fillRect(p.x*T-s-2,p.y*T-s-2,s*2+4,s*2+4);g.globalAlpha=1;g.fillStyle=c;g.fillRect(p.x*T-s/2,p.y*T-s/2,s,s);g.fillStyle='#fff';g.fillRect(p.x*T-1,p.y*T-1,2,2)
   if(sp.dot&&sp.dot[0]==='burn'&&Math.random()<.5)parts.push({x:p.x,y:p.y,vx:rnd(-.5,.5),vy:-.8,life:.3,c:'#ff8a2a',sz:2});if(p.sp>=9)for(let i=0;i<3;i++){g.fillStyle=spCol(sp);g.fillRect(p.x*T-p.vx*.012*(i+1)*T*.5-1,p.y*T-p.vy*.012*(i+1)*T*.5-1,2,2)}}
  drawGibs();for(const p of parts){g.globalAlpha=clamp(p.life*3,0,1);g.fillStyle=p.c;g.fillRect(p.x*T,p.y*T,p.sz,p.sz)}g.globalAlpha=1;
- const ph=((clock+90)/420)%1,k=Math.cos(ph*6.2832),dark=clamp(-k*1.3,0,1)*.62;
+ const ph=((clock+90)/420)%1,k=Math.cos(ph*6.2832),dgF=dunXAt(P.x,P.y),dark=dgF?.9:clamp(-k*1.3,0,1)*.62;
  g.setTransform(1,0,0,1,0,0);
  if(dark>.02){ng.globalCompositeOperation='source-over';ng.clearRect(0,0,cw,ch);ng.fillStyle=`rgba(6,10,45,${dark})`;ng.fillRect(0,0,cw,ch);ng.globalCompositeOperation='destination-out';
   const hole=(x,y,r)=>{const [sx,sy]=w2s(x,y),rr=r*T*S,gr=ng.createRadialGradient(sx,sy,0,sx,sy,rr);gr.addColorStop(0,'rgba(0,0,0,.95)');gr.addColorStop(1,'rgba(0,0,0,0)');ng.fillStyle=gr;ng.fillRect(sx-rr,sy-rr,rr*2,rr*2)};
-  hole(P.x,P.y-.3,5);for(const o of objs)if(o.t==='fire'&&vis(o.x,o.y))hole(o.x+.5,o.y+.5,4);
+  hole(P.x,P.y-.3,dgF?4.8:5);for(const o of objs)if(o.t==='fire'&&vis(o.x,o.y))hole(o.x+.5,o.y+.5,4);for(const o of E)if(dgF&&o.mb&&!o.dead&&vis(o.x,o.y))hole(o.x,o.y-.3,3);
   for(const b of buildings)hole(b.x+b.w/2,b.y+b.h,3.5);g.drawImage(nc,0,0);
-  for(let i=0;i<16;i++){const a=clock*.4+i*2.3,x=cam.x+Math.sin(a*1.3+i)*7,y=cam.y+Math.cos(a+i*3)*4.5,[sx,sy]=w2s(x,y);g.fillStyle=`rgba(255,240,120,${.4+.4*Math.sin(clock*5+i)})`;g.fillRect(sx,sy,2*DPR,2*DPR)}}
+  if(!dgF)for(let i=0;i<16;i++){const a=clock*.4+i*2.3,x=cam.x+Math.sin(a*1.3+i)*7,y=cam.y+Math.cos(a+i*3)*4.5,[sx,sy]=w2s(x,y);g.fillStyle=`rgba(255,240,120,${.4+.4*Math.sin(clock*5+i)})`;g.fillRect(sx,sy,2*DPR,2*DPR)}}
  g.fillStyle='rgba(8,16,10,.16)';g.fillRect(0,0,cw,ch);
  for(let i=0;i<6;i++){const fx=((clock*.012+i*.19)%1.3-.15)*cw,fy=ch*(.1+.15*i),fr=cw*.35,fg=g.createRadialGradient(fx,fy,0,fx,fy,fr);fg.addColorStop(0,'rgba(150,175,160,.07)');fg.addColorStop(1,'rgba(150,175,160,0)');g.fillStyle=fg;g.fillRect(fx-fr,fy-fr,fr*2,fr*2)}
  const vg=g.createRadialGradient(cw/2,ch/2,Math.min(cw,ch)*.22,cw/2,ch/2,Math.max(cw,ch)*.72);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.6)');g.fillStyle=vg;g.fillRect(0,0,cw,ch);

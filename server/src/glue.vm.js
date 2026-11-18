@@ -65,7 +65,7 @@ SRV.step = function (dt) {
   SRV.roosterT -= dt; if (SRV.roosterT <= 0) { SRV.roosterT = rnd(300, 540); CUR = null; spawnRooster() }
   bossTimer -= dt; if (!boss && bossTimer <= 0) { bossTimer = 300; spawnBoss() }
   if (boss && clock - boss.born > 360) { E.splice(E.indexOf(boss), 1); boss = null; sys('The Ember Wyrm retreated into the mountains.', '#f99') }
-  portalTick(dt);
+  portalTick(dt);hazTick(dt);
   for (const e of E) if (e.dead && e.dead < 1e8 && clock > e.dead && e.t !== 'wyrm' && e.t !== 'rooster' && !pls.some(p => Math.hypot(e.hx - p.x, e.hy - p.y) < 6)) { e.dead = 0; e.hp = e.mhp; e.x = e.hx; e.y = e.hy; e.st = 0 }
   const live = pls.filter(p => !p.dead && !p.inside), groups = new Map();
   for (const e of E) { if (e.dead) continue; let b = null, bd = 45; for (const p of live) { const d = Math.max(Math.abs(p.x - e.x), Math.abs(p.y - e.y)); if (d < bd) { bd = d; b = p } } if (b) { if (!groups.has(b)) groups.set(b, []); groups.get(b).push(e) } }

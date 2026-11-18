@@ -104,6 +104,7 @@ function startInteract(t){const d=Math.atan2(t.y+.5-P.y,t.x+.5-P.x);P.dir=Math.a
  if(o.t==='bush'){if(o.dead)return;return startAct('bush',o,.9)}
  if(o.t==='fire'){if(!P.inv.some(i=>ITEMS[i.id].raw))return toast('Nothing to cook','#fc6');return startAct('cook',o,1.3)}
  if(o.t==='gate')return useGate(o);
+ if(o.t==='chest')return chestOpen(o);
  if(o.t==='anvil')return openPanel('forge')}
 function findTarget(){let best=null,bd=9;
  for(const n of npcs){const d=Math.hypot(n.x+.5-P.x,n.y+.5-P.y);if(d<2.1&&d<bd){bd=d;best={kind:'npc',ref:n,x:n.x,y:n.y}}}
@@ -230,7 +231,7 @@ function shroomTick(dt){if(!(P.shroomT>0))return;const b0=P.shroomT;P.shroomT-=d
  if(Math.random()<dt*.15)fl(P.x,P.y-1.1,pick(['whoa…','so colorful','the walls are breathing','bawk?','🌈','is that a slime?']),'#e9a8ff')}
 function spawnEnemies(){let c=0,tries=0;while(c<3800&&tries++<600000){const x=ri(3,MW-4),y=ri(3,MH-4),k=idx(x,y);if(!reach[k]||solid[k]||objAt.has(k)||safeAt(x,y))continue;const d=Math.hypot(x-CX,y-CY);if(d<TOWN_R+14||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R+13))continue;const t=pickMob(d,map[k]);if(!t)continue;E.push(mkEnemy(t,x+.5,y+.5));c++}}
 function hurtEnemy(e,d,src='p'){if(e.dead)return;if(e.shield>clock)d=Math.max(1,Math.round(d*.15));if(meleeT===clock)bloodHit(e);if(src==='p'&&P.shroomT>0)d*=3;if(NET.sim){if(src==='p')netHit(e,d);e.flash=.18;e.hp=Math.max(1,e.hp-d);if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;return}if(e.t==='chicken'||e.t==='sheep'){e.flee=5;if(Math.random()<.4)sfx('bawk')}e.hp-=d;e.flash=.18;e.st=1;if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.hp<=0)killEnemy(e)}
-const ELN=e=>(e.el==='shaman'?'Shaman ':e.el==='elite'?'Elite ':'Chief ')+e.t[0].toUpperCase()+e.t.slice(1);
+const ELN=e=>e.nm?e.nm:(e.el==='shaman'?'Shaman ':e.el==='elite'?'Elite ':'Chief ')+e.t[0].toUpperCase()+e.t.slice(1);
 function killEnemy0(e){if(!NET.sim)mobDie(e);if(meleeT===clock)goreKill(e);if(e.dun)dunKill(e);e.dead=clock+(e.temp?1e9:e.t==='wizard'?1e9:e.dun?ri(240,360):e.t==='wyrm'||e.t==='rooster'?1e9:ri(45,70)*(e.el?4:1));P.kills++;const s=ESPEC[e.t],xm=e.xm||1;gainXp('melee',s.xp*.4*xm);if(e.el&&e.el!=='lord'&&!e.dun){const g2=ri(...s.gold)*4;P.gold+=g2;fl(e.x,e.y-1.2,'+'+g2+'g','#ffd36b');toast('☠️ '+ELN(e)+' slain!','#ffd36b');dropGear(e.t,true);dropGear(e.t,true)}onEvent(e.t);burst(e.x,e.y-.4,'#fff',14);
  const g=ri(...s.gold);P.gold+=g;fl(e.x,e.y-.6,'+'+g+'g','#ffd36b');const dr=(id,p,n=1)=>{if(Math.random()<p&&addItem(id,n)){fl(e.x+.3,e.y-1,'+'+ITEMS[id].e0,'#fff')}};
  if(e.t!=='wyrm')dropGear(e.t,TOUGH.has(e.t));
@@ -400,7 +401,7 @@ function readScroll(){if(P.dead)return;if(chickenForm())return toast('🐔 Bawk!
 function updPortal(dt){trackVillage();if(!portCh)return;if(P.dead||P.hp<portCh.hp-.01||Math.hypot(P.x-portCh.x,P.y-portCh.y)>.6){portCh=null;return toast('Portal interrupted','#f66')}
  portCh.hp=P.hp;portCh.left-=dt;if(Math.random()<dt*30)parts.push({x:P.x+rnd(-.5,.5),y:P.y,vx:0,vy:-2,life:.6,c:'#b46aff',sz:2});
  if(portCh.left<=0){const v=portCh.to||MAINTOWN;if(portCh.scroll)take('tscroll');burst(P.x,P.y-.4,'#b46aff',30,5);fxs.push({k:'ring',x:P.x,y:P.y,r:2,life:.6,max:.6,c:'#b46aff'});P.x=v.x;P.y=v.y;P.path=null;P.chase=null;cam.x=P.x;cam.y=P.y;burst(P.x,P.y-.4,'#b46aff',30,5);fxs.push({k:'ring',x:P.x,y:P.y,r:2,life:.6,max:.6,c:'#b46aff'});if(!portCh.scroll)P.portAt=Date.now()+PORT_CD;sys('🌀 Portal to '+v.n+(portCh.scroll?'.':'. Recharges in 30 min.'),'#c9f');portCh=null;sfx('lvl')}}
-function update(dt){clock+=dt;suppTick(dt);xTick(dt);netStep(dt);updPortal(dt);roosterT-=dt;if(roosterT<=0){spawnRooster();roosterT=rnd(300,540)}shroomSpawnT-=dt;if(shroomSpawnT<=0){spawnShroom();shroomSpawnT=rnd(60,150)}shroomTick(dt);if(P.inside)insideTick(dt);else if(shopSt)shopTick(dt);else updPlayer(dt);updEnemies(dt);updBots(dt);updNpcs(dt);updGuards(dt);updProj(dt);
+function update(dt){clock+=dt;hazTick(dt);suppTick(dt);xTick(dt);netStep(dt);updPortal(dt);roosterT-=dt;if(roosterT<=0){spawnRooster();roosterT=rnd(300,540)}shroomSpawnT-=dt;if(shroomSpawnT<=0){spawnShroom();shroomSpawnT=rnd(60,150)}shroomTick(dt);if(P.inside)insideTick(dt);else if(shopSt)shopTick(dt);else updPlayer(dt);updEnemies(dt);updBots(dt);updNpcs(dt);updGuards(dt);updProj(dt);
  for(let i=objs.length-1;i>=0;i--){const o=objs[i];if(o.exp&&clock>o.exp){objs.splice(i,1);objAt.delete(idx(o.x,o.y));continue}
   if(o.dead&&clock>o.dead){o.dead=0;if(o.t==='tree'){o.hp=ri(2,4);solid[idx(o.x,o.y)]=1}else if(o.t==='rock'){o.hp=ri(2,3);solid[idx(o.x,o.y)]=1}else o.hp=1}}
  for(const o of objs)if(o.hp===1&&(o.t==='tree'||o.t==='rock')&&!o.init){o.init=1;o.hp=o.t==='tree'?ri(2,4):ri(2,3)}
