@@ -24,7 +24,7 @@ const mk = async (n, ip) => { const x = await J('/api/register', { method: 'POST
 const boss = await mk('boss', '9.9.9.9'), pl = await mk('player1', '9.9.9.9');
 await wait(300); const send = (c, o) => c.ws.send(JSON.stringify(o)); const has = (c, f) => c.msgs.some(f);
 send(boss, { t: 'adm', c: 'list' }); await wait(200); const L = boss.msgs.find(m => m.t === 'adl'); ok('admin list shows IPs', L && L.l.some(p => p.n === 'player1' && p.ip === '9.9.9.9'));
-send(pl, { t: 'adm', c: 'bc', m: 'hack' }); await wait(150); ok('non-admin cannot broadcast', !has(boss, m => m.t === 'bc'));
+send(pl, { t: 'adm', c: 'bc', m: 'hack' }); await wait(210); ok('non-admin cannot broadcast', !has(boss, m => m.t === 'bc'));
 send(boss, { t: 'adm', c: 'bc', m: 'Server restarts in 5 minutes' }); await wait(200); ok('broadcast reaches everyone', has(pl, m => m.t === 'bc' && /restarts/.test(m.m)));
 // maintenance
 send(boss, { t: 'adm', c: 'maint', on: true, msg: 'Back soon' }); await wait(250);

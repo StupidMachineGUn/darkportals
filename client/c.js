@@ -157,8 +157,42 @@ const ESPEC={slime:{hp:10,dmg:2,spd:1.5,ag:4,xp:10,tiles:[TL.GRASS],n:50,gold:[1
  sheep:{hp:16,dmg:0,spd:1.1,ag:0,xp:4,tiles:[],n:0,gold:[0,2],pass:1,rad:3},chicken:{hp:6,dmg:0,spd:1.4,ag:0,xp:2,tiles:[],n:0,gold:[0,1],pass:1,rad:3},rooster:{hp:700,dmg:34,spd:3.1,ag:9,xp:1500,tiles:[],n:0,gold:[250,600]},
  wyrm:{hp:350,dmg:18,spd:2.6,ag:14,xp:800,tiles:[],n:0,gold:[100,200]}};
 ESPEC.wizard={hp:9000,dmg:70,spd:2.4,ag:13,xp:25000,tiles:[],n:0,gold:[3000,5000]};
+
+/* ---- v0.6.5: all art mobs + magic abilities. ab: bolt fire frost spit curse summon drain blink shield nova split heal ---- */
+(function(){const X=(n,hp,dmg,spd,ag,xp,g0,g1,ab,sm,lt)=>{ESPEC[n]={hp,dmg,spd,ag,xp,tiles:[],n:0,gold:[g0,g1],ab:ab||[],sm,lt}};
+ for(const n of ['cow','pig','deer','rabbit','camel'])ESPEC[n]={hp:18,dmg:0,spd:1.2,ag:0,xp:4,tiles:[],n:0,gold:[0,2],pass:1,rad:3};
+ X('fire_slime',30,6,1.7,5,24,2,6,['fire']);X('ice_slime',30,5,1.6,5,24,2,6,['frost']);X('toxic_slime',40,6,1.6,5,30,2,7,['spit']);X('shadow_slime',45,8,2.2,6,40,3,8,['blink']);X('gold_slime',60,4,2.4,6,120,40,120);X('crystal_slime',80,10,1.5,6,60,4,12,['shield'],0,[['gem',.03]]);
+ X('fox',22,6,3.3,6,30,2,6);X('boar',70,13,2.8,6,70,4,10,0,0,[['pelt',.5]]);X('hyena',55,12,3.2,7,80,4,10);X('mushroom_man',85,13,1.9,6,90,5,14,['spit'],0,[['shroom',.15]]);X('goblin_shaman',60,10,2.4,7,90,6,16,['bolt','heal']);X('skeleton_archer',70,13,2.3,9,110,6,16,['bolt'],0,[['bone',.5]]);
+ X('fire_ant',50,12,3.2,6,70,3,9);X('beetle',120,15,2,5,100,6,15);X('centipede',90,16,3,6,110,6,16,['spit']);X('scorpion',100,18,2.6,6,130,8,20,['spit']);X('venus_trap',150,22,.9,5,160,8,22,['spit']);X('cultist',120,18,2.4,8,180,12,32,['curse','summon'],'skeleton',[['essence',.2]]);
+ X('bear',260,30,2.4,6,350,12,30,0,0,[['pelt',.6]]);X('panther',200,32,3.6,7,380,14,32);X('dire_wolf',240,28,3.4,7,360,12,30,0,0,[['pelt',.6]]);X('snow_wolf',200,26,3.4,7,320,10,26,0,0,[['pelt',.6]]);
+ X('zombie',340,28,1.6,5,300,10,26,['drain'],0,[['bone',.6]]);X('ghoul',300,30,2.2,6,380,14,34,['drain','curse'],0,[['essence',.25]]);X('mummy',380,32,1.8,6,420,16,38,['curse'],0,[['essence',.3]]);X('imp',160,24,3,9,300,14,34,['fire','blink'],0,[['essence',.3]]);X('assassin',220,40,3.3,7,500,30,80,['blink'],0,[['iron',.4],['hpotion',.2]]);X('lizardman',320,34,2.6,7,450,16,40,['spit']);
+ X('harpy',180,26,3.4,9,380,12,30,['bolt'],0,[['feather',.7]]);X('vulture',150,22,3.5,7,260,8,22,0,0,[['feather',.6]]);X('ice_bat',80,14,3.6,8,160,4,12,['frost']);X('fire_bat',80,15,3.6,8,170,4,12,['fire']);X('wisp',120,26,3,9,330,10,30,['blink','bolt'],0,[['essence',.5]]);X('ghost',260,32,2.8,9,520,20,50,['blink','drain'],0,[['essence',.6]]);
+ X('skeleton_knight',420,38,2.2,6,550,18,44,['shield'],0,[['bone',.6],['iron',.3]]);X('frost_spider',240,28,3,7,420,14,34,['frost'],0,[['pelt',.5]]);X('treant',800,44,1.5,6,700,30,70,['heal'],0,[['log',.9]]);X('thorn_horror',500,42,2,6,650,24,60,['spit']);X('sand_golem',900,46,1.6,5,800,40,90,0,0,[['iron',.7]]);X('iron_golem',1200,52,1.5,5,1000,60,130,['shield'],0,[['iron',.9]]);
+ X('yeti',700,55,2.6,7,1100,40,90,0,0,[['pelt',.8]]);X('polar_bear',650,52,2.6,7,1000,36,80,0,0,[['pelt',.8]]);X('frost_giant',1400,70,2,8,2200,80,180,['nova','frost'],0,[['gem',.12],['tusk',.8]]);X('fire_giant',1500,74,2,8,2400,90,200,['nova','fire'],0,[['gem',.14],['tusk',.8]]);
+ X('orc_warlord',1100,62,2.6,8,1900,70,160,['summon'],'orc',[['tusk',.9],['iron',.6],['gem',.08]]);X('lich',1200,65,2.4,10,2800,120,260,['summon','curse','blink'],'skeleton_knight',[['essence',1,3],['gem',.2]]);
+ X('crystal_golem',1600,60,1.6,6,2000,90,200,['shield','nova'],0,[['gem',.25]]);X('ice_golem',1500,58,1.6,6,1900,80,180,['frost','nova'],0,[['gem',.15]]);X('lava_golem',1700,66,1.6,6,2100,90,200,['fire','nova'],0,[['gem',.18],['iron',.7]]);
+ X('lava_hound',600,50,3.4,8,1200,40,100,['fire']);X('jelly_king',1200,50,1.8,6,1800,70,160,['split'],0,[['gel',1,6],['gem',.1]]);X('phoenix',900,60,3.2,9,2600,100,240,['fire','heal'],0,[['feather',1,3],['essence',.8],['gem',.2]]);
+ X('ice_wyrm',2200,85,2.4,10,5000,200,420,['frost','nova'],0,[['scale',.6],['gem',.4]]);X('lava_drake',2400,95,2.6,10,5500,220,460,['fire','nova'],0,[['scale',.6],['gem',.4]]);X('shadow_drake',2300,90,2.8,10,5500,220,460,['blink','curse','fire'],0,[['scale',.6],['gem',.4],['essence',1,4]]);
+ X('dragon',6000,120,2.4,14,20000,600,1200,['fire','nova','summon'],'lava_hound',[['scale',1,4],['gem',.8]]);
+})();
+/* player status effects from mob magic: slow, poison */
+function playerFx(fx){if(!P||P.dead)return;if(fx==='slow'){P.slowT=4;fl(P.x,P.y-1.2,'❄ Slowed','#8cf')}else if(fx==='curse'){P.slowT=5;P.curseT=5;fl(P.x,P.y-1.2,'☠ Cursed','#c9f')}else if(fx==='psn'){P.psnT=5;fl(P.x,P.y-1.2,'☣ Poisoned','#8d4')}}
+function mobDie(e){const s=ESPEC[e.t];if(s&&s.ab&&s.ab.includes('split')&&!e.child){for(let i=0;i<2;i++){const m=mkEnemy(e.t,e.x+(i?.6:-.6),e.y);m.mhp=m.hp=Math.round(e.mhp*.35);m.child=1;m.temp=1;m.st=1;m.sc=.7;m.xm=.3;if(!solid[idx(Math.floor(m.x),Math.floor(m.y))])E.push(m)}}}
+function mobAb(e,s,d,dt){const ab=s.ab,sh=(a,k,sp,dm,fx)=>{proj.push({x:e.x,y:e.y-.5,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,dmg:Math.round(s.dmg*dm),life:2.4,own:'e',fx,big:dm>1.2?1:0});sfx('bolt')};
+ const a0=Math.atan2(P.y-e.y,P.x-e.x);e.ab1=(e.ab1||0)-dt;
+ if(e.ab1<=0&&d<10&&d>1.6){
+  if(ab.includes('fire')){e.ab1=3.4;sh(a0,0,4.2,1.5);return}
+  if(ab.includes('frost')){e.ab1=2.8;sh(a0,0,5,.9,'slow');return}
+  if(ab.includes('spit')){e.ab1=3;sh(a0,0,4.6,.8,'psn');return}
+  if(ab.includes('bolt')){e.ab1=2.2;sh(a0,0,5.5,.9);return}
+  if(ab.includes('curse')){e.ab1=4;sh(a0,0,5,.8,'curse');return}}
+ if(ab.includes('blink')){e.ab2=(e.ab2||rnd(2,6))-dt;if(e.ab2<=0&&d>3&&d<12){e.ab2=rnd(5,8);const a=a0+Math.PI+rnd(-.8,.8),nx=P.x+Math.cos(a)*1.4,ny=P.y+Math.sin(a)*1.4;if(!solid[idx(Math.floor(nx),Math.floor(ny))]&&!isWater(Math.floor(nx),Math.floor(ny))){burst(e.x,e.y-.4,'#b46aff',10,4);e.x=nx;e.y=ny;burst(e.x,e.y-.4,'#b46aff',10,4)}}}
+ if(ab.includes('shield')){e.ab3=(e.ab3||rnd(3,8))-dt;if(e.ab3<=0){e.ab3=12;e.shield=clock+3;fl(e.x,e.y-1.4,'🛡','#6af')}}
+ if(ab.includes('summon')&&s.sm){e.ab4=(e.ab4||8)-dt;if(e.ab4<=0){e.ab4=15;let n=0;for(const o of E)if(o.own===e&&!o.dead)n++;if(n<3)for(let i=0;i<2;i++){const m=mkEnemy(s.sm,e.x+(i?1.1:-1.1),e.y+.8);m.temp=1;m.st=1;m.own=e;m.xm=.4;if(!solid[idx(Math.floor(m.x),Math.floor(m.y))])E.push(m)}if(n<3)fl(e.x,e.y-1.4,'☠ Rise!','#c9f')}}
+ if(ab.includes('nova')){e.nv=(e.nv==null?rnd(4,8):e.nv)-dt;if(e.nv<=0&&e.novaT==null){e.nv=9;e.novaT=1;fxs.push({k:'ring',x:e.x,y:e.y,r:3.6,life:1,max:1,c:'#ff7a3a'});fl(e.x,e.y-1.5,'⚠','#fc6')}if(e.novaT>0){e.novaT-=dt;if(e.novaT<=0){e.novaT=null;if(d<3.8)playerHit(s.dmg*1.4)}}}
+ if(ab.includes('heal')){e.ab5=(e.ab5||3)-dt;if(e.ab5<=0){e.ab5=3;for(const o of E)if(!o.dead&&o!==e&&Math.hypot(o.x-e.x,o.y-e.y)<6&&o.hp<o.mhp)o.hp=Math.min(o.mhp,o.hp+o.mhp*.06);if(e.hp<e.mhp)e.hp=Math.min(e.mhp,e.hp+e.mhp*.03)}}}
 const FASTM=new Set(['wolf','bat','spider','chicken','sheep']);
-const NOSC=['wyrm','wizard','rooster','chicken','sheep'];
+const NOSC=['wyrm','wizard','rooster','chicken','sheep','cow','pig','deer','rabbit','camel','dragon'];
 function mkEnemy(t,x,y){const s=ESPEC[t],k=NOSC.includes(t)?1:1+clamp((Math.hypot(x-CX,y-CY)-24)/150,0,1)*.9,hp=Math.round(s.hp*k),e={t,x,y,hx:x,hy:y,hp,mhp:hp,cd:0,st:0,dir:0,flash:0,dead:0,ph:Math.random()*9,fire:3};if(k>1.02)e.dm=1+(k-1)*.7;return e}
 const RACES=['slime','goblin','wolf','bat','skeleton','spider','orc','bandit','ogre','wraith','golem','troll','demon'];
 function makeElites(){for(const t of RACES){const L=E.filter(e=>e.t===t&&!e.el);if(L.length<2)continue;const n=Math.max(2,Math.round(L.length/40));for(let i=0;i<n;i++){const e=L.splice(ri(0,L.length-1),1)[0];if(!e)break;const sh=i%2===1;e.el=sh?'shaman':'boss';const s=ESPEC[t];e.mhp=e.hp=Math.round(s.hp*(sh?3.5:6));e.dm=sh?1.2:1.7;e.xm=sh?4:6;e.sc=sh?1.15:1.4;e.fire=2}}}
@@ -166,11 +200,12 @@ function spawnVillageMobs(){const ok=(x,y)=>inb(x,y)&&reach[idx(x,y)]&&!solid[id
  for(const v of VIL)for(const [t,n] of v.mobs){let k=0,tries=0;const N=Math.round(n*1.6);while(k<N&&tries++<8000){const a=rnd(0,6.283),r=rnd(VIL_R+14,VIL_R+34),x=Math.floor(v.x+Math.cos(a)*r),y=Math.floor(v.y+Math.sin(a)*r);if(!ok(x,y))continue;E.push(mkEnemy(t,x+.5,y+.5));k++}}
  let k=0,tries=0;while(k<220&&tries++<20000){const a=rnd(0,6.283),r=rnd(TOWN_R+14,TOWN_R+34),x=Math.floor(CX+Math.cos(a)*r),y=Math.floor(CY+Math.sin(a)*r);if(!ok(x,y))continue;const t=pickMob(30,map[idx(x,y)]);if(!t)continue;E.push(mkEnemy(t,x+.5,y+.5));k++}}
 function pickMob(d,t){const g=t===TL.GRASS||t===TL.SAND,f=t===TL.FOREST,st=t===TL.STONE;let L;
- if(d<40)L=g?[['slime',3],['goblin',1]]:f?(d>=30?[['wolf',1],['bat',2]]:[['bat',1]]):[];
- else if(d<70)L=g?[['slime',2],['goblin',2],['orc',1]]:f?[['wolf',2],['orc',1],['spider',2],['bat',1]]:[['skeleton',3],['bat',1]];
- else if(d<100)L=g?[['orc',2],['ogre',1],['bandit',2]]:f?[['orc',1],['ogre',2],['wolf',1],['spider',2]]:st?[['golem',1],['wraith',1],['skeleton',1]]:[['skeleton',1],['wraith',2]];
- else if(d<125)L=(g||f)?[['ogre',2],['troll',1],['bandit',1]]:st?[['golem',2],['troll',1]]:[['wraith',2],['troll',1]];
- else L=[['troll',2],['demon',1],['golem',1]];
+ if(d<40)L=g?[['slime',3],['goblin',1],['fox',1],['fire_slime',1],['ice_slime',1],['cow',.3],['pig',.3],['rabbit',.4]]:f?(d>=30?[['wolf',1],['bat',2],['boar',1],['deer',.3]]:[['bat',1],['rabbit',.3]]):[];
+ else if(d<70)L=g?[['slime',2],['goblin',2],['orc',1],['toxic_slime',1],['shadow_slime',.5],['hyena',1],['goblin_shaman',1],['fire_ant',1],['beetle',1],['mushroom_man',.7],['crystal_slime',.3],['gold_slime',.15],['deer',.3],['camel',.2]]:f?[['wolf',2],['orc',1],['spider',2],['bat',1],['boar',1],['venus_trap',1],['centipede',1],['scorpion',.6],['fox',1]]:[['skeleton',3],['bat',1],['skeleton_archer',1],['cultist',.5]];
+ else if(d<100)L=g?[['orc',2],['ogre',1],['bandit',2],['bear',1],['panther',1],['lizardman',1],['assassin',.6],['harpy',1],['cultist',1],['vulture',1],['imp',.6]]:f?[['orc',1],['ogre',2],['wolf',1],['spider',2],['dire_wolf',1],['treant',1],['thorn_horror',1],['frost_spider',1],['snow_wolf',1],['bear',1]]:st?[['golem',1],['wraith',1],['skeleton',1],['sand_golem',1],['iron_golem',.5],['skeleton_knight',1],['ghoul',1],['zombie',1],['mummy',1]]:[['skeleton',1],['wraith',2],['ghost',1],['wisp',1],['zombie',1],['ghoul',1],['ice_bat',1],['fire_bat',1]];
+ else if(d<130)L=(g||f)?[['ogre',2],['troll',1],['bandit',1],['yeti',1],['polar_bear',1],['orc_warlord',.8],['panther',1],['assassin',1],['phoenix',.2],['lava_hound',.8],['jelly_king',.4],['treant',1]]:st?[['golem',2],['troll',1],['crystal_golem',.8],['ice_golem',.8],['lava_golem',.8],['iron_golem',1],['frost_giant',.5],['fire_giant',.5]]:[['wraith',2],['troll',1],['ghost',1.5],['lich',.4],['ghoul',1],['mummy',1],['skeleton_knight',1]];
+ else if(d<170)L=(g||f)?[['troll',2],['demon',1],['frost_giant',1],['fire_giant',1],['orc_warlord',1],['yeti',1],['lava_hound',1],['phoenix',.4],['jelly_king',.6]]:st?[['golem',1],['crystal_golem',1],['ice_golem',1],['lava_golem',1],['fire_giant',1],['frost_giant',1],['iron_golem',1]]:[['demon',1],['lich',1],['ghost',1.5],['wraith',1]];
+ else L=(g||f)?[['demon',2],['troll',1],['ice_wyrm',.6],['lava_drake',.6],['shadow_drake',.5],['fire_giant',1],['frost_giant',1],['lich',.6],['phoenix',.5]]:[['demon',1],['lich',1.2],['ice_wyrm',.6],['lava_drake',.6],['shadow_drake',.8],['lava_golem',1],['crystal_golem',1]];
  let tot=0;for(const x of L)tot+=x[1];if(!tot)return null;let r=Math.random()*tot;for(const x of L){if((r-=x[1])<0)return x[0]}return L[0][0]}
 function spawnSheep(){const ok=(x,y)=>inb(x,y)&&reach[idx(x,y)]&&!solid[idx(x,y)]&&!objAt.has(idx(x,y))&&[TL.GRASS,TL.FOREST,TL.PLAZA].includes(map[idx(x,y)]),add=(x,y)=>E.push(mkEnemy('sheep',x+.5,y+.5));
  let n=0,tr=0;while(n<180&&tr++<150000){const x=ri(3,MW-4),y=ri(3,MH-4);if(ok(x,y)){const gx=x+rnd(-1.5,1.5);add(x,y);n++;if(Math.random()<.5&&ok(x+1,y)){add(x+1,y);n++}}}
@@ -193,14 +228,14 @@ function shroomTick(dt){if(!(P.shroomT>0))return;const b0=P.shroomT;P.shroomT-=d
  illT-=dt;if(illT<=0&&ills.length<7){illT=rnd(.7,1.6);const a=rnd(0,6.283),d=rnd(3,8);ills.push({x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,t:pick(ILLT),ph:Math.random()*9,life:rnd(5,10),dir:ri(0,3),vx:rnd(-.5,.5),vy:rnd(-.5,.5)})}
  for(let i=ills.length-1;i>=0;i--){const m=ills[i];m.life-=dt;m.x+=m.vx*dt;m.y+=m.vy*dt;if(Math.hypot(m.x-P.x,m.y-P.y)<1.1){burst(m.x,m.y-.4,hsl2hex((clock*200)%360,.9,.6),16);fl(m.x,m.y-.8,pick(['?!','boo','bawk','wow','🌈']),'#e9a8ff');sfx('pick');ills.splice(i,1)}else if(m.life<=0)ills.splice(i,1)}
  if(Math.random()<dt*.15)fl(P.x,P.y-1.1,pick(['whoa…','so colorful','the walls are breathing','bawk?','🌈','is that a slime?']),'#e9a8ff')}
-function spawnEnemies(){let c=0,tries=0;while(c<2200&&tries++<300000){const x=ri(3,MW-4),y=ri(3,MH-4),k=idx(x,y);if(!reach[k]||solid[k]||objAt.has(k)||safeAt(x,y))continue;const d=Math.hypot(x-CX,y-CY);if(d<TOWN_R+14||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R+13))continue;const t=pickMob(d,map[k]);if(!t)continue;E.push(mkEnemy(t,x+.5,y+.5));c++}}
-function hurtEnemy(e,d,src='p'){if(e.dead)return;if(meleeT===clock)bloodHit(e);if(src==='p'&&P.shroomT>0)d*=3;if(NET.sim){if(src==='p')netHit(e,d);e.flash=.18;e.hp=Math.max(1,e.hp-d);if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;return}if(e.t==='chicken'||e.t==='sheep'){e.flee=5;if(Math.random()<.4)sfx('bawk')}e.hp-=d;e.flash=.18;e.st=1;if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.hp<=0)killEnemy(e)}
+function spawnEnemies(){let c=0,tries=0;while(c<3800&&tries++<600000){const x=ri(3,MW-4),y=ri(3,MH-4),k=idx(x,y);if(!reach[k]||solid[k]||objAt.has(k)||safeAt(x,y))continue;const d=Math.hypot(x-CX,y-CY);if(d<TOWN_R+14||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R+13))continue;const t=pickMob(d,map[k]);if(!t)continue;E.push(mkEnemy(t,x+.5,y+.5));c++}}
+function hurtEnemy(e,d,src='p'){if(e.dead)return;if(e.shield>clock)d=Math.max(1,Math.round(d*.15));if(meleeT===clock)bloodHit(e);if(src==='p'&&P.shroomT>0)d*=3;if(NET.sim){if(src==='p')netHit(e,d);e.flash=.18;e.hp=Math.max(1,e.hp-d);if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;return}if(e.t==='chicken'||e.t==='sheep'){e.flee=5;if(Math.random()<.4)sfx('bawk')}e.hp-=d;e.flash=.18;e.st=1;if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.hp<=0)killEnemy(e)}
 const ELN=e=>(e.el==='shaman'?'Shaman ':e.el==='elite'?'Elite ':'Chief ')+e.t[0].toUpperCase()+e.t.slice(1);
-function killEnemy0(e){if(meleeT===clock)goreKill(e);if(e.dun)dunKill(e);e.dead=clock+(e.temp?1e9:e.t==='wizard'?1e9:e.dun?ri(240,360):e.t==='wyrm'||e.t==='rooster'?1e9:ri(45,70)*(e.el?4:1));P.kills++;const s=ESPEC[e.t],xm=e.xm||1;gainXp('melee',s.xp*.4*xm);if(e.el&&e.el!=='lord'&&!e.dun){const g2=ri(...s.gold)*4;P.gold+=g2;fl(e.x,e.y-1.2,'+'+g2+'g','#ffd36b');toast('☠️ '+ELN(e)+' slain!','#ffd36b');dropGear(e.t,true);dropGear(e.t,true)}onEvent(e.t);burst(e.x,e.y-.4,'#fff',14);
+function killEnemy0(e){if(!NET.sim)mobDie(e);if(meleeT===clock)goreKill(e);if(e.dun)dunKill(e);e.dead=clock+(e.temp?1e9:e.t==='wizard'?1e9:e.dun?ri(240,360):e.t==='wyrm'||e.t==='rooster'?1e9:ri(45,70)*(e.el?4:1));P.kills++;const s=ESPEC[e.t],xm=e.xm||1;gainXp('melee',s.xp*.4*xm);if(e.el&&e.el!=='lord'&&!e.dun){const g2=ri(...s.gold)*4;P.gold+=g2;fl(e.x,e.y-1.2,'+'+g2+'g','#ffd36b');toast('☠️ '+ELN(e)+' slain!','#ffd36b');dropGear(e.t,true);dropGear(e.t,true)}onEvent(e.t);burst(e.x,e.y-.4,'#fff',14);
  const g=ri(...s.gold);P.gold+=g;fl(e.x,e.y-.6,'+'+g+'g','#ffd36b');const dr=(id,p,n=1)=>{if(Math.random()<p&&addItem(id,n)){fl(e.x+.3,e.y-1,'+'+ITEMS[id].e0,'#fff')}};
  if(e.t!=='wyrm')dropGear(e.t,TOUGH.has(e.t));
  if(e.t==='troll'){dr('tusk',.8,3);dr('iron',.7,3);dr('gem',.08);dr('hpotion',.3)}if(e.t==='demon'){dr('essence',.8,3);dr('gem',.12);dr('scale',.1);dr('hpotion',.4);dr('potion',.3)}
- dr('hpotion',e.t==='slime'?0:.04);
+ dr('hpotion',e.t==='slime'?0:.04);if(s.lt)for(const [id,p,n] of s.lt){if(p>=1)addItem(id,ri(p,n||p)) ;else dr(id,p,n||1)}
  if(e.t==='sheep'){dr('wool',.9,2);dr('mutton',.7);sfx('baa')}if(e.t==='chicken'){dr('drum',.5);dr('egg',.6);dr('feather',.7,2);sfx('bawk')}if(e.t==='rooster'){dr('rfeather',1,3);dr('gegg',.6);dr('drum',1,3);dr('egg',1,3);sys('🐓 The Rooster Lord falls! The flock is free.','#ffb347')}
  if(e.t==='goblin'){dr('bread',.2);dr('copper',.15)}if(e.t==='bat')dr('pelt',.3);if(e.t==='spider'){dr('pelt',.5);dr('gem',.02);dr('essence',.05)}if(e.t==='bandit'){dr('iron',.4);dr('bread',.3);dr('hpotion',.15);dr('gem',.03)}if(e.t==='golem'){dr('iron',.9,3);dr('gem',.2);dr('copper',.6,3)}
  if(e.t==='orc'){dr('tusk',.6);dr('iron',.25)}if(e.t==='ogre'){dr('tusk',.8,2);dr('iron',.6,2);dr('gem',.05)}if(e.t==='wraith'){dr('essence',.6);dr('gem',.04);dr('potion',.1)}
@@ -279,7 +314,8 @@ function updEnemies(dt){if(NET.sim)return netMobs(dt);for(const e of E){if(e.dea
   if(e.st===1&&(P.dead||d>s.ag*(e.t==='wyrm'||e.t==='wizard'?2.2:1.5)||hd>(e.t==='wyrm'?60:e.t==='wizard'?24:13)||safeAt(P.x,P.y)))e.st=2;
   if(e.t==='wyrm'&&e.st===2){e.st=0;e.hx=e.x;e.hy=e.y}
   let tx=null,ty=null,sp=s.spd*(e.slow?e.slow.m:1)*(FASTM.has(e.t)||e.el||e.t==='wyrm'||e.t==='rooster'?1:.65);
-  if(e.st===1){tx=P.x;ty=P.y;if(d<1.05){if(e.cd<=0){e.cd=e.t==='wyrm'?1.6:1.2;e.sw=.25;if(Math.random()<.88-clamp(lv('agility')*.003,0,.25))playerHit(s.dmg*(e.dm||1)*rnd(.8,1.2));else{fl(P.x,P.y-.8,'Dodge!','#9cf');gainXp('agility',3);sfx('miss')}}tx=null}
+  if(e.st===1){tx=P.x;ty=P.y;if(d<1.05){if(e.cd<=0){e.cd=e.t==='wyrm'?1.6:1.2;e.sw=.25;if(Math.random()<.88-clamp(lv('agility')*.003,0,.25)){const dd=s.dmg*(e.dm||1)*rnd(.8,1.2);playerHit(dd);if(s.ab&&s.ab.includes('drain'))e.hp=Math.min(e.mhp,e.hp+dd*.5)}else{fl(P.x,P.y-.8,'Dodge!','#9cf');gainXp('agility',3);sfx('miss')}}tx=null}
+   if(s.ab)mobAb(e,s,d,dt);
    if(e.el==='shaman'){e.fire-=dt;if(e.fire<=0&&d<8&&d>1.5){e.fire=2.4;const a=Math.atan2(P.y-e.y,P.x-e.x);proj.push({x:e.x,y:e.y-.5,vx:Math.cos(a)*5,vy:Math.sin(a)*5,dmg:Math.round(s.dmg*.9),life:2,own:'e'});sfx('bolt');for(const o of E){if(!o.dead&&o!==e&&o.t===e.t&&Math.hypot(o.x-e.x,o.y-e.y)<6&&o.hp<o.mhp)o.hp=Math.min(o.mhp,o.hp+o.mhp*.08)}}}
    if(e.t==='wizard'){e.fire-=dt;e.nova=(e.nova||6)-dt;
     if(e.fire<=0&&d<14&&d>1.5){e.fire=1.8;const a0=Math.atan2(P.y-e.y,P.x-e.x);for(const o of [-.35,0,.35])proj.push({x:e.x,y:e.y-.5,vx:Math.cos(a0+o)*6,vy:Math.sin(a0+o)*6,dmg:Math.round(s.dmg*.7),life:2.5,own:'e'});sfx('bolt')}
@@ -312,7 +348,7 @@ function spawnBoss(){let x,y,t=0;do{x=ri(5,MW-5);y=ri(5,MH-5);t++}while(t<9000&&
 function updProj(dt){for(let i=proj.length-1;i>=0;i--){const p=proj[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;let rm=p.life<=0||!inb(Math.floor(p.x),Math.floor(p.y))||(solid[idx(Math.floor(p.x),Math.floor(p.y))]&&isWater(Math.floor(p.x),Math.floor(p.y))===false&&!objAt.has(idx(Math.floor(p.x),Math.floor(p.y))));
   if(p.own==='p'){let hit=null;for(const e of E){if(!e.dead&&Math.hypot(e.x-p.x,e.y-.3-p.y)<.7){hit=e;break}}if(hit){spellHit(p,hit);rm=true}else if(rm&&SPELLS[p.sp].aoe)spellAoe(p,new Set())}
   else if(p.own==='o'||NET.sim){}
-  else if(!P.dead&&Math.hypot(P.x-p.x,P.y-.3-p.y)<.6){playerHit(p.dmg);burst(p.x,p.y,'#f93',10);rm=true}
+  else if(!P.dead&&Math.hypot(P.x-p.x,P.y-.3-p.y)<.6){playerHit(p.dmg);if(p.fx)playerFx(p.fx);burst(p.x,p.y,p.fx==='slow'?'#8cf':p.fx==='psn'?'#8d4':p.fx==='curse'?'#c9f':'#f93',10);rm=true}
   if(rm)proj.splice(i,1);else if(Math.random()<.5)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:.25,c:p.own==='p'?spCol(SPELLS[p.sp]):'#f93',sz:2})}}
 /* ---------- main update ---------- */
 let goal=null,chaseT=0;
@@ -333,8 +369,9 @@ function updPlayer(dt){
  if((vx||vy)&&isDrunk()){const w=clock*3.3;vx+=Math.sin(w)*.7;vy+=Math.cos(w*.8)*.7;const m2=Math.hypot(vx,vy);if(m2>1){vx/=m2;vy/=m2}}
  const moving=vx||vy;if(input.atk&&!P.chase)playerAttack();
  const sprint=input.run&&moving&&P.st>0&&!P.tired;
+ if(P.slowT>0)P.slowT-=dt;if(P.psnT>0){P.psnT-=dt;P.psnA=(P.psnA||0)+dt;if(P.psnA>=1){P.psnA=0;playerHit(4+Math.round(maxHp()*.012))}}
  if(P.tired&&P.st>maxSt()*.25)P.tired=false;if(P.st<=0)P.tired=true;
- let sp=(P.shroomT>0?1.6:(chickenForm()?1.15:1))*(P.hasteT>0?1.4:1)*3.3*(1+Math.min(.25,lv('agility')*.004+G().spd/100))*(sprint?1.7:1)*(act?0:1);
+ let sp=(P.shroomT>0?1.6:(chickenForm()?1.15:1))*(P.hasteT>0?1.4:1)*3.3*(1+Math.min(.25,lv('agility')*.004+G().spd/100))*(sprint?1.7:1)*(act?0:1)*(P.slowT>0?.55:1);
  if(moving){moveEnt(P,vx*sp*dt,vy*sp*dt);P.dir=Math.abs(vx)>Math.abs(vy)?(vx>0?2:1):(vy>0?0:3);P.d8=((Math.round(Math.atan2(vx,vy)/.7854)%8)+8)%8;P.walk=(P.walk||0)+dt*(sprint?12:8);P.play+=0}
  if(sprint){P.st-=7*dt;P.agT=(P.agT||0)+dt;if(P.agT>1.4){P.agT=0;gainXp('agility',3)}}else{P.st=Math.min(maxSt(),P.st+(act&&(act.kind==='fish'||act.kind==='mine')?.6:moving?2.5:5.5)*dt)}
  if(moving&&!sprint){P.wT=(P.wT||0)+dt;if(P.wT>6){P.wT=0;gainXp('agility',1)}}

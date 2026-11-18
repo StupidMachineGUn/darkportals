@@ -39,7 +39,7 @@ pos(D, w.x, w.y); await wait(100);
 for (let i = 0; i < 3; i++) { send(D, { t: 'jd' }); await wait(1100); pos(D, w.x, w.y) }
 ok('digging frees', has(D, m => m.t === 'jr'));
 // arrest in town
-pos(A, 150.5, 150.5, { tp: 1 }); pos(B, 151.5, 150.5, { tp: 1 }); await wait(300);
+pos(A, 210.5, 210.5, { tp: 1 }); pos(B, 211.5, 210.5, { tp: 1 }); await wait(300);
 send(A, { t: 'pvp', to: B.id, d: 5 }); await wait(400);
 ok('guard arrests attacker', has(A, m => m.t === 'jl' && m.left === 25 && m.reason === 'assault') && !has(B, m => m.t === 'phit' && false));
 // kick

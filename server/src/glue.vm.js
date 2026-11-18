@@ -12,10 +12,12 @@ killEnemy = function (e) {
   e.dead = clock + RESP(e);
   SRV.kills.push({ id: e.id, by: e.last || 0 });
   if (e.t === 'wizard') closePortals();
+  mobDie(e);
   if (e === boss) boss = null;
 };
 hurtEnemy = function (e, d, src) {
   if (e.dead) return;
+  if (e.shield > clock) d = Math.max(1, Math.round(d * .15));
   if (e.t === 'chicken' || e.t === 'sheep') e.flee = 5;
   e.hp -= d; e.flash = .18; e.st = 1;
   if (e.hp <= 0) killEnemy(e);
@@ -77,7 +79,7 @@ SRV.step = function (dt) {
     const q = proj[i]; q.x += q.vx * dt; q.y += q.vy * dt; q.life -= dt;
     if (!q.sent) { q.sent = 1; SRV.evs.push({ t: 'ev', k: 'proj', x: q.x, y: q.y, vx: q.vx, vy: q.vy, life: q.life }) }
     let rm = q.life <= 0 || !inb(Math.floor(q.x), Math.floor(q.y)) || (solid[idx(Math.floor(q.x), Math.floor(q.y))] && isWater(Math.floor(q.x), Math.floor(q.y)) === false && !objAt.has(idx(Math.floor(q.x), Math.floor(q.y))));
-    if (!rm) for (const p of live) if (Math.hypot(p.x - q.x, p.y - .3 - q.y) < .6) { SRV.hits.push({ to: p.id, d: Math.max(1, Math.round(q.dmg)) }); rm = true; break }
+    if (!rm) for (const p of live) if (Math.hypot(p.x - q.x, p.y - .3 - q.y) < .6) { SRV.hits.push({ to: p.id, d: Math.max(1, Math.round(q.dmg)), fx: q.fx }); rm = true; break }
     if (rm) proj.splice(i, 1);
   }
   fxs.length = 0; parts.length = 0; floats.length = 0;

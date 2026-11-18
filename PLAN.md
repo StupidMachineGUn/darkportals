@@ -94,3 +94,6 @@ Music rule, inn scene + beer/drunk, house sheep, area titles once. World expansi
 **Every town gets a small bank** (so players can bank without going to the capital).
 Process: show examples/discuss first for non-trivial parts (boss mechanics, dungeon layout) and wait for approval; ask before any deployment.
 Version order: v0.6.3 (test/accept) -> v0.6.4 world expansion (maybe split: map+towns+scroll, then Citadel+boss) -> LPC -> Server authority II.
+
+## v0.6.5 DONE (step 1): 420 map, 3 towns, all 79 mobs, magic abilities.
+Next: step 2 = Citadel + 3 new big hard dungeons with traps/secrets/mini-bosses (hazard system); step 3 = Ashen Wyrm boss fight, legendary-only drops.

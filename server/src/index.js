@@ -330,7 +330,7 @@ export async function createServer({ port = +process.env.PORT || 8080 } = {}) {
     if (![...players.values()].some(p => p.sp?.ready)) return;
     sim.step(.05); st++;
     const dr = sim.drain();
-    for (const h of dr.hits) { const q = players.get(h.to); if (q) q.hurtT = Date.now(); if (q?.ws.readyState === 1) q.ws.send(JSON.stringify({ t: 'hurt', d: h.d })) }
+    for (const h of dr.hits) { const q = players.get(h.to); if (q) q.hurtT = Date.now(); if (q?.ws.readyState === 1) q.ws.send(JSON.stringify({ t: 'hurt', d: h.d, fx: h.fx })) }
     for (const g of dr.glob) broadcast(g);
     for (const e of dr.evs) broadcast(e);
     const ks = dr.kills.length ? JSON.stringify({ t: 'kill', l: dr.kills }) : null;

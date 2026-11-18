@@ -1,4 +1,10 @@
 # Changelog
+## 0.6.5 - A bigger, stranger world
+- The world grows from 300x300 to 420x420 tiles, with three new far-off hard towns: Mistfall, Cinderhold and Gloomspire (each with a bank). Existing characters are moved to the main town once because the map moved.
+- All 79 art mobs are now in the game, spread by distance from the capital and by terrain (foxes, boars, yetis, giants, liches, wisps, ghosts, phoenixes, drakes...). Cows, pigs, deer, rabbits and camels roam as harmless animals. Gold slimes carry lots of gold.
+- Magic mobs: fireball throwers, frost bolts that slow you, poison spitters, curse casters, summoners that raise minions, life-drainers, blinkers that teleport behind you, shielded knights and golems (hits do 85% less while the shield is up), area novas with a warning ring, healers, and jelly kings that split in two when killed. They work online too.
+- New status effects on you: slowed, cursed and poisoned.
+- Mob drops: many new mobs drop gems, essence, scales, pelts and other materials. Legendary gear still only from the final boss (coming).
 ## 0.6.4 - Town portal & village banks
 - Scroll of Town Portal (90g at the shop): read it from the bag, stand still 3 s, and you arrive in the main town. No cooldown; one scroll is used up.
 - Your portal spell now always opens to the main town (Hearthmoor), not the last village.

@@ -24,7 +24,7 @@ function netConnect(){if(!NET.on||!NET.tok)return;const w=new WebSocket((locatio
    for(const id of [...NET.others.keys()])if(!seen.has(id))NET.others.delete(id)}
   else if(m.t==='m')netSnap(m);
   else if(m.t==='pong'){NET.ping=Math.round(performance.now()-m.c);NET.ld=m.ld;NET.q=m.q;netPingUi()}
-  else if(m.t==='hurt'){if(P&&!P.dead)playerHit(m.d,null)}
+  else if(m.t==='hurt'){if(P&&!P.dead){playerHit(m.d,null);if(m.fx)playerFx(m.fx)}}
   else if(m.t==='kill')netKill(m.l);
   else if(m.t==='ev'){if(m.k==='proj'&&Math.hypot(m.x-P.x,m.y-P.y)<30)proj.push({x:m.x,y:m.y,vx:m.vx,vy:m.vy,dmg:0,life:m.life,own:'e'})}
   else if(m.t==='shake'){shakeT=3.2;shakeA=3;sfx('boss')}

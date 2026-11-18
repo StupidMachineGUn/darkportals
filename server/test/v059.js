@@ -7,16 +7,16 @@ const j = async (m, p, b) => { const r = await fetch(base + p, { method: m, head
 const A = (await j('POST', '/api/register', { username: 'Alice', password: 'secret1' })).b, B = (await j('POST', '/api/register', { username: 'Bobby', password: 'secret2' })).b;
 const open = tok => new Promise((res, rej) => { const w = new WebSocket(`ws://127.0.0.1:${s.port}/ws?token=${tok}`); const msgs = []; w.on('message', (d, bin) => { if (!bin) msgs.push(JSON.parse(d)) }); w.on('open', () => res({ w, msgs })); w.on('error', rej) });
 const a = await open(A.token), b = await open(B.token);
-a.w.send(JSON.stringify({ t: 'pos', x: 150, y: 150, dir: 0, eq: 0 })); b.w.send(JSON.stringify({ t: 'pos', x: 151, y: 150, dir: 0, eq: 0 }));
+a.w.send(JSON.stringify({ t: 'pos', x: 210, y: 210, dir: 0, eq: 0 })); b.w.send(JSON.stringify({ t: 'pos', x: 211, y: 210, dir: 0, eq: 0 }));
 await new Promise(r => setTimeout(r, 400));
 // PvP: Bobby killed by Alice; item must NOT be handed over, but dropped on the floor
 b.w.send(JSON.stringify({ t: 'pkill', by: A.token ? JSON.parse(Buffer.from(A.token.split('.')[0], 'base64url')).uid : 0, g: 5, sx: {}, b: 0, it: { id: 'bread', n: 1 } }));
-b.w.send(JSON.stringify({ t: 'gd', its: [{ id: 'bread', n: 1 }], x: 151, y: 150, dth: 1 }));
+b.w.send(JSON.stringify({ t: 'gd', its: [{ id: 'bread', n: 1 }], x: 211, y: 210, dth: 1 }));
 await new Promise(r => setTimeout(r, 500));
 const pk = a.msgs.find(m => m.t === 'pk'); assert.ok(pk && !pk.it, 'killer gets no item'); console.log('ok   pvp item not transferred');
 const gd = a.msgs.find(m => m.t === 'gd'); assert.ok(gd && gd.g.dth === 1 && gd.g.ttl === 1500, 'floor drop broadcast'); console.log('ok   death drop on floor');
 // multi-item mob loot drop
-a.w.send(JSON.stringify({ t: 'gd', its: [{ id: 'bread', n: 2 }, { id: 'bread', n: 3 }], x: 150, y: 151, mob: 1 }));
+a.w.send(JSON.stringify({ t: 'gd', its: [{ id: 'bread', n: 2 }, { id: 'bread', n: 3 }], x: 210, y: 211, mob: 1 }));
 await new Promise(r => setTimeout(r, 500)); assert.equal(a.msgs.filter(m => m.t === 'gd').length, 3); console.log('ok   multi-item loot');
 // too far from player is refused
 a.w.send(JSON.stringify({ t: 'gd', its: [{ id: 'bread', n: 1 }], x: 10, y: 10, mob: 1 })); await new Promise(r => setTimeout(r, 500)); assert.equal(a.msgs.filter(m => m.t === 'gd').length, 3); console.log('ok   far drop refused');
