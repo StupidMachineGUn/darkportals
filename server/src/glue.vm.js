@@ -31,7 +31,7 @@ portalTick = function (dt) {
     p.t -= dt; if (p.t > 0) continue; p.t = rnd(7, 11);
     if (!pls.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 70)) continue;
     let live = 0; for (const e of E) if (e.pt === p.id && !e.dead) live++; if (live >= 6) continue;
-    const d = Math.hypot(p.x - CX, p.y - CY), t = pickMob(d, map[idx(p.x, p.y + 1)]);
+    const d = Math.hypot(p.x - CX, p.y - CY), t = pickMob(d, map[idx(p.x, p.y + 1)], p.x, p.y + 1);
     if (!t || !ESPEC[t] || ESPEC[t].pass) continue;
     const x = p.x + .5 + rnd(-1.5, 1.5), y = p.y + 1.6 + rnd(0, 1.5);
     if (solid[idx(Math.floor(x), Math.floor(y))]) continue;

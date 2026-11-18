@@ -1,4 +1,7 @@
 # Changelog
+## 0.6.8 - Safe hunting near villages
+- Monster difficulty now eases around every village and town: the closer you are to any settlement the weaker the mobs, and they get harder the farther you walk from one. Far-off towns no longer sit in dragon country.
+- Village-themed spawns toned down (no trolls/demons/giants/liches around villages).
 ## 0.6.7 - The Ashen Wyrm
 - Final boss in the Wyrm's Citadel: the Ashen Wyrm. Its HP scales with how many heroes are near it (90,000 +28% per extra hero up to 10) so it takes a raid, not a few players.
 - Attacks are telegraphed with red zones: fireball barrages on every hero, sweeping fire walls with a safe gap, lingering lava patches, minion waves, and meteor rain. Phase 2 below 60% (minions and lava) and Phase 3 enrage below 30% (meteors). After 12 minutes the room burns down.

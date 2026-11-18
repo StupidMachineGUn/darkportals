@@ -130,7 +130,7 @@ body.art .bf{border:2px solid #2c1a0c;border-radius:4px;background:#e3cc98cc}
 <div id="story"><canvas id="stc" width="192" height="108"></canvas><div id="stt"></div><div id="stb"><div class="btn" id="stSkip">Skip</div><div class="btn" id="stNext">Next ▶</div></div></div>
 <div id="toast"></div>
 <div id="title"><canvas id="wcv"></canvas>
-<div id="wtop"><h1>🌀 DARK PORTALS</h1><div id="walpha">ALPHA v0.6.7</div><div style="opacity:.8;max-width:320px;margin-top:8px;font-size:14px">A tiny MMO that grows with you</div></div>
+<div id="wtop"><h1>🌀 DARK PORTALS</h1><div id="walpha">ALPHA v0.6.8</div><div style="opacity:.8;max-width:320px;margin-top:8px;font-size:14px">A tiny MMO that grows with you</div></div>
 <div id="wst">Checking server…</div>
 <div id="wbot">
 <div id="wmain" class="wv"><div class="btn" id="wbOn">Play online</div><div class="btn" id="wbOff" style="background:#1b1536">Play offline (single player)</div></div>
@@ -252,7 +252,7 @@ function genWorld(){
  npc(buildings[0],'Pip','shop','#34527f');npc(buildings[1],'Brakka','smith','#8a3a22');npc(buildings[2],'Rosa','inn','#8a6a2a');npc(buildings[3],'Elder Maren','elder','#4e3d6e');npc(buildings[4],'Gorm','bank','#6b5a2a');npc(buildings[5],'Vessa','trade','#2a5a5a');npc(buildings[6],'Sorin','mage','#4a3a7a');
  guard(CX-1,CY-12);guard(CX+2,CY+13);guard(CX-13,CY);guard(CX+14,CY+1);guard(CX-9,CY-9);guard(CX+10,CY+12);
  const pre=new Uint8Array(MW*MH);{const q=[idx(CX,CY)];pre[q[0]]=1;for(let h=0;h<q.length;h++){const k=q[h],x=k%MW,y=(k/MW)|0;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+a,ny=y+b;if(inb(nx,ny)&&!pre[idx(nx,ny)]&&map[idx(nx,ny)]>1){pre[idx(nx,ny)]=1;q.push(idx(nx,ny))}}}}
- const VT=[[70,10,'Oakhollow',1,[['orc',12],['wolf',6]],['Hobb','Mara']],[-12,-76,'Stonereach',2,[['ogre',8],['orc',8]],['Dren','Sela']],[-76,44,'Gravewatch',3,[['wraith',10],['skeleton',10],['ogre',4]],['Orin','Vesk']],[14,88,'Emberkeep',4,[['troll',8],['ogre',8]],['Tamsin','Rook']],[100,-52,'Frostmere',5,[['troll',10],['wraith',8]],['Bjorn','Ilsa']],[-92,-84,'Dragonwatch',6,[['demon',8],['troll',8]],['Kael','Nyra']],[-150,-130,'Mistfall',7,[['frost_giant',5],['yeti',8],['ice_golem',5]],['Skadi','Hrolf']],[140,130,'Cinderhold',8,[['fire_giant',5],['lava_golem',5],['lava_hound',8]],['Vulcan','Ember']],[150,-140,'Gloomspire',8,[['lich',3],['ghost',8],['shadow_drake',3]],['Morgan','Vale']]];
+ const VT=[[70,10,'Oakhollow',1,[['orc',12],['wolf',6]],['Hobb','Mara']],[-12,-76,'Stonereach',2,[['ogre',8],['orc',8]],['Dren','Sela']],[-76,44,'Gravewatch',3,[['wraith',10],['skeleton',10],['ogre',4]],['Orin','Vesk']],[14,88,'Emberkeep',4,[['ogre',8],['orc',8],['bear',4]],['Tamsin','Rook']],[100,-52,'Frostmere',5,[['wraith',8],['ogre',6],['snow_wolf',6]],['Bjorn','Ilsa']],[-92,-84,'Dragonwatch',6,[['ogre',8],['troll',3],['imp',6]],['Kael','Nyra']],[-150,-130,'Mistfall',7,[['snow_wolf',9],['frost_spider',7],['yeti',3]],['Skadi','Hrolf']],[140,130,'Cinderhold',8,[['fire_ant',9],['imp',6],['lava_hound',4]],['Vulcan','Ember']],[150,-140,'Gloomspire',8,[['skeleton_knight',6],['ghoul',6],['wisp',6]],['Morgan','Vale']]];
  const cands=[];for(let vy=10;vy<MH-10;vy+=2)for(let vx=11;vx<MW-10;vx+=2){if(Math.hypot(vx-CX,vy-CY)<50)continue;let ok=true;for(let y=vy-8;y<=vy+8&&ok;y++)for(let x=vx-9;x<=vx+9;x++){const k=idx(x,y);if(!pre[k]){ok=false;break}}if(ok)cands.push([vx,vy])}
  for(const [dx,dy,name,tier,mobs,nn] of VT){let found=null,bd=1e9;
   for(const [vx,vy] of cands){if(VIL.some(v=>Math.hypot(v.x-vx,v.y-vy)<34))continue;const d=Math.hypot(vx-CX-dx,vy-CY-dy);if(d<bd){bd=d;found=[vx,vy]}}
@@ -702,13 +702,15 @@ function mobAb(e,s,d,dt){const ab=s.ab,sh=(a,k,sp,dm,fx)=>{proj.push({x:e.x,y:e.
  if(ab.includes('heal')){e.ab5=(e.ab5||3)-dt;if(e.ab5<=0){e.ab5=3;for(const o of E)if(!o.dead&&o!==e&&Math.hypot(o.x-e.x,o.y-e.y)<6&&o.hp<o.mhp)o.hp=Math.min(o.mhp,o.hp+o.mhp*.06);if(e.hp<e.mhp)e.hp=Math.min(e.mhp,e.hp+e.mhp*.03)}}}
 const FASTM=new Set(['wolf','bat','spider','chicken','sheep']);
 const NOSC=['wyrm','wizard','rooster','chicken','sheep','cow','pig','deer','rabbit','camel','dragon'];
-function mkEnemy(t,x,y){const s=ESPEC[t],k=NOSC.includes(t)?1:1+clamp((Math.hypot(x-CX,y-CY)-24)/150,0,1)*.9,hp=Math.round(s.hp*k),e={t,x,y,hx:x,hy:y,hp,mhp:hp,cd:0,st:0,dir:0,flash:0,dead:0,ph:Math.random()*9,fire:3};if(k>1.02)e.dm=1+(k-1)*.7;return e}
+/* difficulty = distance from the capital, but eased near villages so newcomers can hunt safely around any town */
+function diffAt(x,y){let d=Math.hypot(x-CX,y-CY);for(const v of VIL){const dv=Math.hypot(x-v.x,y-v.y);d=Math.min(d,dv*1.4+15)}return d}
+function mkEnemy(t,x,y){const s=ESPEC[t],k=NOSC.includes(t)?1:1+clamp((diffAt(x,y)-24)/150,0,1)*.9,hp=Math.round(s.hp*k),e={t,x,y,hx:x,hy:y,hp,mhp:hp,cd:0,st:0,dir:0,flash:0,dead:0,ph:Math.random()*9,fire:3};if(k>1.02)e.dm=1+(k-1)*.7;return e}
 const RACES=['slime','goblin','wolf','bat','skeleton','spider','orc','bandit','ogre','wraith','golem','troll','demon'];
 function makeElites(){for(const t of RACES){const L=E.filter(e=>e.t===t&&!e.el);if(L.length<2)continue;const n=Math.max(2,Math.round(L.length/40));for(let i=0;i<n;i++){const e=L.splice(ri(0,L.length-1),1)[0];if(!e)break;const sh=i%2===1;e.el=sh?'shaman':'boss';const s=ESPEC[t];e.mhp=e.hp=Math.round(s.hp*(sh?3.5:6));e.dm=sh?1.2:1.7;e.xm=sh?4:6;e.sc=sh?1.15:1.4;e.fire=2}}}
 function spawnVillageMobs(){const ok=(x,y)=>inb(x,y)&&reach[idx(x,y)]&&!solid[idx(x,y)]&&!objAt.has(idx(x,y))&&!safeAt(x+.5,y+.5)&&!VIL.some(w=>Math.hypot(x-w.x,y-w.y)<VIL_R+13)&&Math.hypot(x-CX,y-CY)>=TOWN_R+14;
  for(const v of VIL)for(const [t,n] of v.mobs){let k=0,tries=0;const N=Math.round(n*1.6);while(k<N&&tries++<8000){const a=rnd(0,6.283),r=rnd(VIL_R+14,VIL_R+34),x=Math.floor(v.x+Math.cos(a)*r),y=Math.floor(v.y+Math.sin(a)*r);if(!ok(x,y))continue;E.push(mkEnemy(t,x+.5,y+.5));k++}}
  let k=0,tries=0;while(k<220&&tries++<20000){const a=rnd(0,6.283),r=rnd(TOWN_R+14,TOWN_R+34),x=Math.floor(CX+Math.cos(a)*r),y=Math.floor(CY+Math.sin(a)*r);if(!ok(x,y))continue;const t=pickMob(30,map[idx(x,y)]);if(!t)continue;E.push(mkEnemy(t,x+.5,y+.5));k++}}
-function pickMob(d,t){const g=t===TL.GRASS||t===TL.SAND,f=t===TL.FOREST,st=t===TL.STONE;let L;
+function pickMob(d,t,x,y){if(x!=null)d=Math.min(d,diffAt(x,y));const g=t===TL.GRASS||t===TL.SAND,f=t===TL.FOREST,st=t===TL.STONE;let L;
  if(d<40)L=g?[['slime',3],['goblin',1],['fox',1],['fire_slime',1],['ice_slime',1],['cow',.3],['pig',.3],['rabbit',.4]]:f?(d>=30?[['wolf',1],['bat',2],['boar',1],['deer',.3]]:[['bat',1],['rabbit',.3]]):[];
  else if(d<70)L=g?[['slime',2],['goblin',2],['orc',1],['toxic_slime',1],['shadow_slime',.5],['hyena',1],['goblin_shaman',1],['fire_ant',1],['beetle',1],['mushroom_man',.7],['crystal_slime',.3],['gold_slime',.15],['deer',.3],['camel',.2]]:f?[['wolf',2],['orc',1],['spider',2],['bat',1],['boar',1],['venus_trap',1],['centipede',1],['scorpion',.6],['fox',1]]:[['skeleton',3],['bat',1],['skeleton_archer',1],['cultist',.5]];
  else if(d<100)L=g?[['orc',2],['ogre',1],['bandit',2],['bear',1],['panther',1],['lizardman',1],['assassin',.6],['harpy',1],['cultist',1],['vulture',1],['imp',.6]]:f?[['orc',1],['ogre',2],['wolf',1],['spider',2],['dire_wolf',1],['treant',1],['thorn_horror',1],['frost_spider',1],['snow_wolf',1],['bear',1]]:st?[['golem',1],['wraith',1],['skeleton',1],['sand_golem',1],['iron_golem',.5],['skeleton_knight',1],['ghoul',1],['zombie',1],['mummy',1]]:[['skeleton',1],['wraith',2],['ghost',1],['wisp',1],['zombie',1],['ghoul',1],['ice_bat',1],['fire_bat',1]];
@@ -737,7 +739,7 @@ function shroomTick(dt){if(!(P.shroomT>0))return;const b0=P.shroomT;P.shroomT-=d
  illT-=dt;if(illT<=0&&ills.length<7){illT=rnd(.7,1.6);const a=rnd(0,6.283),d=rnd(3,8);ills.push({x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,t:pick(ILLT),ph:Math.random()*9,life:rnd(5,10),dir:ri(0,3),vx:rnd(-.5,.5),vy:rnd(-.5,.5)})}
  for(let i=ills.length-1;i>=0;i--){const m=ills[i];m.life-=dt;m.x+=m.vx*dt;m.y+=m.vy*dt;if(Math.hypot(m.x-P.x,m.y-P.y)<1.1){burst(m.x,m.y-.4,hsl2hex((clock*200)%360,.9,.6),16);fl(m.x,m.y-.8,pick(['?!','boo','bawk','wow','🌈']),'#e9a8ff');sfx('pick');ills.splice(i,1)}else if(m.life<=0)ills.splice(i,1)}
  if(Math.random()<dt*.15)fl(P.x,P.y-1.1,pick(['whoa…','so colorful','the walls are breathing','bawk?','🌈','is that a slime?']),'#e9a8ff')}
-function spawnEnemies(){let c=0,tries=0;while(c<3800&&tries++<600000){const x=ri(3,MW-4),y=ri(3,MH-4),k=idx(x,y);if(!reach[k]||solid[k]||objAt.has(k)||safeAt(x,y))continue;const d=Math.hypot(x-CX,y-CY);if(d<TOWN_R+14||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R+13))continue;const t=pickMob(d,map[k]);if(!t)continue;E.push(mkEnemy(t,x+.5,y+.5));c++}}
+function spawnEnemies(){let c=0,tries=0;while(c<3800&&tries++<600000){const x=ri(3,MW-4),y=ri(3,MH-4),k=idx(x,y);if(!reach[k]||solid[k]||objAt.has(k)||safeAt(x,y))continue;const d=Math.hypot(x-CX,y-CY);if(d<TOWN_R+14||VIL.some(v=>Math.hypot(x-v.x,y-v.y)<VIL_R+13))continue;const t=pickMob(d,map[k],x,y);if(!t)continue;E.push(mkEnemy(t,x+.5,y+.5));c++}}
 function hurtEnemy(e,d,src='p'){if(e.dead)return;if(e.shield>clock)d=Math.max(1,Math.round(d*.15));if(meleeT===clock)bloodHit(e);if(src==='p'&&P.shroomT>0)d*=3;if(NET.sim){if(src==='p')netHit(e,d);e.flash=.18;e.hp=Math.max(1,e.hp-d);if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.dragon&&src==='p')P.dragDmg=(P.dragDmg||0)+d;return}if(e.t==='chicken'||e.t==='sheep'){e.flee=5;if(Math.random()<.4)sfx('bawk')}e.hp-=d;e.flash=.18;e.st=1;if(e.t==='wyrm'&&src==='p')P.bossDmg=(P.bossDmg||0)+d;if(e.dragon&&src==='p')P.dragDmg=(P.dragDmg||0)+d;if(e.hp<=0)killEnemy(e)}
 const ELN=e=>e.nm?e.nm:(e.el==='shaman'?'Shaman ':e.el==='elite'?'Elite ':'Chief ')+e.t[0].toUpperCase()+e.t.slice(1);
 function killEnemy0(e){if(!NET.sim)mobDie(e);if(meleeT===clock)goreKill(e);if(e.dun)dunKill(e);e.dead=clock+(e.temp?1e9:e.t==='wizard'?1e9:e.dun?ri(240,360):e.t==='wyrm'||e.t==='rooster'?1e9:ri(45,70)*(e.el?4:1));P.kills++;const s=ESPEC[e.t],xm=e.xm||1;gainXp('melee',s.xp*.4*xm);if(e.el&&e.el!=='lord'&&!e.dun){const g2=ri(...s.gold)*4;P.gold+=g2;fl(e.x,e.y-1.2,'+'+g2+'g','#ffd36b');toast('☠️ '+ELN(e)+' slain!','#ffd36b');dropGear(e.t,true);dropGear(e.t,true)}onEvent(e.t);burst(e.x,e.y-.4,'#fff',14);
@@ -1492,7 +1494,7 @@ function spawnPortals(){const X0=DUN.x0-8,X1=DUN.x0+DUN.w+8,Y0=DUN.y0-8,Y1=DUN.y
 function portalTick(dt){if(NET.sim)return;if(!PT.open){if(clock>=PT.reopen)reopenPortals();return}
  for(const p of PTS){p.t-=dt;if(p.t>0)continue;p.t=rnd(7,11);if(Math.hypot(P.x-p.x,P.y-p.y)>70)continue;
   let live=0;for(const e of E)if(e.pt===p.id&&!e.dead)live++;if(live>=6)continue;
-  const d=Math.hypot(p.x-CX,p.y-CY),t=pickMob(d,map[idx(p.x,p.y+1)]);if(!t||!ESPEC[t]||ESPEC[t].pass)continue;
+  const d=Math.hypot(p.x-CX,p.y-CY),t=pickMob(d,map[idx(p.x,p.y+1)],p.x,p.y+1);if(!t||!ESPEC[t]||ESPEC[t].pass)continue;
   const x=p.x+.5+rnd(-1.5,1.5),y=p.y+1.6+rnd(0,1.5);if(solid[idx(Math.floor(x),Math.floor(y))])continue;
   const m=mkEnemy(t,x,y);m.pt=p.id;m.temp=1;E.push(m);burst(x,y-.4,'#b46aff',10,3);fxs.push({k:'ring',x,y,r:1.4,life:.5,max:.5,c:'#b46aff'})}
  ptClean+=dt;if(ptClean>30){ptClean=0;E=E.filter(e=>!(e.pt!=null&&e.dead>clock+1e8))}}
@@ -1645,7 +1647,7 @@ function dragonLoot(e){const d=DG.find(q=>q.citadel)||{tier:4};if((P.dragDmg||0)
  toast('🐉 THE ASHEN WYRM IS SLAIN!','#ffd36b');bigMsg&&0}
 function legendaryDrop(){const s=addItem(pick(ENDGAME));if(!s)return;rollGear(s,'smith',true,1);s.rar=3;if(!s.ench)rollGear(s,'smith',true,1),s.rar=3;announceGear(s,'The Wyrm dropped')}
 /* ---------- online layer (accounts, cloud save, other players, chat) ---------- */
-const NET={gnd:new Map(),gpend:new Map(),on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'0.6.7',board:[],lastSave:0,reg:false,tpT:0};
+const NET={gnd:new Map(),gpend:new Map(),on:false,tok:null,user:null,save:null,ws:null,others:new Map(),online:1,ver:'0.6.8',board:[],lastSave:0,reg:false,tpT:0};
 function authUi(){$('#pw').style.display='block';$('#regt').style.display='block';$('#nm').placeholder='Username';$('#nm').maxLength=16;$('#nm').value=localStorage.getItem('emberfall.user')||'';$('#go').textContent='Log in';}
 function authMsg(t){$('#authmsg').textContent=t||''}
 async function netAuth(){const username=$('#nm').value.trim(),password=$('#pw').value;if(!username||!password){authMsg('Enter username and password');return false}

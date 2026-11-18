@@ -199,7 +199,7 @@ function spawnPortals(){const X0=DUN.x0-8,X1=DUN.x0+DUN.w+8,Y0=DUN.y0-8,Y1=DUN.y
 function portalTick(dt){if(NET.sim)return;if(!PT.open){if(clock>=PT.reopen)reopenPortals();return}
  for(const p of PTS){p.t-=dt;if(p.t>0)continue;p.t=rnd(7,11);if(Math.hypot(P.x-p.x,P.y-p.y)>70)continue;
   let live=0;for(const e of E)if(e.pt===p.id&&!e.dead)live++;if(live>=6)continue;
-  const d=Math.hypot(p.x-CX,p.y-CY),t=pickMob(d,map[idx(p.x,p.y+1)]);if(!t||!ESPEC[t]||ESPEC[t].pass)continue;
+  const d=Math.hypot(p.x-CX,p.y-CY),t=pickMob(d,map[idx(p.x,p.y+1)],p.x,p.y+1);if(!t||!ESPEC[t]||ESPEC[t].pass)continue;
   const x=p.x+.5+rnd(-1.5,1.5),y=p.y+1.6+rnd(0,1.5);if(solid[idx(Math.floor(x),Math.floor(y))])continue;
   const m=mkEnemy(t,x,y);m.pt=p.id;m.temp=1;E.push(m);burst(x,y-.4,'#b46aff',10,3);fxs.push({k:'ring',x,y,r:1.4,life:.5,max:.5,c:'#b46aff'})}
  ptClean+=dt;if(ptClean>30){ptClean=0;E=E.filter(e=>!(e.pt!=null&&e.dead>clock+1e8))}}
