@@ -83,3 +83,14 @@ v0.6.1 done (Art Pack default, fire vs lightning). Next: v0.6.2 audio + scenes +
 
 ## v0.6.2 DONE
 Music rule, inn scene + beer/drunk, house sheep, area titles once. World expansion (79 mobs, bigger map, dungeons, boss x2) is next as v0.6.3; LPC after.
+
+## World expansion II (v0.6.4, approved by user 18 Nov) - GO CRAZY
+**Final dungeon ("the Wyrm's Citadel")**: much bigger and scarier. Traps (spike floors, dart walls, fire jets, collapsing floor, teleport pads, poison gas), secret rooms/hidden doors (cracked walls, levers, hidden treasure), mini-bosses on the way, dark fog / limited vision.
+**Final boss (Wyrm)**: needs more than a few players to win (HP/scaling by number of players present). Huge fireballs with area (AoE) magic, fire walls that sweep the room, summons minions in waves, phases (enrage under 50%/25%), telegraphed attacks so skilful groups can dodge. Minions and boss 2x stronger than before.
+**Legendary items**: much harder to find, dropped ONLY by the final boss (removed from all other drops/chests/mobs).
+**New mobs**: more bad and weird types with magic (curse casters, summoners, life-drain, teleporters, shielders, poison clouds, mirror/split mobs, ghosts, etc.). Use all 79 art mobs.
+**Bigger map + new dungeons**: quite big and hard, higher level mobs, own traps/secret rooms/mini-bosses.
+**Scroll of Town Portal**: consumable (craftable/sold), teleports the player to the MAIN town. Player portals (portal stone) always lead to the main city.
+**Every town gets a small bank** (so players can bank without going to the capital).
+Process: show examples/discuss first for non-trivial parts (boss mechanics, dungeon layout) and wait for approval; ask before any deployment.
+Version order: v0.6.3 (test/accept) -> v0.6.4 world expansion (maybe split: map+towns+scroll, then Citadel+boss) -> LPC -> Server authority II.
