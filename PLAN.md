@@ -108,4 +108,5 @@ Next: step 2 = Citadel + 3 new big hard dungeons with traps/secrets/mini-bosses 
 3. Revert the v0.6.10 Ember Wyrm change (user: "don't change the Ember Wyrm"): spawn distance, leash and re-home go back to v0.6.9 behaviour. (Working tree already restored, not yet versioned.)
 4. DONE in working tree (not versioned): every mob now has a Classic drawing (family templates + per-mob colours, 60+ new). Art Pack stays optional in settings. The Ashen Dragon is ash-grey so it never looks like the red Ember Wyrm.
 5. Fewer fireball casters near villages: mobs with fire/bolt/frost magic only appear far from settlements (higher diffAt); near villages mostly melee mobs. Ranged/magic mobs are limited in number.
-6. Mob casting speed scales with the MAGIC SKILL: mob cast cooldown shrinks as its magic rises (weak mobs cast slowly, strong ones faster). To confirm with user: also apply to the player's own spells (higher magic skill = faster casting)?
+6. Casting speed scales with magic skill (higher magic = faster casting). Applies ONLY to players and elite mobs (ordinary mobs keep fixed cast speed). Confirmed by user.
+7. Magic loot: magic staves and mana potions drop from mobs that use magic (casters: bolt/fire/frost/curse/summon etc.), not from non-magic mobs. Drop chances stay low (see x3 material cut).
