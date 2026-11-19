@@ -1,4 +1,12 @@
 # Changelog
+## 0.6.11 - Safer villages, Classic art for every mob, dev tools
+- The Ember Wyrm change from 0.6.10 is reverted: the Wyrm behaves exactly as in 0.6.9.
+- Far fewer fireball/magic mobs near villages: fire and frost slimes, shamans, archers, spitters and cultists now live farther out and are rarer; near towns you mostly meet melee mobs.
+- Casting speed now grows with your Magic skill (up to 1.5x faster at high levels). Elite mobs cast 1.5x faster; ordinary mobs are unchanged.
+- Magic staves and Mana Potions now drop only from mobs that use magic (and staves get stronger with tougher casters).
+- Mob material drops (bones, pelts, feathers, essence, gems, scales...) are 3x rarer. Potions, gold and guaranteed drops are unchanged.
+- Every mob now has a Classic-style drawing (no more red-dragon look-alikes); the Art Pack stays optional in settings. The Ashen Dragon is ash-grey.
+- Dev mode: automatic godmode, speed x2, and a kill-all button (the Ember Wyrm is skipped).
 ## 0.6.10 - The Ember Wyrm stays in the wilds
 - The roaming Ember Wyrm (red dragon) now spawns at least 90 tiles from every village and 110 from the capital, and can no longer be dragged more than 40 tiles from where it appeared, so beginners never meet it near a settlement.
 - The wake-up announcement says how far the Wyrm is from the nearest town.
